@@ -1,0 +1,48 @@
+!!! 5
+html(ng-app="plunker.landing")
+  head
+    meta(charset="utf-8")
+    meta(name="viewport",content="width=device-width, initial-scale=1.0")
+    title Plunker
+    != css("pages/landing")
+    // if lt IE 9
+      script(src="http://html5shim.googlecode.com/svn/trunk/html5.js")
+    script(src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js")
+    script(src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.2/angular.min.js")
+    script
+      var _plunker = {
+        "url": !{url},
+        "package": !{package},
+        "session": !{session},
+        "bootstrap": !{bootstrap}
+      };
+    != js("pages/landing")
+
+  body
+    div.overlay
+    nav.navbar.navbar-fixed-top
+      div.navbar-inner
+        div.container
+          a.brand(href="/") Plunker
+            span.version v{{package.version}}
+
+          <userpanel></userpanel>
+
+          // Top nav bar
+          div.nav
+            ul#navbar.nav
+              li(ng-class="{active:section==activeSection}", ng-repeat="section in sections")
+                a(ng-href="{{section.href}}", title="{{section.title}}")
+                  i(ng-class="section.class")
+                  span(ng-bind="section.text")
+
+    div(ng-view)
+    div.container
+      footer.row
+        div.span4
+        div.span4
+        div.span4
+          h5 Contact me
+          ul.unstyled
+            li: a(href="/group", title="Google Group") Mailing list
+            li: a(href="http://twitter.com/filearts", title="Twitter contact") @filearts

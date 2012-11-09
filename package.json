@@ -1,0 +1,33 @@
+{
+  "name": "plunker-www",
+  "version": "0.1.0",
+  "description": "The code powering the public facing component of http://plnkr.co",
+  "main": "server.js",
+  "dependencies": {
+    "coffee-script": "~1.4.0",
+    "share": "~0.5.0",
+    "jade": "~0.27.6",
+    "mime": "~1.2.7",
+    "authom": "~0.4.6",
+    "nconf": "~0.6.4",
+    "express": "~3.0.0",
+    "less": "~1.3.1",
+    "connect-assets": "~2.3.3",
+    "request": "2.11.4"
+  },
+  "devDependencies": {
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/filearts/plunker_www.git"
+  },
+  "keywords": [
+    "plunker",
+    "plnkr"
+  ],
+  "author": "Geoff Goodman",
+  "license": "MIT"
+}
