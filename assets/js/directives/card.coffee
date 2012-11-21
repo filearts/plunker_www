@@ -1,35 +1,30 @@
+#= require ../services/quickview
+
 #= require ../directives/inlineuser
-#= require ../directives/quickview
+#= require ../directives/inlineplunk
 
 #= require ../../vendor/jquery-timeago/jquery.timeago
 
-module = angular.module "plunker.card", ["plunker.inlineuser", "plunker.quickview"]
+module = angular.module "plunker.card", ["plunker.inlineuser", "plunker.inlineplunk", "plunker.quickview", "plunker.plunkinfo"]
 
-module.directive "plunkerCard", [ "$timeout", "$compile", ($timeout, $compile) ->
-  restrict: "E"
+module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", ($timeout, $compile, quickview) ->
+  restrict: "EAC"
   scope:
     plunk: "="
-  replace: true
   template: """
     <div class="plunk" ng-class="{starred: plunk.thumbed, owned: plunk.token}">
       <div class="card">
         <ul class="operations">
-          <li><a class="btn" ng-href="edit/{{plunk.id}}"><i class="icon-edit"></i> Edit</a></li>
-          <li><button class="btn" ng-click="showQuickView(plunk)"><i class="icon-eye-open"></i> Quick View</button></li>
+          <li><a class="btn" ng-href="/edit/{{plunk.id}}"><i class="icon-edit"></i> Edit</a></li>
+          <li><a class="btn" ng-click="showQuickView(plunk, $event)" ng-href="/{{plunk.id}}"><i class="icon-eye-open"></i> Quick View</a></li>
+          <li><a class="btn" ng-href="/{{plunk.id}}"><i class="icon-play"></i> View Details</a></li>
         </ul>
         <h4 title="{{plunk.description}}">{{plunk.description}}</h4>
         <img ng-src="http://immediatenet.com/t/l3?Size=1024x768&URL={{plunk.raw_url}}?_={{plunk.updated_at | date:'yyyy-MM-ddTHH:mm:ssZ'}}" />
-        <ul class="info">
-          <li class="forks" title="Forks of this plunk">
-            <a ng-href="{{plunk.id}}/forks"><i class="icon-sitemap"></i>{{plunk.forks.length}}</a>
-          </li>
-          <li class="stars" title="{{plunk.thumbed && 'Un-star this plunk' || 'Star this plunk'}}">
-            <a ng-href="{{plunk.id}}" ng-click="toggleStar(plunk)"><i class="icon-star"></i>{{plunk.thumbs}}</a>
-          </li>
-        </ul>
+        <plunker-plunk-info plunk="plunk"></plunker-plunk-info>
         <ul class="meta">
           <li ng-show="plunk.fork_of">
-            <a title="This plunk is a fork of another" ng-click="showQuickView(plunk.fork_of)" ng-href="{{plunk.fork_of}}"><i class="icon-share-alt"></i></a>
+            <plunker-inline-plunk plunk="plunk.parent"><i class="icon-share-alt"></i></plunker-inline-plunk>
           </li>
           <li ng-show="plunk.files['README.md']">
             <a title="Full description of Plunk" ng-href="{{plunk.id}}#README"><i class="icon-info"></i></a>
@@ -46,6 +41,16 @@ module.directive "plunkerCard", [ "$timeout", "$compile", ($timeout, $compile) -
     $scope.$watch "plunk.updated_at", ->
       $timeout -> $("abbr.timeago", $el).timeago()
       
-    $scope.showQuickView = (plunk) ->
-      $el.append $compile("""<plunker-quick-view plunk="plunk"></plunker-quick-view>""")($scope)
+    $scope.showQuickView = (plunk, $event) ->
+      quickview.show(plunk)
+      
+      $event.preventDefault()
+      $event.stopPropagation()
+
+    $scope.toggleStar = (plunk, $event) ->
+      #quickview.show(plunk)
+      
+      $event.preventDefault()
+      $event.stopPropagation()
+
 ]

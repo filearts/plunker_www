@@ -1,10 +1,11 @@
 !!! 5
-html#ng-app(ng-app="plunker.landingPage", lang="en", class="ng-app:plunker.landingPage", xmlns:ng="http://angularjs.org")
+html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editorPage", xmlns:ng="http://angularjs.org")
   head
     meta(charset="utf-8")
     meta(name="viewport",content="width=device-width, initial-scale=1.0")
+    base(href="/edit/")
     title Plunker
-    != css("pages/landing")
+    != css("pages/editor")
     // if lt IE 9
       script(src="http://html5shim.googlecode.com/svn/trunk/html5.js")
     // if lte IE 8
@@ -26,14 +27,14 @@ html#ng-app(ng-app="plunker.landingPage", lang="en", class="ng-app:plunker.landi
         "session": !{session},
         "bootstrap": !{bootstrap}
       };
-    != js("pages/landing")
+    != js("pages/editor")
 
   body
     div.overlay
       p.message
     nav.navbar.navbar-fixed-top
       div.navbar-inner
-        div.container
+        div.container-fluid
           a.brand(href="/") Plunker
             sub.version v{{package.version}}
 
@@ -46,14 +47,5 @@ html#ng-app(ng-app="plunker.landingPage", lang="en", class="ng-app:plunker.landi
                 a(ng-href="{{item.href}}", title="{{item.title}}")
                   i(ng-class="item.class")
                   span(ng-bind="item.text")
-
-    div(ng-view)
-    div.container
-      footer.row
-        div.span4
-        div.span4
-        div.span4
-          h5 Contact me
-          ul.unstyled
-            li: a(href="/group", title="Google Group") Mailing list
-            li: a(href="http://twitter.com/filearts", title="Twitter contact") @filearts
+    <plunker-editor-layout></plunker-editor-layout>
+    <ng-view></ng-view>

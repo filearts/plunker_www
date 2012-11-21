@@ -4,6 +4,7 @@ module.directive "plunkerInlineUser", [ "$rootScope", ($rootScope) ->
   restrict: "E"
   scope:
     user: "="
+  replace: true
   template: """
     <span class="inline-user" ng-class="{registered: !!user}" ng-switch on="!!user">
       <a ng-href="users/{{user.login}}" ng-switch-when="true">

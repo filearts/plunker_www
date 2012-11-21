@@ -7,3 +7,9 @@
 [submodule "assets/vendor/Font-Awesome-More"]
 	path = assets/vendor/Font-Awesome-More
 	url = https://github.com/gregoryloucas/Font-Awesome-More.git
+[submodule "assets/vendor/json2"]
+	path = assets/vendor/json2
+	url = https://github.com/douglascrockford/JSON-js.git
+[submodule "assets/vendor/ace"]
+	path = assets/vendor/ace
+	url = git://github.com/ajaxorg/ace-builds.git

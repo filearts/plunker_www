@@ -62,15 +62,35 @@
 // Utility classes
 @import "../../vendor/bootstrap/less/utilities.less"; // Has to be last to override when necessary
 
+@import "../../vendor/bootstrap/less/responsive-1200px-min.less"; // Has to be last to override when necessary
+@import "../../vendor/bootstrap/less/responsive-768px-979px.less"; // Has to be last to override when necessary
 
-@import "../components/card";
+@import "../../vendor/bootstrap/less/responsive-navbar.less"; // Has to be last to override when necessary
+
+
+@import "../components/gallery";
 @import "../components/overlay";
 @import "../components/quickview";
+@import "../components/plunkinfo";
 
 @import "../views/preview";
+
 
 body {
   background-color: #E5E5E5;
   background: url('http://plnkr.co/img/noise_lines.png');
   padding-top: 60px;
+}
+
+.brand {
+  background: url('/img/plunker.png') no-repeat;
+  background-size: 40px 40px;
+  background-position: 20px center;
+  
+  padding-left: 60px !important;
+  
+  .version {
+    font-size: 50%;
+    color: #ccc;
+  }
 }

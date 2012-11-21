@@ -3,15 +3,14 @@ module = angular.module "plunker.overlay", []
 module.directive "overlay", [ "$rootScope", ($rootScope) ->
   restrict: "C"
   link: ($scope, $el, attrs) ->
-    console.log "Linked to", $el
+    $message = $el.find(".message")
+    
     $rootScope.$on "$routeChangeStart", ->
-      console.log "Handing route change"
       $el.addClass("show")
-      $el.text("Loading page...")
+      $message.text("Loading page...")
     
     $rootScope.$on "$routeChangeSuccess", ->
-      console.log "Route change finished"
       $el.removeClass("show")
-      $el.text("")
+      $message.text("")
 ]
       

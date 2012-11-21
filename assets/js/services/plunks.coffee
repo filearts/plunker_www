@@ -2,8 +2,10 @@
 
 module = angular.module "plunker.plunks", ["plunker.url"]
 
-module.service "plunks", [ "$http", "$q", "url", ($http, $q, url) ->
+
+module.service "plunks", [ "$http", "$rootScope", "$q", "url", ($http, $rootScope, $q, url) ->
   $$plunks = {}
+  $$feeds = {}
   
   $$findOrCreate = (json, options = {upsert: false}) ->
     if json.id
@@ -22,9 +24,55 @@ module.service "plunks", [ "$http", "$q", "url", ($http, $q, url) ->
     results = []
 
     for json in jsonArray
+      json.$$refreshed_at = new Date()
+      
       results.push $$findOrCreate(json, options)
 
     results
+  
+  $$findOrCreateFeed = (defaults) ->
+    defaults = {id: defaults} if angular.isString(defaults)
+    id = defaults.id
+    plunk = $$findOrCreate(defaults)
+    
+    $$feeds[id] ||= do ->
+      feed = []
+      
+      addCreationEvent = (parent) ->
+        if plunk.parent
+          feed.push
+            type: "fork"
+            icon: "icon-share-alt"
+            date: new Date(plunk.created_at)
+            parent: plunk.parent
+            user: plunk.user
+        else
+          feed.push
+            type: "create"
+            icon: "icon-save"
+            date: new Date(plunk.created_at)
+            source: plunk.source
+            user: plunk.user
+        
+        plunk.children = plunks.query(url: "#{url.api}/plunks/#{plunk.id}/forks")
+        plunk.children.$$refreshing.then (children) ->
+          for child in children
+            feed.push
+              type: "forked"
+              icon: "icon-git-fork"
+              date: child.created_at
+              child: child
+              user: child.user
+          null
+
+          
+      if plunk.$$refreshed_at then addCreationEvent(plunk)
+      else if plunk.$$refreshing then plunk.$$refreshing.then(addCreationEvent)
+      else plunk.refresh().then(addCreationEvent)
+      
+      
+      return feed    
+
   
   class Plunk
     constructor: (json) ->
@@ -32,27 +80,49 @@ module.service "plunks", [ "$http", "$q", "url", ($http, $q, url) ->
         angular.extend(plunk, json)
         return plunk
       
-      angular.copy(json, @)
+      self = @
+      
+      angular.copy(json, self)
+      
+      Object.defineProperty self, "feed", get: ->
+        $$findOrCreateFeed(self)
+      Object.defineProperty self, "parent", get: ->
+        if self.fork_of then $$findOrCreate(id: self.fork_of)
+        else null
+    
+    isWritable: -> !@id or !!@token
+    isSaved: -> !!@id
     
     refresh: (options = {}) ->
       self = @
       
-      $http.get("#{url.api}/plunks/#{@id}", options).then (res) ->
+      self.$$refreshing ||= $http.get("#{url.api}/plunks/#{@id}", options).then (res) ->
         angular.copy(res.data, self)
+        
+        self.$$refreshing = null
+        self.$$refreshed_at = new Date()
+        
+        self
+
       
+  plunks =
+    findOrCreate: (defaults = {}) -> $$findOrCreate(defaults, upsert: true)
+    
+    query: (options = {}) ->
+      results = []
       
-  findOrCreate: (defaults = {}) -> $$findOrCreate(defaults, upsert: true)
-  
-  query: (options = {}) ->
-    results = []
-    
-    results.url = options.url || "#{url.api}/plunks"
-    
-    (results.refresh = ->
-      $http.get(results.url + "?pp=12", options).then (res) ->
-        results.length = 0
-        results.push(plunk) for plunk in $$mapPlunks(res.data)
-    )()
-    
-    return results
+      results.url = options.url || "#{url.api}/plunks"
+      
+      (results.refresh = ->
+        results.$$refreshing ||= $http.get(results.url + "?pp=12", options).then (res) ->
+          results.length = 0
+          results.push(plunk) for plunk in $$mapPlunks(res.data)
+          
+          results.$$refreshing = null
+          results.$$refreshed_at = new Date()
+          
+          results
+      )()
+      
+      return results
 ]

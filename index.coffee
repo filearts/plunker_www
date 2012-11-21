@@ -7,6 +7,8 @@ nconf = require("nconf")
 authom = require("authom")
 request = require("request")
 sharejs = require("share")
+lactate = require("lactate")
+
 
 # Set defaults in nconf
 require "./configure"
@@ -16,6 +18,9 @@ github = authom.createServer
   id: nconf.get("oauth:github:id")
   secret: nconf.get("oauth:github:secret")
   scope: ["gist"]
+  
+
+#process.env.NODE_ENV = "production"
 
 
 app = module.exports = express()
@@ -25,10 +30,11 @@ app.set "view engine", "jade"
 app.set "view options", layout: false
 
 app.use express.logger()
-app.use assets(src: "#{__dirname}/assets")
+app.use assets
+  src: "#{__dirname}/assets"
 app.use express.compress()
-app.use "/css/font", express.static("#{__dirname}/assets/vendor/Font-Awesome-More/font/")
-app.use express.static("#{__dirname}/assets")
+app.use "/css/font", lactate.static("#{__dirname}/assets/vendor/Font-Awesome-More/font/")
+app.use lactate.static "#{__dirname}/assets"
 app.use express.cookieParser()
 app.use express.bodyParser()
 app.use require("./middleware/session").middleware()
