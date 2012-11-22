@@ -2,10 +2,22 @@
 
 #= require ../services/importer
 #= require ../services/session
+#= require ../services/notifier
 
+#= require ../directives/userpanel
+#= require ../directives/toolbar
+#= require ../directives/overlay
 #= require ../directives/layout
 
-module = angular.module("plunker.editorPage", ["plunker.layout", "plunker.importer", "plunker.session"])
+module = angular.module "plunker.editorPage", [
+  "plunker.userpanel"
+  "plunker.toolbar"
+  "plunker.overlay"
+  "plunker.layout"
+  "plunker.importer"
+  "plunker.session"
+  "plunker.notifier"
+]
 
 
 module.config ["$locationProvider", ($locationProvider) ->
@@ -15,21 +27,23 @@ module.config ["$locationProvider", ($locationProvider) ->
 module.config ["$routeProvider", ($routeProvider) ->
   $routeProvider.when "/:source",
     template: "<div>Hello</div>"
-    resolve: ["$route", "importer", "session", ($route, importer, session) ->
-      console.log "Routed", $route.current.params
+    resolve: ["$route", "importer", "session", "notifier", ($route, importer, session, notifier) ->
       if source = $route.current.params.source
-        importer.import(source).then (json) ->
-          console.log "Session.reset: ", json
-          session.reset(json)
-        , (error) ->
-          console.log "Import error:", arguments...
+        unless source and source is session.getEditPath()
+          importer.import(source).then (json) ->
+            json.source = source
+            session.reset(json)
+          , (error) ->
+            notifier.error "Import error", error
       else
         session.reset()
     ]
-    controller: [ () ->
-      
+    controller: [ "$scope", "$location", "session", ($scope, $location, session) ->
+      $scope.$watch ( -> session.getEditPath()), (path) ->
+        $location.path("/#{path}")
     ]
 ]
 
-module.run ["$rootScope", ($rootScope) ->
+module.run ["$rootScope", "session", ($rootScope, session) ->
+  $rootScope[k] = v for k, v of _plunker
 ]

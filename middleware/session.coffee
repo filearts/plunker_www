@@ -15,7 +15,7 @@ module.exports.middleware = (options = {}) ->
       
     createSession = ->
       request.post "#{apiUrl}/sessions", (err, response, body) ->
-        if err or response.statusCode >= 400 then next("Error creating session: #{err or response}")
+        if err or response.statusCode >= 400 then next("Error creating session: #{JSON.stringify(err or response)}")
         else finalize(parse(body))
     
     parse = (body) ->

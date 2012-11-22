@@ -4,18 +4,11 @@ html
     meta(charset="utf-8")
     meta(name="viewport",content="width=device-width, initial-scale=1.0")
     title Plunker - Authorized to #{auth.service}
-    != js("/js/vendor/postmessage")
   body
     script
-      if (window.opener) {
-        pm({
-          target: window.opener,
-          type: "oauth:success",
-          data: !{JSON.stringify(auth)},
-          success: function() { window.close(); }
-        });
-      } else {
-        window.location = "/";
+      var auth = !{JSON.stringify(auth)};
+      if (window.opener && auth) {
+        window.opener._handleOAuthSuccess(auth);
       }
 
-          
+      window.close();

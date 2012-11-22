@@ -13,3 +13,12 @@
 [submodule "assets/vendor/ace"]
 	path = assets/vendor/ace
 	url = git://github.com/ajaxorg/ace-builds.git
+[submodule "assets/vendor/noty"]
+	path = assets/vendor/noty
+	url = git://github.com/needim/noty.git
+[submodule "assets/vendor/jquery.cookie"]
+	path = assets/vendor/jquery.cookie
+	url = git://github.com/carhartl/jquery-cookie.git
+[submodule "assets/vendor/jszip"]
+	path = assets/vendor/jszip
+	url = git://github.com/Stuk/jszip.git

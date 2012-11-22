@@ -86,5 +86,27 @@ app.post "/edit/", (req, res, next) ->
 
 app.all "/edit", (req, res, next) -> res.redirect("/edit/", 302)
 
+# /////////////////////////////////
+
+app.get "/auth/:service", (req, res, next) ->
+  req.headers.host = nconf.get("host")
+  
+  next()
+
+app.get "/auth/:service", authom.app
+
+
+authom.on "auth", (req, res, auth) ->
+  console.log "Auth success"
+  res.render "auth/success", auth: auth
+
+
+authom.on "error", (req, res, data) ->
+  console.log "Auth error"
+  res.status 403
+  res.render "auth/error", auth: data
+  
+# /////////////////////////////////
+
 app.get "/*", (req, res) ->
   res.render "landing"

@@ -1,8 +1,12 @@
 #= require "../services/plunks"
+#= require "../services/notifier"
 
-module = angular.module "plunker.session", ["plunker.plunks"]
+module = angular.module "plunker.session", [
+  "plunker.plunks"
+  "plunker.notifier"
+]
 
-module.service "session", [ "plunks", (plunks) ->
+module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) ->
   new class Session
     $$savedBuffers = {}
     $$history = []
@@ -48,6 +52,8 @@ module.service "session", [ "plunks", (plunks) ->
           return buffer
   
       return
+      
+    getEditPath: -> @plunk?.id or @source or ""
   
     toJSON: ->
       json =
@@ -95,7 +101,7 @@ module.service "session", [ "plunks", (plunks) ->
         importer.import(source).then (json) ->
           self.reset(json)
   
-          dfd.accept(self)
+          dfd.resolve(self)
         , (err) ->
           dfd.reject(err)
           notifier.error """
@@ -103,73 +109,101 @@ module.service "session", [ "plunks", (plunks) ->
           """.trim()        
   
     save: ->
-      unless @plunk.isWritable() then return notifier.warning """
+      if @plunk and not @plunk.isWritable() then return notifier.warning """
         Save cancelled: You do not have permission to change this plunk.
       """.trim()
-  
-      delta = {}
-      delta.description = @description if @description != @plunk.description
       
-      # Update tags
-      if @plunk.isSaved()
-        tagDelta = {}
-        tagsChanged = false
-  
-        for tag in @tags
-          tagDelta[tag] = true
-          tagsChanged = true
-  
-        for tag in @plunk.tags where tag not in @tags
-          tagDelta[tag] = false
-          tagsChanged = true
-  
-        if tagsChanged
-          delta.tags = tagDelta
-      else
-        delta.tags = angular.copy(@tags)
-  
-      fileDeltas = {}
-  
-      # Schedule all files for deletion, initially
-      for id, prev_file of $$savedBuffers
-        fileDeltas[prev_file.filename] = null
-  
-      for id, buffer of @buffers
-        if prev_file = $$savedBuffers[id]
-          fileDelta = fileDeltas[prev_file.filename]
-  
-          if buffer.filename != prev_file.filename
-             fileDelta.filename = buffer.filename
-          if buffer.content != prev_file.content
-             fileDelta.content = buffer.content
-         else
-           fileDeltas[buffer.filename] =
-             filename: buffer.filename
-             content: buffer.content
-       
-      for fn, chg of fileDeltas
-        delta.files = fileDeltas
-        break
-  
-      lastSavedBuffers = angular.copy($$savedBuffers)
-      inFlightBuffers = angular.copy(@buffers)
-  
       self = @
-  
-      $$asyncOp.call @, "save", (dfd) ->
-        @plunk.save(delta).then (plunk) ->
-          $$savedBuffers = inFlightBuffers
-          dfd.accept(self)
-        , (err) ->
-          $$savedBuffers = lastSavedBuffers
-  
-          dfd.reject(err)
-          notifier.error """
-            Save failed: #{err}
-          """.trim()
+
+      lastSavedBuffers = angular.copy($$savedBuffers)
+      inFlightBuffers = do ->
+        buffers = {}
+        
+        for id, buffer of self.buffers
+          buffers[id] =
+            filename: buffer.filename
+            content: buffer.content
+        
+        buffers
+        
+
+      if plunk = @plunk
+        delta = {}
+        delta.description = @description if @description != plunk.description
+      
+        # Update tags
+        if plunk.isSaved()
+          tagDelta = {}
+          tagsChanged = false
+    
+          for tag in @tags
+            tagDelta[tag] = true
+            tagsChanged = true
+    
+          for tag in plunk.tags when tag not in @tags
+            tagDelta[tag] = false
+            tagsChanged = true
+    
+          if tagsChanged
+            delta.tags = tagDelta
+        else
+          delta.tags = angular.copy(@tags)
+    
+        fileDeltas = {}
+    
+        # Schedule all files for deletion, initially
+        for id, prev_file of $$savedBuffers
+          fileDeltas[prev_file.filename] = null
+    
+        for id, buffer of @buffers
+          if prev_file = $$savedBuffers[id]
+            fileDelta = fileDeltas[prev_file.filename]
+    
+            if buffer.filename != prev_file.filename
+               fileDelta.filename = buffer.filename
+            if buffer.content != prev_file.content
+               fileDelta.content = buffer.content
+           else
+             fileDeltas[buffer.filename] =
+               filename: buffer.filename
+               content: buffer.content
+         
+        for fn, chg of fileDeltas
+          delta.files = fileDeltas
+          break
+
+        $$asyncOp.call @, "save", (dfd) ->
+          plunk.save(delta).then (plunk) ->
+            $$savedBuffers = inFlightBuffers
+            notifier.success "Plunk updated"
+            dfd.resolve(self)
+          , (err) ->
+            $$savedBuffers = lastSavedBuffers
+    
+            dfd.reject(err)
+            notifier.error """
+              Save failed: #{err}
+            """.trim()
+
+      else
+        delta = @toJSON()
+        plunk = plunks.findOrCreate()
+
+        $$asyncOp.call @, "save", (dfd) ->
+          plunk.save(delta).then (plunk) ->
+            self.plunk = plunk
+            $$savedBuffers = inFlightBuffers
+            notifier.success "Plunk created"
+            dfd.resolve(self)
+          , (err) ->
+            dfd.reject(err)
+            notifier.error """
+              Save failed: #{err}
+            """.trim()
+
   
     fork: ->
-      unless @plunk.isSaved() then return notifier.warning """
+      unless @plunk?.isSaved() then return notifier.warning """
         Fork cancelled: You cannot fork a plunk that is not saved.
       """.trim()
   
@@ -184,7 +218,7 @@ module.service "session", [ "plunks", (plunks) ->
         @plunk.fork(json).then (plunk) ->
           $$savedBuffers = inFlightBuffers
   
-          dfd.accept(self)
+          dfd.resolve(self)
         , (err) ->
           $$savedBuffers = lastSavedBuffers
   
@@ -205,7 +239,9 @@ module.service "session", [ "plunks", (plunks) ->
         @plunk.destroy().then ->
           self.reset()
   
-          dfd.accept(self)
+          notifier.success "Plunk deleted"
+  
+          dfd.resolve(self)
         , (err) ->
           dfd.reject(err)
   

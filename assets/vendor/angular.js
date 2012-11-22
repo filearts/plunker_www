@@ -1,5 +1,5 @@
 /**
- * @license AngularJS v1.0.3-29541e73
+ * @license AngularJS v1.0.3-557e3894
  * (c) 2010-2012 Google, Inc. http://angularjs.org
  * License: MIT
  */
@@ -838,7 +838,7 @@ function encodeUriQuery(val, pctEncodeSpaces) {
  * @name ng.directive:ngApp
  *
  * @element ANY
- * @param {angular.Module} ngApp on optional application
+ * @param {angular.Module} ngApp an optional application
  *   {@link angular.module module} name to load.
  *
  * @description
@@ -1015,7 +1015,7 @@ function setupModuleLoader(window) {
      *
      * # Module
      *
-     * A module is a collocation of services, directives, filters, and configure information. Module
+     * A module is a collocation of services, directives, filters, and configuration information. Module
      * is used to configure the {@link AUTO.$injector $injector}.
      *
      * <pre>
@@ -1045,7 +1045,7 @@ function setupModuleLoader(window) {
      * @param {!string} name The name of the module to create or retrieve.
      * @param {Array.<string>=} requires If specified then new module is being created. If unspecified then the
      *        the module is being retrieved for further configuration.
-     * @param {Function} configFn Option configuration function for the module. Same as
+     * @param {Function} configFn Optional configuration function for the module. Same as
      *        {@link angular.Module#config Module#config()}.
      * @returns {module} new module with the {@link angular.Module} api.
      */
@@ -1247,7 +1247,7 @@ function setupModuleLoader(window) {
  * - `codeName` â€“ `{string}` â€“ Code name of the release, such as "jiggling-armfat".
  */
 var version = {
-  full: '1.0.3-29541e73',    // all of these placeholder strings will be replaced by rake's
+  full: '1.0.3-557e3894',    // all of these placeholder strings will be replaced by rake's
   major: 1,    // compile task
   minor: 0,
   dot: 3,
@@ -5325,8 +5325,7 @@ function locationGetterSetter(property, preprocess) {
  */
 function $LocationProvider(){
   var hashPrefix = '',
-      html5Mode = false,
-      ignorePatterns = [];
+      html5Mode = false;
 
   /**
    * @ngdoc property
@@ -5361,10 +5360,6 @@ function $LocationProvider(){
       return html5Mode;
     }
   };
-  
-  this.addIgnorePattern = function(pattern) {
-    ignorePatterns.push(pattern);
-  }
 
   this.$get = ['$rootScope', '$browser', '$sniffer', '$rootElement',
       function( $rootScope,   $browser,   $sniffer,   $rootElement) {
@@ -5416,21 +5411,9 @@ function $LocationProvider(){
       }
 
       var absHref = elm.prop('href'),
-          rewrittenUrl = $location.$$rewriteAppUrl(absHref),
-          ignored = false,
-          idx = 0,
-          count = ignorePatterns.length;
-      
-      for (idx = 0; idx < count; idx++) {
-        console.log("rewrittenUrl", ignorePatterns[idx], rewrittenUrl);
-        if (ignorePatterns[idx].test(rewrittenUrl)) {
-          console.log("Ignored url", rewrittenUrl, idx, ignorePatterns[idx]);
-          ignored = true;
-          break;
-        }
-      }
+          rewrittenUrl = $location.$$rewriteAppUrl(absHref);
 
-      if (absHref && !elm.attr('target') && rewrittenUrl && !ignored) {
+      if (absHref && !elm.attr('target') && rewrittenUrl) {
         // update location manually
         $location.$$parse(rewrittenUrl);
         $rootScope.$apply();
@@ -6510,7 +6493,7 @@ function $ParseProvider() {
  *     alert('Success: ' + greeting);
  *   }, function(reason) {
  *     alert('Failed: ' + reason);
- *   );
+ *   });
  * </pre>
  *
  * At first it might not be obvious why this extra complexity is worth the trouble. The payoff
@@ -7812,6 +7795,11 @@ function $RootScopeProvider(){
         if (parent.$$childTail == this) parent.$$childTail = this.$$prevSibling;
         if (this.$$prevSibling) this.$$prevSibling.$$nextSibling = this.$$nextSibling;
         if (this.$$nextSibling) this.$$nextSibling.$$prevSibling = this.$$prevSibling;
+
+        // This is bogus code that works around Chrome's GC leak
+        // see: https://github.com/angular/angular.js/issues/1313#issuecomment-10378451
+        this.$parent = this.$$nextSibling = this.$$prevSibling = this.$$childHead =
+            this.$$childTail = null;
       },
 
       /**

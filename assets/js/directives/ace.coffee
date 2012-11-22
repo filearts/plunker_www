@@ -5,9 +5,6 @@
 
 module = angular.module "plunker.ace", ["plunker.session", "plunker.modes"]
 
-module.directive "plunkerEditSessionDocument", [ ->
-]
-
 module.directive "plunkerEditSession", [ "modes", (modes) ->
   EditSession = require("ace/edit_session").EditSession
   UndoManager = require("ace/undomanager").UndoManager
