@@ -89,6 +89,8 @@ module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) -
       @addBuffer("index.html", "") unless $$history.length
   
       @activateBuffer("index.html") if @getBufferByFilename("index.html")
+      
+      @
   
     open: (source) ->
       unless source then return notifier.warning """

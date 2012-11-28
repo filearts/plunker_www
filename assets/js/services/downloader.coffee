@@ -3,7 +3,7 @@
 
 module = angular.module("plunker.downloader", [])
 
-module.factory "downloader", ["$location", ($location) ->
+module.factory "downloader", [ () ->
   download: (json, saveAs = "plunker.zip") ->
     zip = new JSZip()
     zip.file(file.filename, file.content) for filename, file of json.files

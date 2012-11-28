@@ -24,8 +24,22 @@ module.run ["$rootScope", "$location", "$window", "menu", ($rootScope, $location
     href: "/edit/"
     'class': "icon-edit"
     text: "Editor"
-    
-  $rootScope.$on "$routeChangeStart", ->
-    if $location.path().match(/^\/edit\//)
-      window.location = $location.absUrl()
 ]
+
+module.run ["$rootElement", ($rootElement) ->
+  $("body").on "click", (event) ->
+    if event.ctrlKey || event.metaKey || event.which == 2 then return
+  
+    elm = angular.element(event.target)
+  
+    while angular.lowercase(elm[0].nodeName) != 'a'
+      if elm[0] == $rootElement[0] || !(elm = elm.parent())[0] then return
+    
+    console.log "Handling click", elm
+    
+    if (href = elm.prop("href")) and href.match(/\/edit\//)
+      console.log "Stopping propagation", href
+      event.stopPropagation()
+      window.location = href
+]
+

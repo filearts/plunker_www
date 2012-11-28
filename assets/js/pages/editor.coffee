@@ -26,24 +26,25 @@ module.config ["$locationProvider", ($locationProvider) ->
 
 module.config ["$routeProvider", ($routeProvider) ->
   $routeProvider.when "/:source",
-    template: "<div>Hello</div>"
-    resolve: ["$route", "importer", "session", "notifier", ($route, importer, session, notifier) ->
-      if source = $route.current.params.source
-        unless source and source is session.getEditPath()
-          importer.import(source).then (json) ->
-            json.source = source
-            session.reset(json)
-          , (error) ->
-            notifier.error "Import error", error
-      else
-        session.reset()
-    ]
+    template: "<div></div>"
+    resolve: 
+      source: ["$route", "importer", "session", "notifier", ($route, importer, session, notifier) ->
+        if source = $route.current.params.source
+          unless source and source is session.getEditPath()
+            importer.import(source).then (json) ->
+              json.source = source
+              session.reset(json)
+            , (error) ->
+              notifier.error "Import error", error
+        else
+          session.reset()
+      ]
     controller: [ "$scope", "$location", "session", ($scope, $location, session) ->
       $scope.$watch ( -> session.getEditPath()), (path) ->
         $location.path("/#{path}")
     ]
 ]
 
-module.run ["$rootScope", "session", ($rootScope, session) ->
-  $rootScope[k] = v for k, v of _plunker
+module.run ["$rootScope", ($rootScope) ->
+  $rootScope[k] = v for k, v of window._plunker
 ]

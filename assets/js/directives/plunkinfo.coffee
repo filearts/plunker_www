@@ -8,6 +8,9 @@ module.directive "plunkerPlunkInfo", [ "$rootScope", ($rootScope) ->
   replace: true
   template: """
     <ul class="plunk-info">
+      <li class="comments" title="Comments and replunks">
+        <plunker-inline-plunk plunk="plunk"><i class="icon-comments"></i>{{plunk.comments.length || 0}}</plunker-inline-plunk>
+      </li>
       <li class="forks" title="Forks of this plunk">
         <plunker-inline-plunk plunk="plunk"><i class="icon-git-fork"></i>{{plunk.forks.length}}</plunker-inline-plunk>
       </li>

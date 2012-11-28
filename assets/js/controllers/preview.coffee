@@ -9,9 +9,9 @@ module = angular.module("plunker.preview", ["plunker.plunks", "plunker.gallery",
 
 
 module.config ["$routeProvider", ($routeProvider) ->
-  $routeProvider.when "/:plunk_id", do ->
+  $routeProvider.when "/:plunk_id",
     templateUrl: "partials/preview.html"
-    resolve: ->
+    resolve:
       plunk: ["$route", "plunks", ($route, plunks) ->
         plunk = plunks.findOrCreate(id: $route.current.params.plunk_id)
         plunk.refresh()

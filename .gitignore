@@ -1,4 +1,5 @@
 .c9revisions
+.git
 
 lib-cov
 *.seed
@@ -17,4 +18,5 @@ node_modules
 npm-debug.log
 
 config.json
-builtAssets
+
+assets/build

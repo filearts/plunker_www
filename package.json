@@ -1,6 +1,18 @@
 {
-  "name": "plunker-www",
-  "version": "0.1.0",
+  "name": "plunker-beta",
+  "subdomain": "plunker-beta",
+  "domains": [
+    "beta.plnkr.co"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "server.js",
+    "predeploy": "coffee build.coffee"
+  },
+  "engines": {
+    "node": "0.8.x"
+  },
+  "version": "0.1.0-14",
   "description": "The code powering the public facing component of http://plnkr.co",
   "main": "server.js",
   "dependencies": {
@@ -13,12 +25,11 @@
     "express": "~3.0.0",
     "less": "~1.3.1",
     "connect-assets": "~2.3.3",
-    "request": "2.11.4"
+    "request": "2.11.4",
+    "lactate": "0.12.x"
   },
   "devDependencies": {
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "rimraf": "*"
   },
   "repository": {
     "type": "git",

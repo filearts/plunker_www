@@ -1,17 +1,58 @@
 #= require ../services/menu
+#= require ../services/plunks
+#= require ../services/url
 
 #= require ../directives/gallery
 #= require ../directives/overlay
 
-module = angular.module("plunker.landing", ["plunker.gallery", "plunker.overlay", "plunker.menu"])
+module = angular.module "plunker.landing", [
+  "plunker.gallery"
+  "plunker.overlay"
+  "plunker.menu"
+  "plunker.plunks"
+  "plunker.url"
+]
 
+filters =
+  trending:
+    href: "/plunks/trending"
+    text: "Trending"
+    order: "c"
+  popular:
+    href: "/plunks/popular"
+    text: "Popular"
+    order: "b"
+  recent:
+    href: "/plunks/recent"
+    text: "Recent"
+    order: "a"
+
+resolvers =
+  trending: [ "url", "plunks", (url, plunks) ->
+    plunks.query(url: "#{url.api}/plunks/trending").$$refreshing
+  ]
+  popular: [ "url", "plunks", (url, plunks) ->
+    plunks.query(url: "#{url.api}/plunks/popular").$$refreshing
+  ]
+  recent: [ "url", "plunks", (url, plunks) ->
+    plunks.query(url: "#{url.api}/plunks").$$refreshing
+  ]
+
+generateRouteHandler = (filter) ->
+  templateUrl: "partials/explore.html"
+  resolve:
+    filtered: resolvers[filter]
+  controller: ["$scope", "menu", "filtered", ($scope, menu, filtered) ->
+    $scope.plunks = filtered
+    $scope.filters = filters
+    $scope.activeFilter = filters[filter]
+    
+    menu.activate "plunks"
+  ]
 
 module.config ["$routeProvider", ($routeProvider) ->
-  $routeProvider.when "/", do ->
-    templateUrl: "partials/explore.html"
-    controller: [ "menu", (menu) ->
-      menu.activate "plunks"
-    ]
+  $routeProvider.when "/", generateRouteHandler("trending")
+  $routeProvider.when "/plunks/#{view}", generateRouteHandler(view) for view in ["trending", "popular", "recent"]
 ]
 
 module.run ["menu", (menu) ->

@@ -8,10 +8,19 @@ authom = require("authom")
 request = require("request")
 sharejs = require("share")
 lactate = require("lactate")
+path = require("path")
+
+pkginfo = require("./package.json")
 
 
 # Set defaults in nconf
 require "./configure"
+
+process.env.NODE_ENV = "production"
+
+
+app = module.exports = express()
+
 
 github = authom.createServer
   service: "github"
@@ -19,28 +28,41 @@ github = authom.createServer
   secret: nconf.get("oauth:github:secret")
   scope: ["gist"]
   
-
-#process.env.NODE_ENV = "production"
-
-
-app = module.exports = express()
+lactateOptions = 
+  "max age": "one week"
+  
+assetOptions =
+  src: "#{__dirname}/assets"
+  buildDir: "assets/build"
+  buildFilenamer: (filename) ->
+    dir = path.dirname(filename)
+    ext = path.extname(filename)
+    base = path.basename(filename, ext)
+    
+    return path.join dir, "#{base}-#{pkginfo.version}#{ext}"
+  helperContext: app.locals
 
 app.set "views", "#{__dirname}/views"
 app.set "view engine", "jade"
 app.set "view options", layout: false
 
 app.use express.logger()
-app.use assets
-  src: "#{__dirname}/assets"
-app.use express.compress()
-app.use "/css/font", lactate.static("#{__dirname}/assets/vendor/Font-Awesome-More/font/")
-app.use lactate.static "#{__dirname}/assets"
+app.use lactate.static "#{__dirname}/assets/build", lactateOptions
+app.use lactate.static "#{__dirname}/assets", lactateOptions
+app.use "/css/font", lactate.static("#{__dirname}/assets/vendor/Font-Awesome-More/font/", lactateOptions)
+
+if process.env.NODE_ENV is "production"
+  app.locals.js = (route) -> """<script src="/js/#{route}-#{pkginfo.version}.js"></script>"""
+  app.locals.css = (route) -> """<link rel="stylesheet" href="/css/#{route}-#{pkginfo.version}.css" />"""
+else
+  app.use assets(assetOptions)
+  
 app.use express.cookieParser()
 app.use express.bodyParser()
 app.use require("./middleware/session").middleware()
 app.use require("./middleware/expose").middleware
   "url": nconf.get("url")
-  "package": require("./package.json")
+  "package": pkginfo
   "bootstrap": null
 
 sharejs.server.attach app,
@@ -50,6 +72,8 @@ sharejs.server.attach app,
 app.use app.router
 
 app.use express.errorHandler()
+
+
 
 app.get "/partials/:partial", (req, res, next) ->
   res.render "partials/#{req.params.partial}"

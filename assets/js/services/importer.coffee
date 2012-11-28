@@ -27,7 +27,7 @@ githubRegex = ///
 
 module = angular.module("plunker.importer", ["plunker.plunks"])
 
-module.factory "importer", [ "$q", "$http", "plunks", ($q, $http, plunks) ->
+module.service "importer", [ "$q", "$http", "plunks", ($q, $http, plunks) ->
   import: (source) ->
     deferred = $q.defer()
     

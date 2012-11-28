@@ -49,15 +49,17 @@ module.directive "plunkerQuickView", [ "$timeout", ($timeout) ->
 ]
 
 
-module.service "quickview", ["$rootScope", "$document", "$compile", ($rootScope, $document, $compile) ->
+module.service "quickview", ["$rootScope", "$document", "$compile", "$location", ($rootScope, $document, $compile, $location) ->
   class QuickView
-    constructor: (plunk) ->
+    constructor: (@plunk) ->
+      @plunk.refresh() unless @plunk.$$refreshed_at
+      
       $scope = $rootScope.$new()
       $body = $document.find("body")
       link = $compile("""<plunker-quick-view plunk="plunk"></plunker-quick-view>""")
       restoreOverflow = $body.css("overflow")
       
-      $scope.plunk = plunk
+      $scope.plunk = @plunk
       
       $scope.close = @close = ->
         $scope.$destroy()
@@ -69,6 +71,13 @@ module.service "quickview", ["$rootScope", "$document", "$compile", ($rootScope,
       $body.prepend($el).css("overflow", "hidden")
   
   activeQuickView = null
+  
+  if (hash = $location.hash()) and (activeQuickView?.plunk.id != hash)
+    activeQuickView.close() if activeQuickView
+    
+    activeQuickView = new QuickView(id: hash)
+    
+    
   
   show: (plunk) ->
     activeQuickView.close() if activeQuickView

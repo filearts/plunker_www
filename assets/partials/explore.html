@@ -1,7 +1,13 @@
 <div class="container">
+  <ul class="nav nav-pills">
+    <li ng-repeat="(name, filter) in filters | orderBy:'text':true" ng-class="{active: filter == activeFilter}">
+      <a ng-href="{{filter.href}}" ng-bind="filter.text"></a>
+    </li>
+  </ul>
+
   <div class="row">
     <div class="span12">
-      <plunker-gallery></plunker-gallery>
+      <plunker-gallery plunks="plunks"></plunker-gallery>
     </div>
   </div>
 </div>

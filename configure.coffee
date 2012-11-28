@@ -11,8 +11,6 @@ nconf.use("memory")
 unless host = nconf.get("host")
   console.error "The 'host' option is required for Plunker to run."
   process.exit(1)
-  
-console.log "HOST", host  
 
 if nconf.get("nosubdomains")
   nconf.set("url:www", "http://#{host}")
@@ -23,7 +21,6 @@ if nconf.get("nosubdomains")
 
 else
   nconf.set("url:www", "http://#{host}")
-  nconf.set("url:raw", "http://raw.#{host}")
-  nconf.set("url:run", "http://run.#{host}")
+  nconf.set("url:run", "http://run.plnkr.co")
   nconf.set("url:api", "http://api.plnkr.co")
-  nconf.set("url:embed", "http://embed.#{host}")
+  nconf.set("url:embed", "http://embed.plnkr.co")
