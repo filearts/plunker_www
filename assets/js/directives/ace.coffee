@@ -16,7 +16,7 @@ module.directive "plunkerEditSession", [ "modes", "session", (modes, editsession
   scope:
     buffer: "="
   template: """
-    <div class="plunker-edit-session" ng-bind="buffer.content">
+    <div class="plunker-edit-session"">
     </div>
   """
   link: ($scope, $el, attrs, [model, aceEditor]) ->
@@ -71,9 +71,9 @@ module.directive "plunkerAce", [ "$timeout", "session", ($timeout, session) ->
   
   link: ($scope, $el, attrs, ctrl) ->
     # Configure ACE to allow it to be packaged in the plnkr source files where paths may be mangled
-    ace.config.set "workerPath", "/vendor/ace/src/"
-    ace.config.set "modePath", "/vendor/ace/src/"
-    ace.config.set "themePath", "/vendor/ace/src/"
+    ace.config.set "workerPath", "/vendor/ace/src-min/"
+    ace.config.set "modePath", "/vendor/ace/src-min/"
+    ace.config.set "themePath", "/vendor/ace/src-min/"
     
     aceEl = $el.find(".plunker-ace-canvas").get(0)
     
