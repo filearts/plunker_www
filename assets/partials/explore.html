@@ -1,5 +1,7 @@
 <div class="container">
-  <ul class="nav nav-pills">
+  <plunker-pager class="pull-right" collection="plunks"></plunker-pager>
+  
+  <ul class="nav nav-pills pull-left">
     <li ng-repeat="(name, filter) in filters | orderBy:'text':true" ng-class="{active: filter == activeFilter}">
       <a ng-href="{{filter.href}}" ng-bind="filter.text"></a>
     </li>
@@ -10,4 +12,6 @@
       <plunker-gallery plunks="plunks"></plunker-gallery>
     </div>
   </div>
+
+  <plunker-pager class="pagination-right" collection="plunks"></plunker-pager>
 </div>

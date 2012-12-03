@@ -1,0 +1,44 @@
+@import "../panes/previewer";
+
+.plunker-paneselector {
+  background: whiteSmoke;
+  text-align: center;
+  
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    
+    li {
+      text-align: center;
+      font-size: 16px;
+      position: relative;
+      margin: 0; padding: 0;
+      
+      a {
+        display: block;
+        width: 40px;
+        height: 40px;
+        line-height: 40px;
+        vertical-align: center;
+        color: #999;
+        text-decoration: none;
+      }
+    }
+    
+    li:hover {
+      a {
+        color: #005580;
+        background-color: #EEE;
+      }
+    }
+    
+    li.active {
+      a {
+        text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
+        background-color: #08C;
+        color: white;
+      }
+    }
+  }
+}

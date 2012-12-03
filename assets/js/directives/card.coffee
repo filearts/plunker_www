@@ -2,7 +2,6 @@
 
 #= require ../directives/inlineuser
 #= require ../directives/inlineplunk
-#= require ../directives/route
 
 #= require ../../vendor/jquery-timeago/jquery.timeago
 
@@ -11,7 +10,6 @@ module = angular.module "plunker.card", [
   "plunker.inlineplunk"
   "plunker.quickview"
   "plunker.plunkinfo"
-  "plunker.route"
 ]
 
 module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", ($timeout, $compile, quickview) ->
@@ -22,8 +20,8 @@ module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", ($timeout
     <div class="plunk" ng-class="{starred: plunk.thumbed, owned: plunk.token}">
       <div class="card">
         <ul class="operations">
-          <li><a class="btn" ng-href="/edit/{{plunk.id}}" plunker-route-ignore="^/edit/"><i class="icon-edit"></i> Edit</a></li>
-          <li><a class="btn" ng-click="showQuickView(plunk, $event)" ng-href="/{{plunk.id}}"><i class="icon-eye-open"></i> Quick View</a></li>
+          <li><a class="btn" ng-href="/edit/{{plunk.id}}"><i class="icon-edit"></i> Edit</a></li>
+          <li><a class="btn" ng-click="showQuickView(plunk, $event)"><i class="icon-eye-open"></i> Quick View</a></li>
           <li><a class="btn" ng-href="/{{plunk.id}}"><i class="icon-play"></i> View Details</a></li>
         </ul>
         <h4 title="{{plunk.description}}">{{plunk.description}}</h4>

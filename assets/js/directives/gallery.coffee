@@ -10,7 +10,7 @@ module.directive "plunkerGallery", ["$timeout", ($timeout) ->
   template: """
     <div class="plunker-gallery">
       <ul class="gallery">
-        <li plunker-card ng-repeat="plunk in plunks | orderBy:activeFilter.sort:true" plunk="plunk"></li>
+        <li plunker-card ng-repeat="plunk in plunks" plunk="plunk"></li>
       </ul>
     </div>
   """
@@ -18,7 +18,7 @@ module.directive "plunkerGallery", ["$timeout", ($timeout) ->
     nextRefresh = null
     
     (refreshInterval = ->
-      $scope.plunks.refresh()
+      $scope.plunks.refresh() if nextRefresh
       
       nextRefresh = $timeout refreshInterval, 60 * 1000
     )()

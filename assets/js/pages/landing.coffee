@@ -1,6 +1,6 @@
-#= require ../../vendor/angular
+#= require ../../vendor/angular.js
 
-#= require ../controllers/landing
+#= require ../controllers/explore
 #= require ../controllers/preview
 
 #= require ../services/menu
@@ -8,7 +8,7 @@
 #= require ../directives/userpanel
 
 
-module = angular.module("plunker.landingPage", ["plunker.landing", "plunker.preview", "plunker.menu", "plunker.userpanel"])
+module = angular.module("plunker.landing", ["plunker.explore", "plunker.preview", "plunker.menu", "plunker.userpanel"])
 
 
 module.config ["$locationProvider", ($locationProvider) ->
@@ -35,10 +35,7 @@ module.run ["$rootElement", ($rootElement) ->
     while angular.lowercase(elm[0].nodeName) != 'a'
       if elm[0] == $rootElement[0] || !(elm = elm.parent())[0] then return
     
-    console.log "Handling click", elm
-    
     if (href = elm.prop("href")) and href.match(/\/edit\//)
-      console.log "Stopping propagation", href
       event.stopPropagation()
       window.location = href
 ]

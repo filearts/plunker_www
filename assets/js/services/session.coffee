@@ -37,7 +37,6 @@ module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) -
       @buffers = {}
   
       @reset()
-  
     
   
     getActiveBuffer: ->
@@ -89,7 +88,9 @@ module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) -
       @addBuffer("index.html", "") unless $$history.length
   
       @activateBuffer("index.html") if @getBufferByFilename("index.html")
-      
+
+      @updated_at = Date.now()
+
       @
   
     open: (source) ->
@@ -206,18 +207,24 @@ module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) -
   
     fork: ->
       unless @plunk?.isSaved() then return notifier.warning """
-        Fork cancelled: You cannot fork a plunk that is not saved.
+        Fork cancelled: You cannot fork a plunk that does not exist.
       """.trim()
   
       json = @toJSON()
+      self = @
       
       lastSavedBuffers = angular.copy($$savedBuffers)
-      inFlightBuffers = angular.copy(@buffers)
-  
-      self = @
-  
+      inFlightBuffers = do ->
+        buffers = {}
+        
+        for id, buffer of self.buffers
+          buffers[id] =
+            filename: buffer.filename
+            content: buffer.content
+      
       $$asyncOp.call @, "fork", (dfd) ->
-        @plunk.fork(json).then (plunk) ->
+        plunks.fork(self.plunk, json).then (plunk) ->
+          self.plunk = plunk
           $$savedBuffers = inFlightBuffers
   
           dfd.resolve(self)
@@ -304,6 +311,8 @@ module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) -
       """.trim()
   
       buffer.filename = new_filename
+      
+      @updated_at = Date.now()
   
       @
 ]

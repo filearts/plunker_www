@@ -12,7 +12,7 @@ assets
   src: "#{__dirname}/assets"
   build: true
   minify: true
-  buildDir: "assets/build"
+  buildDir: "build"
   buildFilenamer: (filename) ->
     dir = path.dirname(filename)
     ext = path.extname(filename)
@@ -20,7 +20,7 @@ assets
     
     return path.join dir, "#{base}-#{pkginfo.version}#{ext}"
 
-if fs.existsSync("#{__dirname}/assets/build") then rimraf.sync("#{__dirname}/assets/build")
+if fs.existsSync("#{__dirname}/build") then rimraf.sync("#{__dirname}/build")
   
 console.log "Building landing.js"
 js("pages/landing")

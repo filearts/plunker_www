@@ -16,8 +16,6 @@ pkginfo = require("./package.json")
 # Set defaults in nconf
 require "./configure"
 
-process.env.NODE_ENV = "production"
-
 
 app = module.exports = express()
 
@@ -39,7 +37,7 @@ assetOptions =
     ext = path.extname(filename)
     base = path.basename(filename, ext)
     
-    return path.join dir, "#{base}-#{pkginfo.version}#{ext}"
+    return path.join dir, "{base}-#{pkginfo.version}#{ext}"
   helperContext: app.locals
 
 app.set "views", "#{__dirname}/views"
@@ -47,7 +45,8 @@ app.set "view engine", "jade"
 app.set "view options", layout: false
 
 app.use express.logger()
-app.use lactate.static "#{__dirname}/assets/build", lactateOptions
+app.use require("./middleware/vary").middleware()
+app.use lactate.static "#{__dirname}/build", lactateOptions
 app.use lactate.static "#{__dirname}/assets", lactateOptions
 app.use "/css/font", lactate.static("#{__dirname}/assets/vendor/Font-Awesome-More/font/", lactateOptions)
 

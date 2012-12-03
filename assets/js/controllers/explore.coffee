@@ -4,9 +4,11 @@
 
 #= require ../directives/gallery
 #= require ../directives/overlay
+#= require ../directives/pager
 
-module = angular.module "plunker.landing", [
+module = angular.module "plunker.explore", [
   "plunker.gallery"
+  "plunker.pager"
   "plunker.overlay"
   "plunker.menu"
   "plunker.plunks"

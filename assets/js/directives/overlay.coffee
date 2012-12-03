@@ -7,7 +7,7 @@ module.directive "overlay", [ "$rootScope", ($rootScope) ->
     
     $rootScope.$on "$routeChangeStart", ->
       $el.addClass("show")
-      $message.text("Loading page...")
+      $message.text("Loading...")
     
     $rootScope.$on "$routeChangeSuccess", ->
       $el.removeClass("show")

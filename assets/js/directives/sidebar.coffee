@@ -11,7 +11,7 @@ module.directive "plunkerSidebarFile", [ "notifier", "session", (notifier, sessi
     buffer: "="
   template: """
     <li class="file" ng-class="{active: active}">
-      <a ng-click="activateBuffer(buffer)">{{buffer.filename}}</a>
+      <a ng-click="activateBuffer(buffer)" ng-dblclick="promptFileRename(buffer)">{{buffer.filename}}</a>
       <ul class="file-ops">
         <li class="delete">
           <button ng-click="promptFileDelete(buffer)" class="btn btn-mini">
@@ -32,6 +32,10 @@ module.directive "plunkerSidebarFile", [ "notifier", "session", (notifier, sessi
     $scope.activateBuffer = (buffer) ->
       session.activateBuffer(buffer.filename)
     
+    $scope.promptFileRename = (buffer) ->
+      notifier.prompt "Rename file", buffer.filename,
+        confirm: (filename) -> session.renameBuffer(buffer.filename, filename)
+    
     $scope.promptFileDelete = (buffer) ->
       notifier.confirm "Confirm Delete", "Are you sure that you would like to delete #{buffer.filename}?",
         confirm: -> session.removeBuffer(buffer.filename)
@@ -45,7 +49,7 @@ module.directive "plunkerSidebar", [ "session", (session) ->
       <details open>
         <summary class="header">Files</summary>
         <ul class="plunker-filelist nav nav-list">
-          <plunker-sidebar-file buffer="buffer" ng-repeat="(id, buffer) in session.buffers">
+          <plunker-sidebar-file buffer="buffer" ng-repeat="(id, buffer) in session.buffers | orderBy:'filename'">
             <a ng-click="session.activateBuffer(buffer.filename)">{{buffer.filename}}</a>
           </plunker-sidebar-file>
         </ul>

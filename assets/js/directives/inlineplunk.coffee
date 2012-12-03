@@ -15,10 +15,6 @@ module.directive "plunkerInlinePlunk", [ "$rootScope", "quickview", ($rootScope,
     </span>
   """
   link: ($scope, $el, attrs) ->
-    $scope.$watch "plunk", (plunk) ->
-      if plunk
-        plunk.refresh() unless plunk.$$refreshing or plunk.$$refreshed_at
-    
     $scope.showQuickView = (plunk, $event) ->
       quickview.show(plunk)
       

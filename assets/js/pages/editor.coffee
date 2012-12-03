@@ -1,4 +1,4 @@
-#= require ../../vendor/angular
+#= require ../../vendor/angular.js
 
 #= require ../services/importer
 #= require ../services/session

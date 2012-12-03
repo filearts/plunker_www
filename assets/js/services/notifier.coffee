@@ -11,6 +11,19 @@ module.factory "notifier", [ "$rootScope", ($rootScope) ->
   notifier = {}
   methods = ["alert", "success", "error", "warning", "information", "confirm"]
   
+  notifier.prompt = (message, dflt = "", options = {}) ->
+    if angular.isObject(dflt)
+      options = dflt
+      dflt = ""
+    
+    options.confirm ||= angular.noop
+    options.deny ||= angular.noop
+  
+    if (value = window.prompt(message, dflt)) != null
+      options.confirm(value)
+    else
+      options.deny()
+  
   for method in methods then do (method) ->
     notifier[method] = (title, text, options = {}) ->
       switch arguments.length

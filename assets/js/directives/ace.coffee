@@ -5,7 +5,7 @@
 
 module = angular.module "plunker.ace", ["plunker.session", "plunker.modes"]
 
-module.directive "plunkerEditSession", [ "modes", (modes) ->
+module.directive "plunkerEditSession", [ "modes", "session", (modes, editsession) ->
   EditSession = require("ace/edit_session").EditSession
   UndoManager = require("ace/undomanager").UndoManager
   
@@ -16,26 +16,38 @@ module.directive "plunkerEditSession", [ "modes", (modes) ->
   scope:
     buffer: "="
   template: """
-    <div class="plunker-edit-session">
+    <div class="plunker-edit-session" ng-bind="buffer.content">
     </div>
   """
   link: ($scope, $el, attrs, [model, aceEditor]) ->
+    buffer = $scope.buffer
+    initial = true
+    
     session = new EditSession(model.$modelValue)
     session.setUndoManager(new UndoManager())
     session.setTabSize(2)
-    #session.setUseWrapMode(true)
+    session.setUseWorker(true)
+    
+    model.$render = -> 
+      session.setValue(model.$modelValue)
+      initial = false
     
     session.on "change", (delta) ->
-      model.$setViewValue(session.getValue())
-    
-    model.$render = ->
-      session.setValue(model.$modelValue)
-    
+      unless initial then $scope.$apply -> model.$setViewValue(session.getValue())
+      
+    session.on "changeAnnotation", ->
+      angular.copy session.getAnnotations(), buffer.annotations
+
     $scope.$watch "buffer.filename", (filename) ->
       mode = modes.findByFilename(filename)
       session.setMode("ace/mode/#{mode.name}")
+      editsession.updated_at = Date.now()
     
-    $scope.buffer.session = session
+    $scope.$watch "buffer.content", (content) ->
+      editsession.updated_at = Date.now()
+    
+    buffer.annotations = []
+    buffer.session = session
 ]
 
 module.directive "plunkerAce", [ "$timeout", "session", ($timeout, session) ->

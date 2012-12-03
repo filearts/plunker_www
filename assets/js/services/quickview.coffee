@@ -62,22 +62,16 @@ module.service "quickview", ["$rootScope", "$document", "$compile", "$location",
       $scope.plunk = @plunk
       
       $scope.close = @close = ->
-        $scope.$destroy()
-        $el.remove()
-        $body.css("overflow", restoreOverflow)
+        if $scope.$parent
+          $scope.$destroy()
+          $el.remove()
+          $body.css("overflow", restoreOverflow)
       
       $el = link($scope)
       
       $body.prepend($el).css("overflow", "hidden")
   
-  activeQuickView = null
-  
-  if (hash = $location.hash()) and (activeQuickView?.plunk.id != hash)
-    activeQuickView.close() if activeQuickView
-    
-    activeQuickView = new QuickView(id: hash)
-    
-    
+  activeQuickView = null    
   
   show: (plunk) ->
     activeQuickView.close() if activeQuickView
@@ -86,4 +80,6 @@ module.service "quickview", ["$rootScope", "$document", "$compile", "$location",
   
   hide: ->
     activeQuickView.close() if activeQuickView
+    
+    activeQuickView = null
 ]

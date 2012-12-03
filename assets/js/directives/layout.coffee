@@ -1,12 +1,24 @@
-#= require "../../vendor/jquery-ui"
-#= require "../../vendor/jquery-layout/jquery.layout"
+#= require ../../vendor/jquery-ui
+#= require ../../vendor/jquery-layout/jquery.layout
 
-#= require "../directives/sidebar"
-#= require "../directives/ace"
+#= require ../services/panes
 
-module = angular.module "plunker.layout", ["plunker.sidebar", "plunker.ace"]
+#= require ../directives/sidebar
+#= require ../directives/ace
+#= require ../directives/multipane
+#= require ../directives/paneselector
 
-module.directive "plunkerEditorLayout", [ () ->
+#= require_tree ../panes
+
+module = angular.module "plunker.layout", [
+  "plunker.panes"
+  "plunker.sidebar"
+  "plunker.ace"
+  "plunker.multipane"
+  "plunker.paneselector"
+]
+
+module.directive "plunkerEditorLayout", [ "panes", (panes) ->
   restrict: "E"
   replace: true
   template: """
@@ -18,15 +30,14 @@ module.directive "plunkerEditorLayout", [ () ->
         <div class="ui-layout-center">
           <plunker-ace></plunker-ace>
         </div>
-        <div class="ui-layout-east"></div>
+        <plunker-multipane class="ui-layout-east"></plunker-multipane>
       </div>
-      <div class="ui-layout-east">
-        
-      </div>
+      <plunker-paneselector class="ui-layout-east">
+      </plunker-paneselector>
     </div>
   """
   link: ($scope, $el, attrs) ->
-    $el.layout
+    layout = $el.layout
       defaults:
         spacing_open: 4
         spacing_closed: 8
@@ -39,16 +50,26 @@ module.directive "plunkerEditorLayout", [ () ->
         children:
           defaults:
             spacing_open: 4
-            spacing_closed: 8
+            spacing_closed: 0
           center:
             size: "50%"
           east:
-            initHidden: true
             size: "50%"
+            onclose: ->
+              if panes.active then $scope.$apply ->
+                panes.close()
       east:
         size: 41 # 40px + 1px border
         closable: false
         resizable: false
         spacing_open: 1
         spacing_closed: 1
+    
+    center = layout.panes.center.layout()
+    
+    # Watch for changes to the active pane
+    $scope.$watch ( -> panes.active ), (pane) ->
+      if pane then center.open("east")
+      else center.close("east")
+      
 ]

@@ -8,7 +8,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", ($http
   $$plunks = {}
   $$feeds = {}
   
-  $$findOrCreate = (json, options = {upsert: false}) ->
+  $$findOrCreate = (json = {}, options = {upsert: false}) ->
     if json.id
       unless $$plunks[json.id]
         $$plunks[json.id] = new Plunk(json)
@@ -107,14 +107,14 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", ($http
         self.$$refreshed_at = new Date()
         
         self
-
+    
     save: (delta = {}, options = {}) ->
       self = @
       
       options.params ||= {}
       options.params.sessid = visitor.session.id
       
-      self.$$refreshing ||= $http.post("#{url.api}/plunks/#{@id or ''}", delta, options).then (res) ->
+      self.$$refreshing ||= $http.post(options.url or "#{url.api}/plunks/#{@id or ''}", delta, options).then (res) ->
         angular.copy(res.data, self)
         
         self.$$refreshing = null
@@ -138,17 +138,46 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", ($http
   plunks =
     findOrCreate: (defaults = {}) -> $$findOrCreate(defaults, upsert: true)
     
+    fork: (id, json, options = {}) ->
+      self = @
+      
+      id = id.id if id.id # Normalize if plunk passed in
+      
+      options.url ||= "#{url.api}/plunks/#{id}/forks"
+      options.params ||= {}
+      options.params.sessid = visitor.session.id
+      
+      
+      plunk = $$findOrCreate()
+      plunk.save(json, options).then (plunk) ->
+        $$plunks[plunk.id] = plunk
+
+    
     query: (options = {}) ->
       results = []
+      links = {}
       
       options.params ||= {}
       options.params.sessid = visitor.session.id
       options.params.pp = 12
       
       results.url = options.url || "#{url.api}/plunks"
+      results.links = (rel) ->
+        if rel then links[rel] or ""
+        else links
+          
+      results.pageTo = (href) ->
+        results.url = href
+        results.refresh()
       
       (results.refresh = ->
         results.$$refreshing ||= $http.get(results.url, options).then (res) ->
+          angular.copy {}, links
+          
+          if link = res.headers("link")
+            link.replace /<([^>]+)>;\s*rel="(\w+)"/gi, (match, href, rel) ->
+              links[rel] = href
+          
           results.length = 0
           results.push(plunk) for plunk in $$mapPlunks(res.data)
           
