@@ -1,10 +1,13 @@
+#= require ../services/settings
+
 module = angular.module("plunker.panes")
 
 module.requires.push "plunker.url"
 module.requires.push "plunker.session"
+module.requires.push "plunker.settings"
 
 
-module.run [ "$q", "$http", "url", "panes", "session", ($q, $http, url, panes, session) ->
+module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, url, panes, session, settings) ->
 
   debounce = (wait, func, immediate) ->
     timeout = undefined
@@ -22,6 +25,7 @@ module.run [ "$q", "$http", "url", "panes", "session", ($q, $http, url, panes, s
     id: "preview"
     icon: "eye-open"
     title: "Preview your work"
+    size: "50%"
     template: """
       <div class="plunker-previewer" ng-class="{loading: loading}">
         <div class="plunker-previewer-ops">
@@ -73,7 +77,7 @@ module.run [ "$q", "$http", "url", "panes", "session", ($q, $http, url, panes, s
           
         return $scope.promise = dfd.promise
       
-      $scope.$watch "session.updated_at", debounce 400, ->
+      $scope.$watch "session.updated_at", debounce settings.previewer.delay, ->
         $scope.refreshPreview() if pane.active
         
       $scope.$watch "pane.active"

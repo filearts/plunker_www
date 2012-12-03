@@ -27,6 +27,7 @@ module.config ["$locationProvider", ($locationProvider) ->
 module.config ["$routeProvider", ($routeProvider) ->
   $routeProvider.when "/:source",
     template: "<div></div>"
+    reloadOnSearch: false
     resolve: 
       source: ["$route", "importer", "session", "notifier", ($route, importer, session, notifier) ->
         if source = $route.current.params.source

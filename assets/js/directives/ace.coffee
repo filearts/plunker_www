@@ -2,10 +2,15 @@
 
 #= require ../services/session
 #= require ../services/modes
+#= require ../services/settings
 
-module = angular.module "plunker.ace", ["plunker.session", "plunker.modes"]
+module = angular.module "plunker.ace", [
+  "plunker.session"
+  "plunker.modes"
+  "plunker.settings"
+]
 
-module.directive "plunkerEditSession", [ "modes", "session", (modes, editsession) ->
+module.directive "plunkerEditSession", [ "modes", "session", "settings", (modes, editsession, settings) ->
   EditSession = require("ace/edit_session").EditSession
   UndoManager = require("ace/undomanager").UndoManager
   
@@ -25,7 +30,7 @@ module.directive "plunkerEditSession", [ "modes", "session", (modes, editsession
     
     session = new EditSession(model.$modelValue)
     session.setUndoManager(new UndoManager())
-    session.setTabSize(2)
+    session.setTabSize(settings.editor.tab_size)
     session.setUseWorker(true)
     
     model.$render = -> 
@@ -46,11 +51,17 @@ module.directive "plunkerEditSession", [ "modes", "session", (modes, editsession
     $scope.$watch "buffer.content", (content) ->
       editsession.updated_at = Date.now()
     
+    $scope.$watch ( -> settings.editor.tab_size ), (tab_size) ->
+      session.setTabSize(tab_size)
+    
+    $scope.$watch ( -> settings.editor.soft_tabs ), (soft_tabs) ->
+      session.setUseSoftTabs(!!soft_tabs)
+    
     buffer.annotations = []
     buffer.session = session
 ]
 
-module.directive "plunkerAce", [ "$timeout", "session", ($timeout, session) ->
+module.directive "plunkerAce", [ "$timeout", "session", "settings", ($timeout, session, settings) ->
   Editor = require("ace/editor").Editor
   Renderer = require("ace/virtual_renderer").VirtualRenderer
   
@@ -81,6 +92,9 @@ module.directive "plunkerAce", [ "$timeout", "session", ($timeout, session) ->
     
     $scope.$watch "session.getActiveBuffer()", (buffer) ->
       ctrl.editor.setSession(buffer.session)
+      
+    $scope.$watch ( -> settings.editor.theme ), (theme) ->
+      ctrl.editor.setTheme("ace/theme/#{theme}")
       
     $scope.$on "resize", -> ctrl.editor.resize()
     

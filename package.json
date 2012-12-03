@@ -12,7 +12,7 @@
   "engines": {
     "node": "0.8.x"
   },
-  "version": "0.1.1-7",
+  "version": "0.1.1-8",
   "description": "The code powering the public facing component of http://plnkr.co",
   "main": "server.js",
   "dependencies": {
