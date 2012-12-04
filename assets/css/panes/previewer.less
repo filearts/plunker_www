@@ -1,3 +1,42 @@
+@-webkit-keyframes pulse {
+  from {
+    text-shadow: none;
+    filter: none;
+  }
+  to {
+    text-shadow: 0px 0px 4px #F89406;
+    filter: dropshadow(color=#f89406, offx=0, offy=0);
+  }
+}
+
+@-moz-keyframes pulse {
+  from {
+    text-shadow: none;
+    filter: none;
+  }
+  to {
+    text-shadow: 0px 0px 4px #F89406;
+    filter: dropshadow(color=#f89406, offx=0, offy=0);
+  }
+}
+
+
+.plunker-paneselector {
+  .deferred {
+    -webkit-animation-name: pulse;
+    -webkit-animation-duration: 2s;
+    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-timing-function: ease-in-out;
+    -webkit-animation-direction: alternate;
+    
+    -moz-animation-name: pulse;
+    -moz-animation-duration: 2s;
+    -moz-animation-iteration-count: infinite;
+    -moz-animation-timing-function: ease-in-out;
+    -moz-animation-direction: alternate;
+  }
+}
+
 .plunker-previewer {
   position: absolute;
   top: 0; left: 0; bottom: 0; right: 0;

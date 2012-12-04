@@ -41,14 +41,14 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
       </div>
     """
     link: ($scope, $el, attrs) ->
-      previewId = ""
-      refreshQueued = false
       pane = @
       
       $previewer = $("iframe.plunker-previewer-iframe", $el)
       
       $scope.session = session
       $scope.windowed = false
+      $scope.refreshQueued = true
+      $scope.previewId = ""
       
       $scope.refreshPreview = ->
         dfd = $q.defer()
@@ -56,7 +56,7 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
         
         $scope.loading = true
         
-        req = $http.post("#{url.run}/#{previewId}", json, cache: false)
+        req = $http.post("#{url.run}/#{$scope.previewId}", json, cache: false)
         
         req.then (res) ->
           loc = $previewer[0].contentWindow.location
@@ -70,7 +70,8 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
             dfd.resolve()
             $scope.loading = false
   
-          previewId = res.data.id
+          $scope.previewId = res.data.id
+          $scope.refreshQueued = false
         , (err) ->
           dfd.reject(err)
           $scope.loading = false
@@ -78,7 +79,13 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
         return $scope.promise = dfd.promise
       
       $scope.$watch "session.updated_at", debounce settings.previewer.delay, ->
-        $scope.refreshPreview() if pane.active
+        if pane.active then $scope.refreshPreview()
+        else $scope.refreshQueued = true
         
-      $scope.$watch "pane.active"
+      $scope.$watch "pane.active", (active) ->
+        $scope.refreshPreview() if active and ($scope.refreshQueued or !$scope.previewId)
+        
+      $scope.$watch "refreshQueued", (queued) ->
+        if queued then pane.class = "deferred"
+        else pane.class = ""
 ]

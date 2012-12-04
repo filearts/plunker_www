@@ -54,7 +54,6 @@ module.directive "plunkerEditorLayout", [ "panes", (panes) ->
           center:
             size: "50%"
           east:
-            size: panes.active?.size or "50%"
             onresize: (el, name, state) ->
               panes.active.size = state.size if panes.active
             onclose: ->
@@ -71,10 +70,9 @@ module.directive "plunkerEditorLayout", [ "panes", (panes) ->
     
     # Watch for changes to the active pane
     $scope.$watch ( -> panes.active ), (pane) ->
-      console.log "Pane size", pane.size
       if pane
-        center.open("east")
         center.sizePane("east", pane.size)
+        center.open("east")
       else center.close("east")
       
 ]

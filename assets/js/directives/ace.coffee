@@ -39,6 +39,7 @@ module.directive "plunkerEditSession", [ "modes", "session", "settings", (modes,
     
     session.on "change", (delta) ->
       unless initial then $scope.$apply -> model.$setViewValue(session.getValue())
+      else model.$setViewValue(session.getValue())
       
     session.on "changeAnnotation", ->
       angular.copy session.getAnnotations(), buffer.annotations
