@@ -43,6 +43,8 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
     link: ($scope, $el, attrs) ->
       pane = @
       
+      debouncedRefreshPreview = angular.noop
+      
       $previewer = $("iframe.plunker-previewer-iframe", $el)
       
       $scope.session = session
@@ -78,14 +80,18 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
           
         return $scope.promise = dfd.promise
       
-      $scope.$watch "session.updated_at", debounce settings.previewer.delay, ->
-        if pane.active then $scope.refreshPreview()
-        else $scope.refreshQueued = true
+      $scope.$watch "settings.previewer.delay", (delay) ->
+        debouncedRefreshPreview = debounce delay, ->
+          if pane.active then $scope.refreshPreview()
+          else $scope.refreshQueued = true
+        
+      $scope.$watch "session.updated_at", ->
+        debouncedRefreshPreview()
         
       $scope.$watch "pane.active", (active) ->
         $scope.refreshPreview() if active and ($scope.refreshQueued or !$scope.previewId)
         
       $scope.$watch "refreshQueued", (queued) ->
-        if queued then pane.class = "deferred"
+        if queued then pane.class = "pulse-info"
         else pane.class = ""
 ]

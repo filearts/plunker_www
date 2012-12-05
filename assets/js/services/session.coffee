@@ -7,13 +7,18 @@ module = angular.module "plunker.session", [
 ]
 
 module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) ->
+
+  genid = (len = 16, prefix = "", keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") ->
+    prefix += keyspace.charAt(Math.floor(Math.random() * keyspace.length)) while len-- > 0
+    prefix
+
   new class Session
     $$savedBuffers = {}
     $$history = []
   
     $$counter = 0
   
-    $$uid = (prefix = "__") ->  prefix + ($$counter++)
+    $$uid = (prefix = "__") ->  prefix + genid()
   
     $$asyncOp = (operation, fn) ->
       dfd = $q.defer()

@@ -1,4 +1,5 @@
 #= require ../../vendor/angular.js
+#= require ../../vendor/bootstrap/js/bootstrap-button.js
 
 #= require ../services/importer
 #= require ../services/session

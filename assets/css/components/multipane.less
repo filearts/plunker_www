@@ -1,5 +1,46 @@
 @import "../panes/previewer";
 @import "../panes/options";
+@import "../panes/linter";
+
+@-webkit-keyframes pulse-info {
+  from {
+    text-shadow: none;
+    filter: none;
+  }
+  to {
+    text-shadow: 0px 0px 5px #08C;
+    filter: dropshadow(color=#08C, offx=0, offy=0);
+  }
+}
+
+@-moz-keyframes pulse-info {
+  from {
+    text-shadow: none;
+    filter: none;
+  }
+  to {
+    text-shadow: 0px 0px 5px #08C;
+    filter: dropshadow(color=#08C, offx=0, offy=0);
+  }
+}
+
+
+.plunker-paneselector {
+  .pulse-info {
+    -webkit-animation-name: pulse-info;
+    -webkit-animation-duration: 2s;
+    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-timing-function: ease-in-out;
+    -webkit-animation-direction: alternate;
+    
+    -moz-animation-name: pulse-info;
+    -moz-animation-duration: 2s;
+    -moz-animation-iteration-count: infinite;
+    -moz-animation-timing-function: ease-in-out;
+    -moz-animation-direction: alternate;
+  }
+}
+
 
 .plunker-paneselector {
   background: whiteSmoke;

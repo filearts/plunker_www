@@ -3,14 +3,16 @@
 #= require ../services/session
 #= require ../services/modes
 #= require ../services/settings
+#= require ../services/annotations
 
 module = angular.module "plunker.ace", [
   "plunker.session"
   "plunker.modes"
   "plunker.settings"
+  "plunker.annotations"
 ]
 
-module.directive "plunkerEditSession", [ "modes", "session", "settings", (modes, editsession, settings) ->
+module.directive "plunkerEditSession", [ "$timeout", "modes", "session", "settings", "annotations", ($timeout, modes, editsession, settings, annotations) ->
   EditSession = require("ace/edit_session").EditSession
   UndoManager = require("ace/undomanager").UndoManager
   
@@ -33,16 +35,18 @@ module.directive "plunkerEditSession", [ "modes", "session", "settings", (modes,
     session.setTabSize(settings.editor.tab_size)
     session.setUseWorker(true)
     
+    $timeout -> initial = false
+    
     model.$render = -> 
       session.setValue(model.$modelValue)
-      initial = false
     
     session.on "change", (delta) ->
       unless initial then $scope.$apply -> model.$setViewValue(session.getValue())
       else model.$setViewValue(session.getValue())
       
     session.on "changeAnnotation", ->
-      angular.copy session.getAnnotations(), buffer.annotations
+      unless initial then $scope.$apply -> angular.copy session.getAnnotations(), annotations[buffer.id]
+      else angular.copy session.getAnnotations(), annotations[buffer.id]
 
     $scope.$watch "buffer.filename", (filename) ->
       mode = modes.findByFilename(filename)
@@ -57,9 +61,14 @@ module.directive "plunkerEditSession", [ "modes", "session", "settings", (modes,
     
     $scope.$watch ( -> settings.editor.soft_tabs ), (soft_tabs) ->
       session.setUseSoftTabs(!!soft_tabs)
+      
+    aceEditor.sessions[buffer.id] = session
+
+    annotations[buffer.id] = []
     
-    buffer.annotations = []
-    buffer.session = session
+    $scope.$on "$destroy", ->
+      delete aceEditor.sessions[buffer.id]
+      delete annotations[buffer.id]
 ]
 
 module.directive "plunkerAce", [ "$timeout", "session", "settings", ($timeout, session, settings) ->
@@ -78,6 +87,10 @@ module.directive "plunkerAce", [ "$timeout", "session", "settings", ($timeout, s
     </div>
   """
   controller: class AceController
+    constructor: ->
+      @sessions = {}
+      @editor = null
+
     edit: (@el) ->
       @editor = new Editor(new Renderer(@el, "ace/theme/textmate"))
   
@@ -92,7 +105,7 @@ module.directive "plunkerAce", [ "$timeout", "session", "settings", ($timeout, s
     $scope.session = session
     
     $scope.$watch "session.getActiveBuffer()", (buffer) ->
-      ctrl.editor.setSession(buffer.session)
+      ctrl.editor.setSession(ctrl.sessions[buffer.id])
       
     $scope.$watch ( -> settings.editor.theme ), (theme) ->
       ctrl.editor.setTheme("ace/theme/#{theme}")
