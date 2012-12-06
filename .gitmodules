@@ -19,3 +19,6 @@
 [submodule "assets/vendor/jszip"]
 	path = assets/vendor/jszip
 	url = git://github.com/Stuk/jszip.git
+[submodule "assets/vendor/bootstrap"]
+	path = assets/vendor/bootstrap
+	url = git://github.com/twitter/bootstrap.git

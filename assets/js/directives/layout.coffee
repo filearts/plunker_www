@@ -54,6 +54,7 @@ module.directive "plunkerEditorLayout", [ "panes", (panes) ->
           center:
             size: "50%"
           east:
+            maskContents: true
             onresize: (el, name, state) ->
               panes.active.size = state.size if panes.active
             onclose: ->
@@ -67,6 +68,8 @@ module.directive "plunkerEditorLayout", [ "panes", (panes) ->
         spacing_closed: 1
     
     center = layout.panes.center.layout()
+    center.resizers.east.mousedown -> center.showMasks("east")
+    center.resizers.east.mouseup -> center.hideMasks("east")
     
     # Watch for changes to the active pane
     $scope.$watch ( -> panes.active ), (pane) ->
