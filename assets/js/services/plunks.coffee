@@ -1,7 +1,7 @@
 #= require ../services/url
 #= require ../services/visitor
 
-module = angular.module "plunker.plunks", ["plunker.url"]
+module = angular.module "plunker.plunks", ["plunker.url", "plunker.visitor"]
 
 
 module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", ($http, $rootScope, $q, url, visitor) ->

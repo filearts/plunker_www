@@ -2,13 +2,22 @@
 
 #= require ../controllers/explore
 #= require ../controllers/preview
+#= require ../controllers/editor
+#= require ../controllers/notfound
 
 #= require ../services/menu
 
 #= require ../directives/userpanel
 
 
-module = angular.module("plunker.landing", ["plunker.explore", "plunker.preview", "plunker.menu", "plunker.userpanel"])
+module = angular.module "plunker.landing", [
+  "plunker.explore"
+  "plunker.preview"
+  "plunker.editorPage"
+  "plunker.notfound"
+  "plunker.menu"
+  "plunker.userpanel"
+]
 
 
 module.config ["$locationProvider", ($locationProvider) ->
@@ -19,11 +28,6 @@ module.run ["$rootScope", "$location", "$window", "menu", ($rootScope, $location
   $rootScope[k] = v for k, v of _plunker
   $rootScope.menu = menu
   
-  menu.addItem "editor",
-    title: "Launch the Editor"
-    href: "/edit/"
-    'class': "icon-edit"
-    text: "Editor"
 ]
 
 module.run ["$rootElement", ($rootElement) ->

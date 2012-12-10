@@ -24,6 +24,7 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
   panes.add
     id: "preview"
     icon: "eye-open"
+    order: 0
     title: "Preview your work"
     size: "50%"
     template: """
@@ -49,7 +50,7 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
       
       $scope.session = session
       $scope.windowed = false
-      $scope.refreshQueued = true
+      $scope.refreshQueued = false
       $scope.previewId = ""
       
       $scope.refreshPreview = ->
@@ -86,7 +87,7 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
           else $scope.refreshQueued = true
         
       $scope.$watch "session.updated_at", ->
-        debouncedRefreshPreview()
+        debouncedRefreshPreview() if settings.previewer.auto_refresh
         
       $scope.$watch "pane.active", (active) ->
         $scope.refreshPreview() if active and ($scope.refreshQueued or !$scope.previewId)

@@ -10,7 +10,7 @@ module.directive "plunkerPaneselector", [ "panes", (panes) ->
   template: """
     <div class="plunker-paneselector">
       <ul>
-        <li ng-repeat="pane in panes.panes" class="{{pane.class}}" ng-class="{active:pane==panes.active}">
+        <li ng-repeat="pane in panes.panes | orderBy:'order'" class="{{pane.class}} plunker-pane-{{pane.id}}" ng-class="{active:pane==panes.active}">
           <a ng-click="panes.toggle(pane)" title="{{pane.title}}">
             <i class="icon-{{pane.icon}}"></i>
           </a>

@@ -33,6 +33,7 @@ module.service "panes", [ "$rootScope", "$location", ($rootScope, $location) ->
       pane.icon ||= "check-empty"
       pane.link ||= angular.noop
       pane.template ||= ""
+      pane.order ||= 500
       
       @panes.push(pane)
       

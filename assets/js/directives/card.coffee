@@ -2,6 +2,7 @@
 
 #= require ../directives/inlineuser
 #= require ../directives/inlineplunk
+#= require ../directives/taglist
 
 #= require ../../vendor/jquery-timeago/jquery.timeago
 
@@ -10,6 +11,7 @@ module = angular.module "plunker.card", [
   "plunker.inlineplunk"
   "plunker.quickview"
   "plunker.plunkinfo"
+  "plunker.taglist"
 ]
 
 module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", ($timeout, $compile, quickview) ->
@@ -26,6 +28,7 @@ module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", ($timeout
         </ul>
         <h4 title="{{plunk.description}}">{{plunk.description}}</h4>
         <img ng-src="http://immediatenet.com/t/l3?Size=1024x768&URL={{plunk.raw_url}}?_={{plunk.updated_at | date:'yyyy-MM-ddTHH:mm:ssZ'}}" />
+        <plunker-taglist tags="plunk.tags"></plunker-taglist>
         <plunker-plunk-info plunk="plunk"></plunker-plunk-info>
         <ul class="meta">
           <li ng-show="plunk.fork_of">

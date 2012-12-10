@@ -2,14 +2,18 @@ module = angular.module("plunker.menu", [])
 
 module.service "menu", [ () ->
   menu =
-    items: {}
+    items: []
     active: null
     
   menu.addItem = (name, item) ->
-    menu.items[name] = item
+    item.id = name
+    menu.items.push item
   
   menu.activate = (name) ->
-    menu.active = item if item = menu.items[name]
+    menu.active = item for item in @items when item.id == name
+  
+  menu.deactivate = ->
+    menu.active = null
     
   menu
 ]

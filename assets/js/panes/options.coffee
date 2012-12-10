@@ -11,6 +11,7 @@ module.run [ "panes", "settings", (panes, settings) ->
     id: "options"
     icon: "cog"
     size: 328
+    order: 1000
     title: "Personalize the editor"
     template: """
       <div class="plunker-options">
@@ -33,10 +34,13 @@ module.run [ "panes", "settings", (panes, settings) ->
           <div class="control-group">
             <label class="control-label" for="opts-previewer-delay">Refresh interval:</label>
             <div class="controls">
-              <input class="input-small" id="opts-previewer-delay" ng-model="settings.previewer.delay" type="number" />
+              <input class="input-small" id="opts-previewer-delay" ng-model="settings.previewer.delay" ng-disabled="!settings.previewer.auto_refresh" type="number" />
+              <label class="checkbox">
+                <input type="checkbox" ng-model="settings.previewer.auto_refresh" />
+                Auto refresh
+              </label>
             </div>
           </div>
-          
         </form>
       </div>
     """
