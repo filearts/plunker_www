@@ -22,3 +22,9 @@
 [submodule "assets/vendor/bootstrap"]
 	path = assets/vendor/bootstrap
 	url = git://github.com/twitter/bootstrap.git
+[submodule "assets/vendor/socialcount"]
+	path = assets/vendor/socialcount
+	url = git://github.com/filamentgroup/SocialCount.git
+[submodule "assets/vendor/angular-ui"]
+	path = assets/vendor/angular-ui
+	url = git://github.com/angular-ui/angular-ui.git
