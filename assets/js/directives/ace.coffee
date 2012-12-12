@@ -4,13 +4,16 @@
 #= require ../services/modes
 #= require ../services/settings
 #= require ../services/annotations
+#= require ../services/cursor
 
 module = angular.module "plunker.ace", [
   "plunker.session"
   "plunker.modes"
   "plunker.settings"
   "plunker.annotations"
+  "plunker.cursor"
 ]
+
 
 module.directive "plunkerEditSession", [ "$timeout", "modes", "session", "settings", "annotations", ($timeout, modes, editsession, settings, annotations) ->
   EditSession = require("ace/edit_session").EditSession
@@ -37,16 +40,18 @@ module.directive "plunkerEditSession", [ "$timeout", "modes", "session", "settin
     
     $timeout -> initial = false
     
+    updateModel = (fn) ->
+      unless initial then $scope.$apply(fn)
+      else fn()
+    
     model.$render = -> 
       session.setValue(model.$modelValue)
     
     session.on "change", (delta) ->
-      unless initial then $scope.$apply -> model.$setViewValue(session.getValue())
-      else model.$setViewValue(session.getValue())
+      updateModel -> model.$setViewValue(session.getValue())
       
     session.on "changeAnnotation", ->
-      unless initial then $scope.$apply -> angular.copy session.getAnnotations(), annotations[buffer.id]
-      else angular.copy session.getAnnotations(), annotations[buffer.id]
+      updateModel -> angular.copy session.getAnnotations(), annotations[buffer.id]
 
     $scope.$watch "buffer.filename", (filename) ->
       mode = modes.findByFilename(filename)
@@ -71,16 +76,16 @@ module.directive "plunkerEditSession", [ "$timeout", "modes", "session", "settin
       delete annotations[buffer.id]
 ]
 
-module.directive "plunkerAce", [ "$timeout", "session", "settings", ($timeout, session, settings) ->
+module.directive "plunkerAce", [ "$timeout", "session", "settings", "cursor", ($timeout, session, settings, cursor) ->
   Editor = require("ace/editor").Editor
   Renderer = require("ace/virtual_renderer").VirtualRenderer
   
 
   restrict: "E"
-  require: "plunkerAce"
+  require: ["plunkerAce", "ngModel"]
   replace: true
   template: """
-    <div class="plunker-ace">
+    <div class="plunker-ace" ng-model="cursor">
       <plunker-edit-session ng-model="buffer.content" buffer="buffer" ng-repeat="(id, buffer) in session.buffers">
       </plunker-edit-session>
       <div class="plunker-ace-canvas"></div>
@@ -93,8 +98,11 @@ module.directive "plunkerAce", [ "$timeout", "session", "settings", ($timeout, s
 
     edit: (@el) ->
       @editor = new Editor(new Renderer(@el, "ace/theme/textmate"))
-  
-  link: ($scope, $el, attrs, ctrl) ->
+        
+  link: ($scope, $el, attrs, [ctrl, model]) ->
+    $scope.cursor = cursor
+    ignoreCursorMove = false
+    
     # Configure ACE to allow it to be packaged in the plnkr source files where paths may be mangled
     ace.config.set "workerPath", "/vendor/ace/src-min/"
     ace.config.set "modePath", "/vendor/ace/src-min/"
@@ -105,12 +113,34 @@ module.directive "plunkerAce", [ "$timeout", "session", "settings", ($timeout, s
     $scope.session = session
     
     $scope.$watch "session.getActiveBuffer()", (buffer) ->
+      ignoreCursorMove = true
       ctrl.editor.setSession(ctrl.sessions[buffer.id])
+      ignoreCursorMove = false
+      
+      cursor.filename = buffer.filename
       
     $scope.$watch ( -> settings.editor.theme ), (theme) ->
       ctrl.editor.setTheme("ace/theme/#{theme}")
       
+    $scope.$watch "cursor.filename", (filename) ->
+      session.activateBuffer(filename) if filename and filename != session.getActiveBuffer().filename
+    
+    onChangeCursorPosition = ->
+      current = ctrl.editor.getCursorPosition()
+      position = cursor.position
+      
+      unless position.row is current.row and position.column is current.column
+        $timeout ->
+          ctrl.editor.moveCursorTo(position.row, position.column)
+          ctrl.editor.focus()
+    
+    $scope.$watch "cursor.position.row", onChangeCursorPosition
+    $scope.$watch "cursor.position.column", onChangeCursorPosition
+      
     $scope.$on "resize", -> ctrl.editor.resize()
     
     ctrl.edit(aceEl)
+
+    ctrl.editor.on "changeSelection", ->
+      angular.copy ctrl.editor.getCursorPosition(), cursor.position unless ignoreCursorMove
 ]

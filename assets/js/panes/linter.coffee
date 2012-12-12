@@ -1,18 +1,23 @@
 #= require ../services/annotations
+#= require ../services/cursor
 
 module = angular.module("plunker.panes")
 
 module.requires.push "plunker.annotations"
 module.requires.push "plunker.session"
+module.requires.push "plunker.cursor"
 
 
-module.run [ "panes", "annotations", "session", (panes, annotations, session) ->
+module.run [ "panes", "annotations", "session", "cursor", (panes, annotations, session, cursor) ->
 
   panes.add
     id: "linter"
     icon: "check"
     size: 328
-    title: "Show lint messages"
+    title: "Code Linting"
+    description: """
+      Display a filtered list of lint errors, warnings and messages for all of your code. Quickly see potential issues and navigate to them.
+    """
     template: """
       <div class="plunker-linter">
         <div class="note-filters">
@@ -29,7 +34,7 @@ module.run [ "panes", "annotations", "session", (panes, annotations, session) ->
               No matching notes
             </li>
             <li ng-repeat="note in relevantNotes(notes, filters)" class="alert alert-{{note.type}}">
-              <a ng-click="positionCursor(note.row, note.column)" class="note-line">Line {{note.row}}</a>
+              <a ng-click="moveCursorTo(session.buffers[buffId].filename, note.row, note.column)" class="note-line">Line {{note.row + 1}}</a>
               <p class="note-text" ng-bind="note.text"></p>
             </li>
           </ul>
@@ -65,5 +70,10 @@ module.run [ "panes", "annotations", "session", (panes, annotations, session) ->
               pane.class = "pulse-info"
               return
       , true
+      
+      $scope.moveCursorTo = (filename, row, column) ->
+        cursor.filename = filename
+        cursor.position.row = row
+        cursor.position.column = column
       
 ]
