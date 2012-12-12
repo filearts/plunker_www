@@ -39,6 +39,37 @@ module.directive "plunkerQuickView", [ "$timeout", ($timeout) ->
               </a>
             </li>
           </ul>
+          <div class="feed">
+            <div class="event" ng-repeat="event in plunk.feed | orderBy:'-date'" ng-class="{{event.type}}" ng-switch on="event.type">
+              <hr />
+              <div ng-switch-when="fork">
+                <div class="type"><i ng-class="event.icon"></i></div>
+                <div class="details">
+                  <plunker-inline-user user="event.user"></plunker-inline-user>
+                  forked this plunk off of <plunker-inline-plunk plunk="event.parent">{{event.parent.id}}</plunker-inline-plunk>
+                  by <plunker-inline-user user="event.parent.user"></plunker-inline-user>
+                  <abbr timeago="event.date"></abbr>.
+                </div>
+              </div>
+              <div ng-switch-when="create">
+                <div class="type"><i ng-class="event.icon"></i></div>
+                <div class="details">
+                  <plunker-inline-user user="event.user"></plunker-inline-user>
+                  created this plunk
+                  <abbr timeago="event.date"></abbr>.
+                </div>
+              </div>
+              <div ng-switch-when="forked">
+                <div class="type"><i ng-class="event.icon"></i></div>
+                <div class="details">
+                  <plunker-inline-user user="event.user"></plunker-inline-user>
+                  created <plunker-inline-plunk plunk="event.child">{{event.child.id}}</plunker-inline-plunk>
+                  by forking this plunk
+                  <abbr timeago="event.date"></abbr>.
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

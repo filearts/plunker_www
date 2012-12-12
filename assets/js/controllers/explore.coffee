@@ -40,27 +40,30 @@ resolvers =
     plunks.query(url: "#{url.api}/plunks").$$refreshing
   ]
 
-generateRouteHandler = (filter) ->
-  templateUrl: "partials/explore.html"
-  resolve:
-    filtered: resolvers[filter]
-  controller: ["$scope", "menu", "filtered", ($scope, menu, filtered) ->
-    $scope.plunks = filtered
-    $scope.filters = filters
-    $scope.activeFilter = filters[filter]
-    
-    menu.activate "plunks"
-  ]
+generateRouteHandler = (filter, options = {}) ->
+  angular.extend
+    templateUrl: "/partials/explore.html"
+    resolve:
+      filtered: resolvers[filter]
+    controller: ["$scope", "menu", "filtered", ($scope, menu, filtered) ->
+      $scope.plunks = filtered
+      $scope.filters = filters
+      $scope.activeFilter = filters[filter]
+      
+      menu.activate "plunks" unless options.skipActivate
+    ]
+  , options
 
 module.config ["$routeProvider", ($routeProvider) ->
-  $routeProvider.when "/", generateRouteHandler("trending")
+  $routeProvider.when "/", generateRouteHandler("trending", {templateUrl: "/partials/landing.html", skipActivate: true})
+  $routeProvider.when "/plunks", generateRouteHandler("trending")
   $routeProvider.when "/plunks/#{view}", generateRouteHandler(view) for view in ["trending", "popular", "recent"]
 ]
 
 module.run ["menu", (menu) ->
   menu.addItem "plunks",
     title: "Explore plunks"
-    href: "/"
+    href: "/plunks"
     'class': "icon-th"
     text: "Plunks"
 ]

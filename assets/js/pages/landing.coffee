@@ -1,4 +1,4 @@
-#= require ../../vendor/angular.js
+#= require ../../vendor/angular
 
 #= require ../controllers/explore
 #= require ../controllers/preview
