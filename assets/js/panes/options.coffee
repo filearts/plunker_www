@@ -12,7 +12,10 @@ module.run [ "panes", "settings", (panes, settings) ->
     icon: "cog"
     size: 328
     order: 1000
-    title: "Personalize the editor"
+    title: "Editor Options"
+    description: """
+      Customize the theme of the editor, indentation options and much more.
+    """
     template: """
       <div class="plunker-options">
         <form class="form-horizontal">

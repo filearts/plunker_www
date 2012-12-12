@@ -25,7 +25,10 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
     id: "preview"
     icon: "eye-open"
     order: 0
-    title: "Preview your work"
+    title: "Live Preview"
+    description: """
+      See a live preview of your code on the web in either a pane or as a pop-out window.
+    """
     size: "50%"
     template: """
       <div class="plunker-previewer" ng-class="{loading: loading}">
