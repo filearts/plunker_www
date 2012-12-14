@@ -1,4 +1,4 @@
 module.exports.middleware = (options = {}) ->
   (req, res, next) ->
-    res.header "Vary", "Accept-Encoding", "Cookie"
+    res.set "Vary", "Accept-Encoding, Cookie"
     next()
