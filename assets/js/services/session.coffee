@@ -146,7 +146,7 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
             content: buffer.content
         
         buffers
-      inFlightSaveTime = Date.now()
+      inFlightSavedAt = Date.now()
         
 
       if plunk = @plunk
@@ -179,16 +179,19 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
     
         for id, buffer of @buffers
           if prev_file = $$savedBuffers[id]
-            fileDelta = fileDeltas[prev_file.filename]
+            fileDelta = {}
     
             if buffer.filename != prev_file.filename
-               fileDelta.filename = buffer.filename
+              fileDelta.filename = buffer.filename
             if buffer.content != prev_file.content
-               fileDelta.content = buffer.content
-           else
-             fileDeltas[buffer.filename] =
-               filename: buffer.filename
-               content: buffer.content
+              fileDelta.content = buffer.content
+            
+            if fileDelta.filename or fileDelta.content
+              fileDeltas[prev_file.filename] = fileDelta
+          else
+            fileDeltas[buffer.filename] =
+              filename: buffer.filename
+              content: buffer.content
          
         for fn, chg of fileDeltas
           delta.files = fileDeltas
