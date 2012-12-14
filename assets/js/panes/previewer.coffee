@@ -61,6 +61,7 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
       $scope.windowed = false
       $scope.refreshQueued = false
       $scope.previewId = ""
+      $scope.settings = settings
       
       $scope.refreshPreview = ->
         dfd = $q.defer()
@@ -94,7 +95,7 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
         debouncedRefreshPreview = debounce ->
           if pane.active then $scope.refreshPreview()
           else $scope.refreshQueued = true
-        , delay
+        , delay || 400
         
       $scope.$watch "session.updated_at", ->
         debouncedRefreshPreview() if settings.previewer.auto_refresh
