@@ -9,7 +9,7 @@ module.requires.push "plunker.settings"
 
 module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, url, panes, session, settings) ->
 
-  debounce = (threshold, func, execAsap) ->
+  debounce = (func, threshold, execAsap) ->
     timeout = false
     
     return debounced = ->
@@ -91,9 +91,10 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
         return $scope.promise = dfd.promise
       
       $scope.$watch "settings.previewer.delay", (delay) ->
-        debouncedRefreshPreview = debounce delay, ->
+        debouncedRefreshPreview = debounce ->
           if pane.active then $scope.refreshPreview()
           else $scope.refreshQueued = true
+        , delay
         
       $scope.$watch "session.updated_at", ->
         debouncedRefreshPreview() if settings.previewer.auto_refresh
