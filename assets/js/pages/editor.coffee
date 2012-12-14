@@ -29,21 +29,46 @@ module.config ["$routeProvider", ($routeProvider) ->
   $routeProvider.when "/:source",
     template: "<div></div>"
     reloadOnSearch: false
-    resolve: 
+    resolve:
+      dirtyCheck: ["$q", "notifier", "session", ($q, notifier, session) ->
+        dfd = $q.defer()
+        
+        if session.isDirty() then notifier.confirm "You have unsaved changes. This action will reset your plunk. Are you sure you would like to proceed?",
+          confirm: -> dfd.resolve()
+          deny: -> dfd.reject()
+        else dfd.resolve()
+        
+        dfd.promise
+      ]
       source: ["$route", "importer", "session", "notifier", ($route, importer, session, notifier) ->
         if source = $route.current.params.source
           unless source and source is session.getEditPath()
             importer.import(source).then (json) ->
               json.source = source
-              session.reset(json)
+              json
             , (error) ->
               notifier.error "Import error", error
-        else
-          session.reset()
+        else {}
       ]
-    controller: [ "$scope", "$location", "session", ($scope, $location, session) ->
+    controller: [ "$rootScope", "$scope", "$location", "$browser", "$timeout", "$route", "session", "source", ($rootScope, $scope, $location, $browser, $timeout, $route, session, source) ->
+      session.reset(source)
+      
       $scope.$watch ( -> session.getEditPath()), (path) ->
         $location.path("/#{path}")
+        
+      lastValidUrl = $location.absUrl()
+      lastValidRoute = $route.current
+
+      $rootScope.$on "$routeChangeError", (curr, prev) ->
+        $route.current = lastValidRoute
+        $location.$$parse lastValidUrl
+        $browser.url lastValidUrl, true
+        
+        window.history.back()
+        
+      $rootScope.$on "$routeChangeSuccess", (curr, prev) ->
+        lastValidUrl = $location.absUrl()
+        lastValidRoute = $route.current
     ]
 ]
 

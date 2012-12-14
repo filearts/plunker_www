@@ -6,7 +6,7 @@ module = angular.module "plunker.session", [
   "plunker.notifier"
 ]
 
-module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) ->
+module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeout, plunks, notifier) ->
 
   genid = (len = 16, prefix = "", keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") ->
     prefix += keyspace.charAt(Math.floor(Math.random() * keyspace.length)) while len-- > 0
@@ -42,7 +42,15 @@ module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) -
       @buffers = {}
   
       @reset()
+      
+      window.onbeforeunload = =>
+        if @isDirty() then "You have unsaved work on this Plunk."
     
+    isDirty: ->
+      if @updated_at <= @reset_at then false
+      else if @saved_at is null then true
+      else if @saved_at < @updated_at then true
+      else false
   
     getActiveBuffer: ->
       throw new Error("Attempting return the active buffer while the Session is out of sync") unless $$history.length
@@ -95,6 +103,11 @@ module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) -
       @activateBuffer("index.html") if @getBufferByFilename("index.html")
 
       @updated_at = Date.now()
+      @reset_at = Date.now() + 36000 # Far in future to make sure isDirty is false until next tick
+      @saved_at = null
+      
+      # Update @reset_at to next tick value to capture subsequent change events in setting initial value
+      $timeout => @reset_at = Date.now()
 
       @
   
@@ -133,6 +146,7 @@ module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) -
             content: buffer.content
         
         buffers
+      inFlightSaveTime = Date.now()
         
 
       if plunk = @plunk
@@ -183,6 +197,7 @@ module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) -
         $$asyncOp.call @, "save", (dfd) ->
           plunk.save(delta).then (plunk) ->
             $$savedBuffers = inFlightBuffers
+            self.saved_at = inFlightSavedAt
             notifier.success "Plunk updated"
             dfd.resolve(self)
           , (err) ->
@@ -200,6 +215,7 @@ module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) -
         $$asyncOp.call @, "save", (dfd) ->
           plunk.save(delta).then (plunk) ->
             self.plunk = plunk
+            self.saved_at = inFlightSavedAt
             $$savedBuffers = inFlightBuffers
             notifier.success "Plunk created"
             dfd.resolve(self)
@@ -226,10 +242,12 @@ module.service "session", [ "$q", "plunks", "notifier", ($q, plunks, notifier) -
           buffers[id] =
             filename: buffer.filename
             content: buffer.content
+      inFlightSavedAt = Date.now()
       
       $$asyncOp.call @, "fork", (dfd) ->
         plunks.fork(self.plunk, json).then (plunk) ->
           self.plunk = plunk
+          self.saved_at = inFlightSavedAt
           $$savedBuffers = inFlightBuffers
   
           dfd.resolve(self)

@@ -26,6 +26,8 @@ module.factory "notifier", [ "$rootScope", ($rootScope) ->
   
   for method in methods then do (method) ->
     notifier[method] = (title, text, options = {}) ->
+      dfd = null
+      
       switch arguments.length
         when 3
           options.title = title
@@ -73,6 +75,6 @@ module.factory "notifier", [ "$rootScope", ($rootScope) ->
 
       
       noty(options)
-  
+      
   notifier
 ]
