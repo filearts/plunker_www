@@ -108,6 +108,29 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", ($http
         
         self
     
+    star: (starred = !@thumbed, options = {}) ->
+      self = @
+      
+      throw new Error("Impossible to star a plunk when not logged in") unless visitor.logged_in
+      
+      options.params ||= {}
+      options.params.sessid = visitor.session.id
+      
+      success = (res) ->
+        self.thumbs = res.data.thumbs
+        self.score = res.data.score
+        self.thumbed = starred
+        
+        self.$$refreshing = null
+        self.$$refreshed_at = new Date()
+        
+        self
+      
+      if starred
+        self.$$refreshing ||= $http.post("#{url.api}/plunks/#{@id}/thumb", {}, options).then(success)
+      else
+        self.$$refreshing ||= $http.delete("#{url.api}/plunks/#{@id}/thumb", options).then(success)
+    
     save: (delta = {}, options = {}) ->
       self = @
       

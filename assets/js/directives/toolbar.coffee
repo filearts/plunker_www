@@ -83,4 +83,7 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
     
     $scope.triggerDownload = ->
       downloader.download session.toJSON(), if session.plunk?.id then "plunk-#{session.plunk.id}.zip" else "plunk.zip"
+    
+    $scope.toggleFavorite = ->
+      if session.plunk then session.plunk.star()
 ]

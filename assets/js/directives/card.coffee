@@ -14,7 +14,7 @@ module = angular.module "plunker.card", [
   "plunker.taglist"
 ]
 
-module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", ($timeout, $compile, quickview) ->
+module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", "visitor", ($timeout, $compile, quickview, visitor) ->
   restrict: "EAC"
   scope:
     plunk: "="
@@ -22,9 +22,11 @@ module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", ($timeout
     <div class="plunk" ng-class="{starred: plunk.thumbed, owned: plunk.token}">
       <div class="card">
         <ul class="operations">
-          <li><a class="btn" ng-href="/edit/{{plunk.id}}"><i class="icon-edit"></i> Edit</a></li>
-          <li><a class="btn" ng-click="showQuickView(plunk, $event)"><i class="icon-eye-open"></i> Quick View</a></li>
-          <li><a class="btn" ng-href="/{{plunk.id}}"><i class="icon-play"></i> View Details</a></li>
+          <li><a class="btn" title="Edit this Plunk" ng-href="/edit/{{plunk.id}}"><i class="icon-edit"></i></a></li>
+          <li><a class="btn" title="View this Plunk in an overlay" ng-click="showQuickView(plunk, $event)"><i class="icon-play"></i></a></li>
+          <li><a class="btn" title="View the detailed information about this Plunk" ng-href="/{{plunk.id}}"><i class="icon-info-sign"></i></a></li>
+          <li ng-show="visitor.logged_in && plunk.thumbed"><button title="Unstar this Plunk" class="btn starred" ng-click="plunk.star()"><i class="icon-star"></i></button></li>
+          <li ng-show="visitor.logged_in && !plunk.thumbed"><button title="Star this Plunk" class="btn" ng-click="plunk.star()"><i class="icon-star"></i></button></li>
         </ul>
         <h4 title="{{plunk.description}}">{{plunk.description}}</h4>
         <img ng-src="http://immediatenet.com/t/l3?Size=1024x768&URL={{plunk.raw_url}}?_={{plunk.updated_at | date:'yyyy-MM-ddTHH:mm:ssZ'}}" />
@@ -46,6 +48,8 @@ module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", ($timeout
     </div>
   """
   link: ($scope, $el, attrs) ->
+    $scope.visitor = visitor
+    
     $scope.$watch "plunk.updated_at", ->
       $timeout -> $("abbr.timeago", $el).timeago()
       

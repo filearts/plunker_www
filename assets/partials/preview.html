@@ -15,6 +15,13 @@
             Launch Fullscreen
           </a>
         </li>
+        <li ng-show="visitor.logged_in">
+          <button class="btn" ng-click="plunk.star()" ng-class="{starred: plunk.thumbed}">
+            <i class="icon-star"></i>
+            <span ng-show="plunk.thumbed">Unstar</span>
+            <span ng-hide="plunk.thumbed">Star</span>
+          </button>
+        </li>
       </ul>
       <div class="frame">
         <iframe frameborder="0" width="100%" height="100%" ng-src="{{plunk.raw_url}}"></iframe>

@@ -1,11 +1,19 @@
 #= require ../services/plunks
+#= require ../services/visitor
 
 #= require ../directives/gallery
 #= require ../directives/overlay
 #= require ../directives/plunkinfo
 #= require ../directives/timeago
 
-module = angular.module("plunker.preview", ["plunker.plunks", "plunker.gallery", "plunker.overlay", "plunker.plunkinfo", "plunker.timeago"])
+module = angular.module "plunker.preview", [
+  "plunker.plunks"
+  "plunker.visitor"
+  "plunker.gallery"
+  "plunker.overlay"
+  "plunker.plunkinfo"
+  "plunker.timeago"
+]
 
 
 module.config ["$routeProvider", ($routeProvider) ->
@@ -14,11 +22,11 @@ module.config ["$routeProvider", ($routeProvider) ->
     resolve:
       plunk: ["$route", "plunks", ($route, plunks) ->
         plunk = plunks.findOrCreate(id: $route.current.params.plunk_id)
-        plunk.refresh()
+        plunk.refresh() unless plunk.$$refreshed_at
       ]
       
-    controller: ["$scope", "$routeParams", "plunks", ($scope, $routeParams, plunks) ->
-      $scope.plunk = plunks.findOrCreate(id: $routeParams.plunk_id)
-      
+    controller: ["$scope", "$routeParams", "visitor", "plunk", ($scope, $routeParams, visitor, plunk) ->
+      $scope.plunk = plunk
+      $scope.visitor = visitor
     ]
 ]
