@@ -38,6 +38,7 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
   
       @description = ""
       @tags = []
+      @private = true
   
       @buffers = {}
   
@@ -45,6 +46,9 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
       
       window.onbeforeunload = =>
         if @isDirty() then "You have unsaved work on this Plunk."
+    
+    isSaved: -> !!@plunk and @plunk.isSaved()
+    isWritable: -> !!@plunk and @plunk.isWritable()
     
     isDirty: ->
       if @updated_at <= @reset_at then false
@@ -65,12 +69,15 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
   
       return
       
-    getEditPath: -> @plunk?.id or @source or ""
+    getEditPath: ->
+      if @plunk then @plunk.id or ""
+      else @source or ""
   
     toJSON: ->
       json =
         description: @description
         tags: @tags
+        'private': @private
         files: {}
   
       for buffId, buffer of @buffers
@@ -91,6 +98,7 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
   
       @description = options.description or ""
       @tags = options.tags or []
+      @private = !!options.private
   
       angular.copy {}, @buffers
   
@@ -129,7 +137,7 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
             Open failed: #{err}
           """.trim()        
   
-    save: ->
+    save: (options = {}) ->
       if @plunk and not @plunk.isWritable() then return notifier.warning """
         Save cancelled: You do not have permission to change this plunk.
       """.trim()
@@ -196,6 +204,8 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
         for fn, chg of fileDeltas
           delta.files = fileDeltas
           break
+          
+        delta = angular.extend delta, options
 
         $$asyncOp.call @, "save", (dfd) ->
           plunk.save(delta).then (plunk) ->
@@ -215,11 +225,13 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
         delta = @toJSON()
         plunk = plunks.findOrCreate()
 
+        delta = angular.extend delta, options
+
         $$asyncOp.call @, "save", (dfd) ->
           plunk.save(delta).then (plunk) ->
-            self.plunk = plunk
             self.saved_at = inFlightSavedAt
             $$savedBuffers = inFlightBuffers
+            self.plunk = plunk
             notifier.success "Plunk created"
             dfd.resolve(self)
           , (err) ->
@@ -229,12 +241,12 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
             """.trim()
 
   
-    fork: ->
+    fork: (options = {}) ->
       unless @plunk?.isSaved() then return notifier.warning """
         Fork cancelled: You cannot fork a plunk that does not exist.
       """.trim()
   
-      json = @toJSON()
+      json = angular.extend @toJSON(), options
       self = @
       
       lastSavedBuffers = angular.copy($$savedBuffers)

@@ -47,7 +47,8 @@ module.service "importer", [ "$q", "$http", "plunks", ($q, $http, plunks) ->
         if response.data.meta.status >= 400 then deferred.reject("Gist not found")
         else
           gist = response.data.data
-          json = {}
+          json = 
+            'private': true
           
           if manifest = gist.files["plunker.json"]
             try

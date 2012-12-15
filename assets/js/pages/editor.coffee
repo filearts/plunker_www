@@ -51,10 +51,10 @@ module.config ["$routeProvider", ($routeProvider) ->
         else {}
       ]
     controller: [ "$rootScope", "$scope", "$location", "$browser", "$timeout", "$route", "session", "source", ($rootScope, $scope, $location, $browser, $timeout, $route, session, source) ->
-      session.reset(source)
+      session.reset(source) if source?
       
       $scope.$watch ( -> session.getEditPath()), (path) ->
-        $location.path("/#{path}")
+        $location.path("/#{path}").replace()
         
       lastValidUrl = $location.absUrl()
       lastValidRoute = $route.current

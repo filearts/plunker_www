@@ -7,7 +7,6 @@ module.directive "plunkerInlinePlunk", [ "$rootScope", "quickview", ($rootScope,
   scope:
     plunk: "="
   transclude: true
-  replace: true
   template: """
     <span class="inline-plunk" ng-class="{owned: plunk.isOwned()}">
       <a ng-href="{{plunk.id}}" ng-click="showQuickView(plunk, $event)" ng-transclude>

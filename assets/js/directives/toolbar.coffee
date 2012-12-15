@@ -18,8 +18,13 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
       <div class="btn-group" ng-show="!session.plunk || session.plunk.isWritable()">
         <button ng-click="session.save()" title="Save your work as a new Plunk" class="btn btn-primary"><i class="icon-save"></i><span class="shrink"> Save</span></button>
       </div>
-      <div class="btn-group" ng-show="session.plunk">
-        <button ng-click="session.fork()" title="Save your work as a fork of the original Plunk" class="btn"><i class="icon-git-fork"></i><span class="shrink"> Fork</span></button>
+      <div class="btn-group" ng-show="session.isSaved()">
+        <button ng-click="session.fork()" title="Save your changes as a fork of this Plunk" class="btn"><i class="icon-git-fork"></i><span class="shrink"> Fork</span></button>
+        <button data-toggle="dropdown" class="btn dropdown-toggle"><span class="caret"></span></button>
+        <ul class="dropdown-menu" ng-switch on="session.private">
+          <li ng-switch-when="false"><a ng-click="session.fork({private: true})">Fork to private plunk</a></li>
+          <li ng-switch-when="true"><a ng-click="session.fork({private: false})">Fork to public plunk</a></li>
+        </ul>
       </div>
       <div ng-show="session.plunk.isWritable() && session.plunk.isSaved()" class="btn-group">
         <button ng-click="promptDestroy()" title="Delete the current plunk" class="btn btn-danger"><i class="icon-trash"></i></button>
@@ -60,6 +65,11 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
       <div class="btn-group">
         <button ng-click="triggerDownload()" class="btn" title="Save your work as a zip file">
           <i class="icon-download-alt" />
+        </button>
+      </div>
+      <div class="btn-group" ng-show="session.isSaved()">
+        <button ng-click="toggleFavorite()" class="btn" ng-class="{starred: session.plunk.thumbed, 'btn-inverse': session.plunk.thumbed}" title="Save this Plunk in your favorites">
+          <i class="icon-star" />
         </button>
       </div>
     </div>

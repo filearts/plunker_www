@@ -7,7 +7,7 @@ module.directive "plunkerInlineUser", [ "$rootScope", ($rootScope) ->
   replace: true
   template: """
     <span class="inline-user" ng-class="{registered: !!user}" ng-switch on="!!user">
-      <a ng-href="users/{{user.login}}" ng-switch-when="true">
+      <a ng-href="/users/{{user.login}}" ng-switch-when="true">
         <img class="gravatar" ng-src="http://www.gravatar.com/avatar/{{user.gravatar_id}}?s=18&amp;d=mm">
         {{user.login}}
       </a>

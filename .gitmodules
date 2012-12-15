@@ -28,3 +28,6 @@
 [submodule "assets/vendor/flatstrap"]
 	path = assets/vendor/flatstrap
 	url = git://github.com/littlesparkvt/flatstrap.git
+[submodule "assets/vendor/select2"]
+	path = assets/vendor/select2
+	url = git://github.com/ivaynberg/select2.git
