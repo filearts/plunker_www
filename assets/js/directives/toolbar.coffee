@@ -16,7 +16,7 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
   template: """
     <div class="plunker-toolbar btn-toolbar">
       <div class="btn-group" ng-show="!session.plunk || session.plunk.isWritable()">
-        <button ng-click="session.save()" title="Save your work as a new Plunk" class="btn btn-primary"><i class="icon-save"></i><span class="shrink"> Save</span></button>
+        <button ng-disabled="!session.isDirty()" ng-click="session.save()" title="Save your work as a new Plunk" class="btn btn-primary"><i class="icon-save"></i><span class="shrink"> Save</span></button>
       </div>
       <div class="btn-group" ng-show="session.isSaved()">
         <button ng-click="session.fork()" title="Save your changes as a fork of this Plunk" class="btn"><i class="icon-git-fork"></i><span class="shrink"> Fork</span></button>
