@@ -1,23 +1,37 @@
 #= require ../services/url
 #= require ../services/visitor
+#= require ../services/instantiator
+#= require ../services/users
 
-module = angular.module "plunker.plunks", ["plunker.url", "plunker.visitor"]
+
+module = angular.module "plunker.plunks", [
+  "plunker.url"
+  "plunker.visitor"
+  "plunker.instantiator"
+  "plunker.users"
+]
 
 
-module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", ($http, $rootScope, $q, url, visitor) ->
+module.run ["instantiator", "plunks", (instantiator, plunks) ->
+  instantiator.register "plunks", plunks.findOrCreate
+]
+
+module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "instantiator", ($http, $rootScope, $q, url, visitor, instantiator) ->
   $$plunks = {}
   $$feeds = {}
   
-  $$findOrCreate = (json = {}, options = {upsert: false}) ->
+  $$findOrCreate = (json = {}, options = {}) ->
     if json.id
       unless $$plunks[json.id]
         $$plunks[json.id] = new Plunk(json)
       
       plunk = $$plunks[json.id]
       
-      angular.extend(plunk, json) if options.upsert
+      angular.extend(plunk, json)
     else
       plunk = new Plunk(json)
+    
+    plunk.user = instantiator.findOrCreate("users", json.user) if json.user
     
     return plunk
   
@@ -179,6 +193,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", ($http
     query: (options = {}) ->
       results = []
       links = {}
+      options = angular.copy(options)
       
       options.params ||= {}
       options.params.sessid = visitor.session.id

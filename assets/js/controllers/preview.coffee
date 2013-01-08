@@ -23,6 +23,7 @@ module.config ["$routeProvider", ($routeProvider) ->
       plunk: ["$route", "plunks", ($route, plunks) ->
         plunk = plunks.findOrCreate(id: $route.current.params.plunk_id)
         plunk.refresh() unless plunk.$$refreshed_at
+        plunk
       ]
       
     controller: ["$scope", "$routeParams", "visitor", "plunk", ($scope, $routeParams, visitor, plunk) ->

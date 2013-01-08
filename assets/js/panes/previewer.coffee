@@ -30,7 +30,7 @@ module.run [ "$q", "$http", "url", "panes", "session", "settings", ($q, $http, u
   panes.add
     id: "preview"
     icon: "eye-open"
-    order: 0
+    order: 1
     title: "Live Preview"
     description: """
       See a live preview of your code on the web in either a pane or as a pop-out window.

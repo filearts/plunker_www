@@ -72,8 +72,9 @@ module.run [ "panes", "annotations", "session", "cursor", (panes, annotations, s
       , true
       
       $scope.moveCursorTo = (filename, row, column) ->
-        cursor.filename = filename
-        cursor.position.row = row
-        cursor.position.column = column
+        if buffer = session.getBufferByFilename(filename)
+          cursor.buffer = buffer.id
+          cursor.position.row = row
+          cursor.position.column = column
       
 ]

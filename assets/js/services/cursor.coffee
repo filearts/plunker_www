@@ -1,9 +1,13 @@
-module = angular.module "plunker.cursor", []
+#= require ../services/activity
 
-module.service "cursor", [ () ->
+module = angular.module "plunker.cursor", [
+  "plunker.activity"
+]
+
+module.service "cursor", [ "$rootScope", "activity", "visitor", ($rootScope, activity, visitor) ->
   new class Cursor
     constructor: ->
-      @filename = ""
+      @buffer = ""
       @position =
         row: 0
         column: 0

@@ -1,12 +1,14 @@
-#= require "../services/plunks"
-#= require "../services/notifier"
+#= require ../services/plunks
+#= require ../services/notifier
+#= require ../services/activity
 
 module = angular.module "plunker.session", [
   "plunker.plunks"
   "plunker.notifier"
+  "plunker.activity"
 ]
 
-module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeout, plunks, notifier) ->
+module.service "session", [ "$q", "$timeout", "plunks", "notifier", "activity", ($q, $timeout, plunks, notifier, activity) ->
 
   genid = (len = 16, prefix = "", keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") ->
     prefix += keyspace.charAt(Math.floor(Math.random() * keyspace.length)) while len-- > 0
@@ -51,7 +53,8 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
     isWritable: -> !!@plunk and @plunk.isWritable()
     
     isDirty: ->
-      if @updated_at <= @reset_at then false
+      if @plunk and (@description != @plunk.description or !angular.equals(@tags, @plunk.tags)) then true
+      else if @updated_at <= @reset_at then false
       else if @saved_at is null then true
       else if @saved_at < @updated_at then true
       else false
@@ -73,7 +76,7 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
       if @plunk then @plunk.id or ""
       else @source or ""
   
-    toJSON: ->
+    toJSON: (options = {}) ->
       json =
         description: @description
         tags: @tags
@@ -84,12 +87,15 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
         json.files[buffer.filename] =
           filename: buffer.filename
           content: buffer.content
+        json.files[buffer.filename].id = buffId if options.includeBufferId
   
       json
   
     reset: (options = {}) ->
       $$savedBuffers = {}
       $$history = []
+  
+      @resetting = true
   
       @plunk = null
       @plunk = plunks.findOrCreate(options.plunk) if options.plunk
@@ -104,7 +110,7 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
   
       $$history.length = 0
       
-      @addBuffer(file.filename, file.content) for filename, file of options.files if options.files
+      @addBuffer(file.filename, file.content, file) for filename, file of options.files if options.files
   
       @addBuffer("index.html", "") unless $$history.length
   
@@ -114,8 +120,13 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
       @reset_at = Date.now() + 36000 # Far in future to make sure isDirty is false until next tick
       @saved_at = null
       
+      activity.record "reset", [], @toJSON(includeBufferId: true)
+
+      
       # Update @reset_at to next tick value to capture subsequent change events in setting initial value
-      $timeout => @reset_at = Date.now()
+      $timeout =>
+        @reset_at = Date.now()
+        @resetting = false
 
       @
   
@@ -196,6 +207,8 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
             
             if fileDelta.filename or fileDelta.content
               fileDeltas[prev_file.filename] = fileDelta
+            else
+              delete fileDeltas[prev_file.filename]
           else
             fileDeltas[buffer.filename] =
               filename: buffer.filename
@@ -302,7 +315,7 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
         File not added: A file named '#{filename}' already exists.
       """.trim()
   
-      buffId = $$uid()
+      buffId = options.id or $$uid()
       
       @buffers[buffId] =
         id: buffId
@@ -310,6 +323,8 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
         content: content
   
       $$history.push(buffId)
+      
+      activity.record "files.add", ["files", buffId], angular.copy(@buffers[buffId]) unless @resetting
   
       @activateBuffer(filename) if options.activate is true
   
@@ -325,6 +340,8 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
   
       $$history.splice(idx, 1)
       delete @buffers[buffer.id]
+      
+      activity.record "files.remove", ["files", buffer.id], angular.copy(buffer) unless @resetting
   
       @
   
@@ -349,6 +366,8 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", ($q, $timeou
       """.trim()
   
       buffer.filename = new_filename
+      
+      activity.record "files.rename", ["files", buffer.id, "filename"], filename, new_filename unless @resetting
       
       @updated_at = Date.now()
   

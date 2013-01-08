@@ -69,7 +69,7 @@ module.directive "plunkerTagger", ->
       options.push(id: tag, text: tag) for tag in modelValue
       options
 
-module.directive "plunkerSidebar", [ "session", (session) ->
+module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) ->
   restrict: "E"
   replace: true
   template: """
@@ -80,6 +80,9 @@ module.directive "plunkerSidebar", [ "session", (session) ->
           <plunker-sidebar-file buffer="buffer" ng-repeat="(id, buffer) in session.buffers | orderBy:'filename'">
             <a ng-click="session.activateBuffer(buffer.filename)">{{buffer.filename}}</a>
           </plunker-sidebar-file>
+          <li class="newfile">
+            <a ng-click="promptFileAdd()"><i class="icon-file"></i> New file</a>
+          </li>
         </ul>
       </details>
       <details open>
@@ -115,4 +118,7 @@ module.directive "plunkerSidebar", [ "session", (session) ->
   """
   link: ($scope, $el, attrs) ->
     $scope.session = session
+    $scope.promptFileAdd = ->
+      notifier.prompt "New filename", "",
+        confirm: (filename) -> session.addBuffer(filename, "", activate: true)
 ]

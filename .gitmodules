@@ -31,3 +31,9 @@
 [submodule "assets/vendor/select2"]
 	path = assets/vendor/select2
 	url = git://github.com/ivaynberg/select2.git
+[submodule "assets/vendor/masonry"]
+	path = assets/vendor/masonry
+	url = git://github.com/desandro/masonry.git
+[submodule "assets/vendor/URL"]
+	path = assets/vendor/URL
+	url = git://github.com/stevoland/URL.js.git

@@ -1,8 +1,10 @@
+#= require ../../vendor/masonry/jquery.masonry
+
 #= require ../directives/card
 
 module = angular.module "plunker.gallery", ["plunker.card"]
 
-module.directive "plunkerGallery", ["$timeout", ($timeout) ->
+module.directive "plunkerGallery", ["$timeout", "$location", ($timeout, $location) ->
   restrict: "E"
   replace: true
   scope:
@@ -17,11 +19,21 @@ module.directive "plunkerGallery", ["$timeout", ($timeout) ->
   link: ($scope, $el, attrs) ->
     nextRefresh = null
     
+    $gallery = $(".gallery", $el)
+    
     (refreshInterval = ->
-      $scope.plunks.refresh() if nextRefresh
+      if nextRefresh
+        $scope.plunks.refresh()  
+        $timeout.cancel(nextRefresh)
       
       nextRefresh = $timeout refreshInterval, 60 * 1000
     )()
+    
+    $gallery.masonry columnWidth: 300
+    
+    
+    $scope.$watch "plunks.$$refreshed_at", ->
+      $timeout -> $gallery.masonry "reload"
     
     $scope.$on "$destroy", -> $timeout.cancel(nextRefresh)
 ]

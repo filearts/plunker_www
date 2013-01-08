@@ -58,7 +58,7 @@
     <h1>See what users have been creating</h1>
   </div>
   
-  <plunker-pager class="pull-right" collection="plunks"></plunker-pager>
+  <plunker-pager class="pull-right" path="/plunks/" collection="plunks"></plunker-pager>
   
   <ul class="nav nav-pills pull-left">
     <li ng-repeat="(name, filter) in filters | orderBy:'text':true" ng-class="{active: filter == activeFilter}">
@@ -72,5 +72,5 @@
     </div>
   </div>
 
-  <plunker-pager class="pagination-right" collection="plunks"></plunker-pager>
+  <plunker-pager class="pagination-right" path="/plunks/" collection="plunks"></plunker-pager>
 </div>

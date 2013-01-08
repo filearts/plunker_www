@@ -30,14 +30,14 @@ filters =
     order: "a"
 
 resolvers =
-  trending: [ "url", "plunks", (url, plunks) ->
-    plunks.query(url: "#{url.api}/plunks/trending").$$refreshing
+  trending: ["$location", "url", "plunks", ($location, url, plunks) ->
+    plunks.query(url: "#{url.api}/plunks/trending", params: $location.search()).$$refreshing
   ]
-  popular: [ "url", "plunks", (url, plunks) ->
-    plunks.query(url: "#{url.api}/plunks/popular").$$refreshing
+  popular: ["$location", "url", "plunks", ($location, url, plunks) ->
+    plunks.query(url: "#{url.api}/plunks/popular", params: $location.search()).$$refreshing
   ]
-  recent: [ "url", "plunks", (url, plunks) ->
-    plunks.query(url: "#{url.api}/plunks").$$refreshing
+  recent: ["$location", "url", "plunks", ($location, url, plunks) ->
+    plunks.query(url: "#{url.api}/plunks", params: $location.search()).$$refreshing
   ]
 
 generateRouteHandler = (filter, options = {}) ->
@@ -45,6 +45,7 @@ generateRouteHandler = (filter, options = {}) ->
     templateUrl: "/partials/explore.html"
     resolve:
       filtered: resolvers[filter]
+    reloadOnSearch: true
     controller: ["$scope", "menu", "filtered", ($scope, menu, filtered) ->
       $scope.plunks = filtered
       $scope.filters = filters

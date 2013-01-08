@@ -3,6 +3,7 @@
 #= require ../controllers/explore
 #= require ../controllers/preview
 #= require ../controllers/editor
+#= require ../controllers/profile
 #= require ../controllers/notfound
 
 #= require ../services/menu
@@ -13,6 +14,7 @@
 module = angular.module "plunker.landing", [
   "plunker.explore"
   "plunker.preview"
+  "plunker.profile"
   "plunker.editorPage"
   "plunker.notfound"
   "plunker.menu"
