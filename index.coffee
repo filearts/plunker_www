@@ -9,6 +9,9 @@ request = require("request")
 sharejs = require("share")
 lactate = require("lactate")
 path = require("path")
+xmlbuilder = require("xmlbuilder")
+es = require("event-stream")
+JSONStream = require("JSONStream")
 
 pkginfo = require("./package.json")
 
@@ -31,7 +34,7 @@ lactateOptions =
   
 assetOptions =
   src: "#{__dirname}/assets"
-  buildDir: "assets/build"
+  buildDir: "build"
   buildFilenamer: (filename) ->
     dir = path.dirname(filename)
     ext = path.extname(filename)
@@ -130,6 +133,34 @@ authom.on "error", (req, res, data) ->
   res.render "auth/error", auth: data
   
 # /////////////////////////////////
+
+apiUrl = nconf.get("url:api")
+wwwUrl = nconf.get("url:www")
+
+app.get "/sitemap.xml", (req, res) ->
+  outstanding = 0
+  
+  urlset = xmlbuilder.create "urlset",
+    version: "1.0"
+    encoding: "UTF-8"
+  
+  urlset.attribute "xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9"
+  
+  finalize = ->
+    res.set('Content-Type', 'application/xml')
+    res.send(urlset.end())
+  
+  complete = -> finalize() unless --outstanding > 0
+  
+  outstanding++
+  plunks = request("#{apiUrl}/plunks").pipe(JSONStream.parse([true])).pipe es.mapSync (plunk) ->
+    url = urlset.ele("url")
+    url.ele("loc").text("#{wwwUrl}/#{plunk.id}").up()
+    url.ele("lastmod").text(plunk.updated_at).up()
+    url.ele("changefreq").text("daily").up()
+    url.up()
+  
+  plunks.on "end", complete
 
 app.get "/*", (req, res) ->
   res.render "landing"
