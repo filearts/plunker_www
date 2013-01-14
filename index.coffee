@@ -153,7 +153,7 @@ app.get "/sitemap.xml", (req, res) ->
   complete = -> finalize() unless --outstanding > 0
   
   outstanding++
-  plunks = request("#{apiUrl}/plunks").pipe(JSONStream.parse([true])).pipe es.mapSync (plunk) ->
+  plunks = request("#{apiUrl}/plunks?pp=40000").pipe(JSONStream.parse([true])).pipe es.mapSync (plunk) ->
     url = urlset.ele("url")
     url.ele("loc").text("#{wwwUrl}/#{plunk.id}").up()
     url.ele("lastmod").text(plunk.updated_at).up()
@@ -161,6 +161,29 @@ app.get "/sitemap.xml", (req, res) ->
     url.up()
   
   plunks.on "end", complete
+  
+
+apiUrl = nconf.get("url:api")
+  
+
+app.get "/plunks", (req, res) -> res.render "landing"
+app.get "/plunks/trending", (req, res) -> res.render "landing"
+app.get "/plunks/popular", (req, res) -> res.render "landing"
+app.get "/plunks/recent", (req, res) -> res.render "landing"
+
+app.get "/users", (req, res) -> res.render "landing"
+app.get "/users/:username", (req, res) -> res.render "landing"
+
+app.get "/tags", (req, res) -> res.render "landing"
+app.get "/tags/:tagname", (req, res) -> res.render "landing"
+
+app.get "/:id", (req, res) ->
+  request.get "#{apiUrl}/plunks/#{req.params.id}", (err, response, body) ->
+    return res.send(500) if err
+    return res.send(response.statusCode) if response.statusCode >= 400
+    
+    res.locals.bootstrap = body.replace(/<\//g,"<\\/")
+    res.render "landing"
 
 app.get "/*", (req, res) ->
   res.render "landing"
