@@ -10953,6 +10953,7 @@ var inputType = {
       </doc:example>
    */
   'number': numberInputType,
+  'range': numberInputType,
 
 
   /**

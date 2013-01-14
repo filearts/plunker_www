@@ -91,26 +91,27 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", "activity", 
   
       json
   
-    reset: (options = {}) ->
+    reset: (json = {}, options = {}) ->
       $$savedBuffers = {}
       $$history = []
   
       @resetting = true
+      
+      unless options.soft
+        @plunk = null
+        @plunk = plunks.findOrCreate(json.plunk) if json.plunk
   
-      @plunk = null
-      @plunk = plunks.findOrCreate(options.plunk) if options.plunk
+        @source = json.source or ""
   
-      @source = options.source or ""
-  
-      @description = options.description or ""
-      @tags = options.tags or []
-      @private = !!options.private
+      @description = json.description or ""
+      @tags = json.tags or []
+      @private = !!json.private
   
       angular.copy {}, @buffers
   
       $$history.length = 0
       
-      @addBuffer(file.filename, file.content, file) for filename, file of options.files if options.files
+      @addBuffer(file.filename, file.content, file) for filename, file of json.files if json.files
   
       @addBuffer("index.html", "") unless $$history.length
   

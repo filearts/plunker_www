@@ -1,15 +1,17 @@
 #= require ../services/visitor
 #= require ../services/session
 #= require ../services/downloader
+#= require ../services/panes
 
 module = angular.module "plunker.toolbar", [
   "plunker.visitor"
   "plunker.session"
   "plunker.downloader"
   "plunker.notifier"
+  "plunker.panes"
 ]
 
-module.directive "plunkerToolbar", ["$location", "session", "downloader", "notifier", ($location, session, downloader, notifier) ->
+module.directive "plunkerToolbar", ["$location", "session", "downloader", "notifier", "panes", ($location, session, downloader, notifier, panes) ->
   restrict: "E"
   scope: {}
   replace: true
@@ -68,14 +70,27 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
         </button>
       </div>
       <div class="btn-group" ng-show="session.isSaved()">
-        <button ng-click="toggleFavorite()" class="btn" ng-class="{starred: session.plunk.thumbed, 'btn-inverse': session.plunk.thumbed}" title="Save this Plunk in your favorites">
+        <button ng-click="toggleFavorite()" class="btn" ng-class="{starred: session.plunk.thumbed, 'active': session.plunk.thumbed}" title="Save this Plunk in your favorites">
           <i class="icon-star" />
+        </button>
+      </div>
+      <div class="btn-group">
+        <button ng-click="togglePreview()" class="btn btn-inverse" ng-class="{active: panes.active.id=='preview'}" title="Run this plunk" ng-switch on="panes.active.id=='preview'">
+          <div ng-switch-when="false">
+            <i class="icon-play" />
+            <span class="shrink">Run</span>
+          </div>
+          <div ng-switch-when="true">
+            <i class="icon-stop" />
+            <span class="shrink">Stop</span>
+          </div>
         </button>
       </div>
     </div>
   """
   link: ($scope, el, attrs) ->
     $scope.session = session
+    $scope.panes = panes
     
     $scope.promptDestroy = ->
       notifier.confirm "Confirm Deletion", "Are you sure that you would like to delete this plunk?",
@@ -86,4 +101,8 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
     
     $scope.toggleFavorite = ->
       if session.plunk then session.plunk.star()
+    
+    $scope.togglePreview = ->
+      previewer = panes.findById("preview")
+      panes.toggle(previewer)
 ]

@@ -82,7 +82,7 @@ module.directive "plunkerEditSession", [ "$timeout", "modes", "session", "settin
     $timeout -> initial = false
     
     updateModel = (fn) ->
-      unless initial then $scope.$apply(fn)
+      if !initial and !$scope.$root.$$phase then $scope.$apply(fn)
       else fn()
     
     model.$render = -> 
@@ -136,7 +136,10 @@ module.directive "plunkerEditSession", [ "$timeout", "modes", "session", "settin
 
     annotations[buffer.id] = []
     
+    console.log "Creating session", buffer.id, buffer
+    
     $scope.$on "$destroy", ->
+      console.log "Destroying session", buffer.id, buffer
       delete aceEditor.sessions[buffer.id]
       delete annotations[buffer.id]
       
@@ -160,6 +163,7 @@ module.directive "plunkerAce", [ "$timeout", "session", "settings", "activity", 
   """
   controller: class AceController
     constructor: ->
+      console.log "Creating ace controller"
       @sessions = {}
       @editor = null
 
@@ -211,7 +215,7 @@ module.directive "plunkerAce", [ "$timeout", "session", "settings", "activity", 
     
     # Read from the activity stream (handle events)
     activity.addHandler "reset", (path, options) ->
-      session.reset(options)
+      session.reset(options, soft: true)
 
     # Read from the activity stream (handle events)
     activity.addHandler "files.add", (path, buffer) ->
