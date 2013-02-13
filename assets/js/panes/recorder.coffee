@@ -2,70 +2,16 @@
 #= require ../services/activity
 #= require ../services/session
 
+
+#= require ../directives/player
+
 module = angular.module("plunker.panes")
 
 module.requires.push "plunker.activity"
 module.requires.push "plunker.session"
 module.requires.push "plunker.notifier"
+module.requires.push "plunker.player"
 
-
-module.directive "plunkerPlayer", [ "$timeout", "activity", ($timeout, activity) ->
-  restrict: "E"
-  replace: true
-  scope:
-    events: "="
-    final: "="
-    
-  template: """
-    <div class="plunker-player">
-      <div class="btn-toolbar">
-        <div class="btn-group">
-          <button class="btn btn-small" ng-click="seekStart()" title="Return to the start of the recorded session" ng-disabled="currentEvent==0"><i class="icon-fast-backward"></i></button>
-          <button class="btn btn-small" ng-click="addSpeed(-1)" title="Decrease the playback speed to {{speed - 1}}x" ng-disabled="!events.length || speed<=0"><i class="icon-backward"></i></button>
-          <button class="btn btn-small" ng-click="play()" ng-hide="playing" ng-disabled="currentEvent==events.length"><i class="icon-play"></i></button>
-          <button class="btn btn-small" ng-click="pause()" ng-show="playing"><i class="icon-pause"></i></button>
-          <button class="btn btn-small" ng-click="stepForward()" ng-disabled="playing || currentEvent==events.length"><i class="icon-step-forward"></i></button>
-          <button class="btn btn-small" ng-click="addSpeed(1)" ng-disabled="!events.length"><i class="icon-forward"></i></button>
-          <button class="btn btn-small" ng-click="seekEnd()" ng-disabled="currentEvent==events.length"><i class="icon-fast-forward"></i></button>
-        </div>
-      </div>
-    </div>
-  """
-  link: ($scope, $el, attrs) ->
-    nextEventPromise = null
-    
-    $scope.speed = 1
-    $scope.playing = false
-    
-    $scope.seekStart = ->
-      $scope.currentEvent = 0
-      $scope.stepForward = ->
-        if current = $scope.events[$scope.currentEvent]
-          $timeout ->
-            activity.play(current.type, current.path, current.args...)
-            $scope.currentEvent++
-            
-            if $scope.playing
-              if next = $scope.events[$scope.currentEvent]
-                nextEventPromise = $timeout($scope.stepForward, (next.time - current.time) / ($scope.speed or 1))
-              else
-                $scope.playing = false
-          , 0, false
-            
-    $scope.play = ->
-      $scope.playing = true
-      $scope.stepForward()
-      
-    $scope.pause = ->
-      $timeout.cancel(nextEventPromise) if nextEventPromise
-      $scope.playing = false
-    
-    $scope.addSpeed = (increment = 0) ->
-      $scope.speed = Math.max(1, $scope.speed + increment)
-      
-    $scope.seekStart()
-    
-]
 
 module.run [ "$timeout", "panes", "activity", "session", "notifier", ($timeout, panes, activity, session, notifier) ->
 
@@ -75,6 +21,7 @@ module.run [ "$timeout", "panes", "activity", "session", "notifier", ($timeout, 
     size: 328
     order: 400
     title: "Session Recorder"
+    hidden: true
     description: """
       Record all of your activities while you are working on your plunker and share them with other users.
     """
@@ -88,21 +35,19 @@ module.run [ "$timeout", "panes", "activity", "session", "notifier", ($timeout, 
           <i class="icon-stop"></i>
           Finish recording
         </button>
+        <button class="btn btn-primary" ng-click="promptSave()" ng-show="!recording && events.length">
+          <i class="icon-save"></i>
+          Save
+        </button>
         <button class="btn btn-danger" ng-click="promptReset()" ng-show="!recording && events.length">
           <i class="icon-eject"></i>
           Reset
         </button>
-        <plunker-player events="events"></plunker-player>
-        <ul>
-          <li ng-class="{active: $index==$parent.lastEvent}" ng-repeat="event in events">{{event.time}} - {{event.type}}</li>
-        </ul>
+        <plunker-player events="events" ng-show="events.length && !recording"></plunker-player>
       </div>
     """
     link: ($scope, $el, attrs) ->
       stopListening = null
-
-      $scope.recording = 0
-      $scope.events = []
       
       $scope.startRecording = ->
         $scope.recording = Date.now()
@@ -111,30 +56,32 @@ module.run [ "$timeout", "panes", "activity", "session", "notifier", ($timeout, 
         $scope.events.push
           time: 0
           type: "reset"
-          path: []
-          args: [session.toJSON(includeBufferId: true)]
+          event: session.toJSON(includeBufferId: true)
         
-        stopListening = activity.addWatcher (event, path, args...) ->
+        stopListening = activity.client("recorder").watch (type, event) ->
           $scope.events.push
             time: Date.now() - $scope.recording
-            type: event
-            path: path
-            args: args
+            type: type
+            event: event
       
       $scope.stopRecording = ->
         stopListening()
         
         $scope.recording = 0 # Kill the listener
-        $scope.lastEvent = -1
-        
         $scope.final = session.toJSON()
       
       $scope.reset = ->
         $scope.playing = 0
-        $scope.lastEvent = -1
         $scope.events = []
+        $scope.final = null
 
       $scope.promptReset = ->
         notifier.confirm "This will cause your session recording to be lost. Are you sure you would like to reset the recorder?",
           confirm: $scope.reset
+      
+      $scope.promptSave = ->
+        notifier.confirm "Are you sure that you would like to attach this recording to your Plunk?",
+          confirm: -> session.addBuffer "recording.json", JSON.stringify($scope.events)
+      
+      $scope.reset()
 ]

@@ -5,6 +5,8 @@ module.exports.middleware = (options = {}) ->
   
   apiUrl = nconf.get("url:api")
   
+  console.log "API Url", apiUrl
+  
   (req, res, next) ->
     fetchSession = (sessid) ->
       return createSession() unless sessid

@@ -30,6 +30,9 @@ module.service "modes", -> new class Modes
       html:
         title: "HTML"
         extensions: ["html", "htm"]
+      jade:
+        title: "Jade"
+        extensions: ["jade"]
       java:
         title: "Java"
         extensions: ["java"]
@@ -42,6 +45,9 @@ module.service "modes", -> new class Modes
       latex:
         title: "LaTeX"
         extensions: ["tex"]
+      less:
+        title: "Less"
+        extensions: ["less"]
       lua:
         title: "Lua"
         extensions: ["lua"]
@@ -87,6 +93,9 @@ module.service "modes", -> new class Modes
       textile:
         title: "Textile"
         extensions: ["textile"]
+      typescript:
+        title: "Typescript"
+        extensions: ["ts"]
       xml:
         title: "XML"
         extensions: ["xml"]

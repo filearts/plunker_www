@@ -2,23 +2,29 @@
 
 #= require ../controllers/explore
 #= require ../controllers/preview
+#= require ../controllers/users
+#= require ../controllers/tags
 #= require ../controllers/editor
 #= require ../controllers/profile
 #= require ../controllers/notfound
 
 #= require ../services/menu
+#= require ../services/plunks
 
 #= require ../directives/userpanel
 
 
 module = angular.module "plunker.landing", [
   "plunker.explore"
-  "plunker.preview"
+  "plunker.users"
+  "plunker.tags"
   "plunker.profile"
   "plunker.editorPage"
+  "plunker.preview"
   "plunker.notfound"
   "plunker.menu"
   "plunker.userpanel"
+  "plunker.plunks"
 ]
 
 
@@ -29,7 +35,13 @@ module.config ["$locationProvider", ($locationProvider) ->
 module.run ["$rootScope", "$location", "$window", "menu", ($rootScope, $location, $window, menu) ->
   $rootScope[k] = v for k, v of _plunker
   $rootScope.menu = menu
+]
+
+module.run ["plunks", (plunks) ->
   
+  if bootstrap = _plunker.bootstrap?.plunks
+    for json in bootstrap
+      plunks.findOrCreate(json).$$updated_at = Date.now()
 ]
 
 module.run ["$rootElement", ($rootElement) ->

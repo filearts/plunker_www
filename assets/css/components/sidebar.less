@@ -1,10 +1,18 @@
 @import "../../vendor/select2/select2.css";
 
 .plunker-sidebar {
-  position: absolute;
-  top: 0; bottom: 0; left: 0; right: 0;
+  //position: absolute;
+  //top: 0; bottom: 0; left: 0; right: 0;
+  min-height: 100%;
+  width: 100%;
+  overflow-x: hidden;
   background-color: #f5f5f5;
   font-size: 12px;
+  
+  .plunker-restorer {
+    margin-bottom: 8px;
+    padding: 8px 14px;
+  }
 
   details {
     margin-bottom: 6px;
@@ -47,6 +55,28 @@
     
     .file-ops {
       display: none;
+    }
+    .participants {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      float: right;
+      
+      margin-right: 8px;
+      vertical-align: middle;
+      line-height: 26px;
+      
+      li {
+        display: inline-block;
+        padding: 0;
+        -webkit-border-radius: 2px;
+        -moz-border-radius: 2px;
+        border-radius: 2px;
+        line-height: 8px;
+        width: 8px;
+        height: 8px;
+
+      }
     }
   }
   

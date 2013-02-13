@@ -11,7 +11,7 @@ pkginfo = require("./package.json")
 assets
   src: "#{__dirname}/assets"
   build: true
-  minify: true
+  minifyBuilds: false
   buildDir: "build"
   buildFilenamer: (filename) ->
     dir = path.dirname(filename)

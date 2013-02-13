@@ -5,7 +5,7 @@
 #= require ../services/settings
 #= require ../services/annotations
 #= require ../services/activity
-#= require ../services/guard
+#= require ../services/participants
 
 
 module = angular.module "plunker.ace", [
@@ -14,242 +14,359 @@ module = angular.module "plunker.ace", [
   "plunker.settings"
   "plunker.annotations"
   "plunker.activity"
-  "plunker.cursor"
-  "plunker.guard"
+  "plunker.participants"
 ]
 
+Editor = require("ace/editor").Editor
+Renderer = require("ace/virtual_renderer").VirtualRenderer
 
-module.directive "plunkerEditSession", [ "$timeout", "modes", "session", "settings", "annotations", "activity", ($timeout, modes, editsession, settings, annotations, activity) ->
-  EditSession = require("ace/edit_session").EditSession
-  UndoManager = require("ace/undomanager").UndoManager
-  Range = require("ace/range").Range
-  
-  
-  rangeToOffset = (doc, range) ->
-    lines = doc.getLines 0, range.start.row
-      
-    offset = 0
+EditSession = require("ace/edit_session").EditSession
+MultiSelect = require("ace/multi_select").MultiSelect
+UndoManager = require("ace/undomanager").UndoManager
+Range = require("ace/range").Range
 
-    for line, i in lines
-      if i < range.start.row then offset += line.length
-      else offset += range.start.column
 
-    # Add the row number to include newlines.
-    offset + range.start.row
+# Convert an ACE Range object row/col to an offset range
+
+rangeToOffset = (doc, range) ->
+  lines = doc.getLines 0, range.start.row
     
-  offsetToRange = (doc, offset, length = 0) ->
-    # Again, very inefficient.
-    lines = doc.getAllLines()
+  offset = 0
 
-    row = 0
-    for line, row in lines
-      if offset <= line.length
-        unless start
-          start = row: row, column: offset
-          offset += length
-      if offset <= line.length
-        if start
-          end = row: row, column: offset
-          break
+  for line, i in lines
+    offset += if i < range.start.row
+      line.length
+    else
+      range.start.column
 
-      # +1 for the newline.
-      offset -= lines[row].length + 1
-    
-    new Range(start.row, start.column, end.row, end.column)
+  # Add the row number to include newlines.
+  offset + range.start.row * doc.getNewLineCharacter().length
+
+rangeToInterval = (doc, range) ->
+  firstRow = range.start.row
+  lastRow = range.end.row
+  lines = doc.getLines 0, lastRow
+  start = 0
+  end = 0
+
+  for line, i in lines
+    if i < firstRow then start += line.length
+    else if i == firstRow
+      start += range.start.column
+
+    if i < lastRow then end += line.length
+    else if i == lastRow
+      end += range.end.column
   
+  # Add the row number to include newlines.
+  start += range.start.row * doc.getNewLineCharacter().length
+  end += range.end.row * doc.getNewLineCharacter().length
   
+  [start, end]
+
+
+# Convert an offset range to an ace row/col range
+
+offsetToRange = (doc, offset, length = 0) ->
+  return Range.fromPoints offsetToPosition(doc, offset), offsetToPosition(doc, offset + length)
+  
+  # Again, very inefficient.
+  lines = doc.getAllLines()
+
+  row = 0
+  for line, row in lines
+    if offset <= line.length
+      unless start
+        start = row: row, column: offset
+        offset += length
+    if offset <= line.length
+      if start
+        end = row: row, column: offset
+        break
+
+    # +1 for the newline.
+    offset -= lines[row].length + doc.getNewLineCharacter().length
+  
+  new Range(start.row, start.column, end.row, end.column)
+
+offsetToPosition = (doc, offset) ->
+  lines = doc.getAllLines()
+  row = 0
+  
+  for line, row in lines
+    break if offset <= line.length
+
+    # +1 for the newline.
+    offset -= line.length + doc.getNewLineCharacter().length
+
+  row: row, column: offset
+
+nextClass = do ->
+  idx = -1
+  -> idx = (idx + 1) % 20
+
+module.directive "plunkerParticipant", ["session", "participants", (session, participants) ->
   restrict: "E"
   replace: true
-  require: ["?ngModel", "^plunkerAce"]
+  require: "^plunkerAce"
+  scope:
+    buffer: "="
+    participant: "="
+  template: """
+    <div class="plunker-participant">
+    </div>
+  """
+  
+  link: ($scope, $el, attrs, controller) ->
+    selectionMarkerRange = new Range(0, 0, 0, 0)
+    selectionMarkerId = null
+    
+    cursorMarkerRange = new Range(0, 0, 0, 0)
+    cursorMarkerId = null
+    
+    activeSession = null
+    
+    
+    participant = $scope.participant
+    participant.style = "participant-#{nextClass()}"
+
+    cleanUp = -> if activeSession
+      selectionMarkerRange.start.detach()
+      selectionMarkerRange.end.detach()
+      
+      cursorMarkerRange.start.detach()
+      cursorMarkerRange.end.detach()
+      
+      activeSession.removeMarker selectionMarkerId
+      activeSession.removeMarker cursorMarkerId
+      
+      delete buffer.participants[participant.id] if buffer = session.buffers[participant.state.buffId]
+
+    $scope.$watch "participant.state", (state, oldState) ->
+      return unless state
+      
+      if !oldState or state.buffId != oldState.buffId
+        cleanUp()
+        
+        if oldState and (buffer = session.buffers[oldState.buffId]) then delete buffer.participants[participant.id]
+        if state and (buffer = session.buffers[state.buffId]) then buffer.participants[participant.id] = participant
+        
+        if activeSession = controller.sessions[state.buffId]
+          doc = activeSession.getDocument()
+          
+          selectionMarkerRange.start = doc.createAnchor(state.selection.start.row, state.selection.start.column)
+          selectionMarkerRange.end = doc.createAnchor(state.selection.end.row, state.selection.end.column)
+          selectionMarkerId = activeSession.addMarker selectionMarkerRange, "participant-selection #{participant.style}", "text"
+  
+          cursorMarkerRange.start = doc.createAnchor(state.cursor.row, state.cursor.column)
+          cursorMarkerRange.end = doc.createAnchor(state.cursor.row, state.cursor.column + 1)
+          cursorMarkerId = activeSession.addMarker cursorMarkerRange, "participant-cursor #{participant.style}", "text"
+      
+      else if activeSession
+        selectionMarkerRange.start.setPosition(state.selection.start.row, state.selection.start.column)
+        selectionMarkerRange.end.setPosition(state.selection.end.row, state.selection.end.column)
+
+        cursorMarkerRange.start.setPosition(state.cursor.row, state.cursor.column)
+        cursorMarkerRange.end.setPosition(state.cursor.row, state.cursor.column + 1)
+      
+      if activeSession then activeSession._emit "changeBackMarker"
+    , true
+    
+    # Trigger a cursor event in ace
+    controller.sessions[controller.buffId]._emit "changeSelection"
+    
+    $scope.$on "$destroy", -> cleanUp()
+]
+
+module.directive "plunkerEditSession", ["modes", "settings", "annotations", "activity", (modes, settings, annotations, activity) ->
+  restrict: "E"
+  replace: true
+  require: ["ngModel", "^plunkerAce"]
   scope:
     buffer: "="
   template: """
-    <div class="plunker-edit-session"">
+    <div class="plunker-edit-session">
     </div>
   """
-  link: ($scope, $el, attrs, [model, aceEditor]) ->
+  
+  link: ($scope, $el, attrs, [model, controller]) ->
+    $scope.settings = settings.editor
+    
+    cleanup = []
     buffer = $scope.buffer
-    initial = true
     
     session = new EditSession(model.$modelValue or "")
     session.setUndoManager(new UndoManager())
     session.setTabSize(settings.editor.tab_size)
     session.setUseWorker(true)
     
+    
     doc = session.getDocument()
-    cleanup = []
-    
-    $timeout -> initial = false
-    
-    updateModel = (fn) ->
-      if !initial and !$scope.$root.$$phase then $scope.$apply(fn)
-      else fn()
-    
-    model.$render = -> 
-      session.setValue(model.$modelValue)
+
+
+    # Register this session with the parent directive's controller
+    controller.addSession(buffer.id, session)
+
+
+    # Enable two-way binding between the session and ACE
+    model.$render = ->  session.setValue(model.$modelValue)
     
     session.on "change", (delta) ->
-      updateModel -> model.$setViewValue(session.getValue())
+      unless session.getValue() == model.$viewValue or $scope.$root.$$phase then $scope.$apply ->
+        model.$setViewValue(session.getValue())
+        controller.markDirty()
       
-    session.on "changeAnnotation", ->
-      updateModel -> annotations[buffer.id] = angular.copy session.getAnnotations(), 
+    # Create an entry for the file's annotations
+    annotations[buffer.id] = []
 
+    session.on "changeAnnotation", ->
+      # Ignore changes in annotations that do not happen asynchronously
+      unless $scope.$root.$$phase
+        $scope.$apply ->
+          annotations[buffer.id] = angular.copy session.getAnnotations()
+          
+    
+    # Handle text events
+    client = activity.client("ace")
+    
+    doc.on "change", (e) ->
+      unless $scope.$root.$$phase
+        switch e.data.action
+          when "insertText" then client.record "insert", { buffId: buffer.id, offset: rangeToOffset(doc, e.data.range), text: e.data.text }
+          when "removeText" then client.record "remove", { buffId: buffer.id, offset: rangeToOffset(doc, e.data.range), text: e.data.text }
+          when "insertLines" then client.record "insert", { buffId: buffer.id, offset: rangeToOffset(doc, e.data.range), text: e.data.lines.join(e.data.nl) + e.data.nl }
+          when "removeLines" then client.record "remove", { buffId: buffer.id, offset: rangeToOffset(doc, e.data.range), text: e.data.lines.join(e.data.nl) + e.data.nl }
+
+    cleanup.push client.handleEvent "insert", (type, event) ->
+      if event.buffId is buffer.id
+        doc.insert offsetToPosition(doc, event.offset), event.text
+      
+    cleanup.push client.handleEvent "remove", (type, event) ->
+      if event.buffId is buffer.id
+        doc.remove offsetToRange(doc, event.offset, event.text.length)
+
+
+
+    # Change the mode upon changes to the filename
     $scope.$watch "buffer.filename", (filename) ->
       mode = modes.findByFilename(filename)
       session.setMode("ace/mode/#{mode.name}")
-      editsession.updated_at = Date.now()
-    
-    $scope.$watch "buffer.content", (content) ->
-      editsession.updated_at = Date.now()
       
-    doc.on "change", (e) ->
-      return if initial
-      
-      $scope.$apply ->
-        switch e.data.action
-          when "insertText" then activity.record "insert", ["files", buffer.id, "content", rangeToOffset(doc, e.data.range)], e.data.text
-          when "removeText" then activity.record "remove", ["files", buffer.id, "content", rangeToOffset(doc, e.data.range)], e.data.text
-          when "insertLines" then activity.record "insert", ["files", buffer.id, "content", rangeToOffset(doc, e.data.range)], e.data.lines.join("\n") + "\n"
-          when "removeLines" then activity.record "remove", ["files", buffer.id, "content", rangeToOffset(doc, e.data.range)], e.data.lines.join("\n") + "\n"
+      controller.markDirty()
     
     
-    cleanup.push activity.addHandler "insert", (path, text) ->
-      [ignore0, buffId, ignore1, offset] = path
-      
-      
-      if buffId is buffer.id
-        doc.insert offsetToRange(doc, offset).start, text
-      
-    cleanup.push activity.addHandler "remove", (path, text) ->
-      [ignore0, buffId, ignore1, offset] = path
-      
-      if buffId is buffer.id
-        doc.remove offsetToRange(doc, offset, text.length)
-      
-    $scope.$watch ( -> settings.editor.tab_size ), (tab_size) ->
+    # Update the tab size and tab type upon changes to those settings
+    $scope.$watch "settings.tab_size", (tab_size) ->
       session.setTabSize(tab_size)
     
-    $scope.$watch ( -> settings.editor.soft_tabs ), (soft_tabs) ->
+    $scope.$watch "settings.soft_tabs", (soft_tabs) ->
       session.setUseSoftTabs(!!soft_tabs)
-      
-    aceEditor.sessions[buffer.id] = session
-
-    annotations[buffer.id] = []
     
-    console.log "Creating session", buffer.id, buffer
     
+    # Handle clean-up
     $scope.$on "$destroy", ->
-      console.log "Destroying session", buffer.id, buffer
-      delete aceEditor.sessions[buffer.id]
-      delete annotations[buffer.id]
+      controller.removeSession(buffer.id)
       
-      unregister() for unregister in cleanup
+      deregister() for deregister in cleanup
+      
+      delete annotations[buffer.id]
 ]
 
-module.directive "plunkerAce", [ "$timeout", "session", "settings", "activity", "visitor", "cursor", "guard", ($timeout, session, settings, activity, visitor, cursor, guard) ->
-  Editor = require("ace/editor").Editor
-  Renderer = require("ace/virtual_renderer").VirtualRenderer
-  
 
+
+module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "participants", ($timeout, session, settings, activity, participants) ->
   restrict: "E"
-  require: ["plunkerAce", "ngModel"]
   replace: true
+  require: "plunkerAce"
   template: """
-    <div class="plunker-ace" ng-model="cursor">
-      <plunker-edit-session ng-model="buffer.content" buffer="buffer" ng-repeat="(id, buffer) in session.buffers">
-      </plunker-edit-session>
+    <div class="plunker-ace">
+      <plunker-edit-session ng-model="buffer.content" buffer="buffer" ng-repeat="(id, buffer) in session.buffers"></plunker-edit-session>
+      <plunker-participant participant="participant" ng-repeat="(id, participant) in participants"></plunker-participant>
       <div class="plunker-ace-canvas"></div>
     </div>
   """
-  controller: class AceController
-    constructor: ->
-      console.log "Creating ace controller"
-      @sessions = {}
-      @editor = null
+  controller: ["$scope", ($scope) ->
+    $scope.session = session
+    $scope.settings = settings.editor
+    $scope.participants = participants
+  
+    @sessions = {}
+      
+    @addSession = (buffId, session) -> @sessions[buffId] = session
+    @removeSession = (buffId) -> delete @sessions[buffId]
+    
+    @activate = (@buffId) -> @editor.setSession(@sessions[@buffId])
+    
+    @markDirty = -> session.updated_at = Date.now()
 
-    edit: (@el) ->
-      @editor = new Editor(new Renderer(@el, "ace/theme/textmate"))
-        
-  link: ($scope, $el, attrs, [ctrl, model]) ->
+    @
+  ]
+  link: ($scope, $el, attrs, controller) ->
     # Configure ACE to allow it to be packaged in the plnkr source files where paths may be mangled
     ace.config.set "workerPath", "/vendor/ace/src-min/"
     ace.config.set "modePath", "/vendor/ace/src-min/"
     ace.config.set "themePath", "/vendor/ace/src-min/"
+
+    $aceEl = $el.find(".plunker-ace-canvas").get(0)
+
+    controller.editor = new Editor(new Renderer($aceEl, "ace/theme/#{settings.editor.theme || 'textmate'}"))
     
-    aceEl = $el.find(".plunker-ace-canvas").get(0)
+    MultiSelect(controller.editor)
     
-    $scope.session = session
-    $scope.cursor = cursor
     
-    ignoreCursorMove = false
     
-    bufferGuard = guard($scope, "cursor.buffer")
-    cursorGuard = guard($scope, "cursor.position")
-    
-    $scope.$watch "session.getActiveBuffer()", (buffer) ->
-      #ignoreCursorMove = true
-      ctrl.editor.setSession(ctrl.sessions[buffer.id])
+    controller.editor.on "changeSelection", ->
+      unless $scope.$$phase
+        selection = controller.editor.getSession().getSelection()
+        
+        activity.client("ace").record "selection",
+          buffId: session.getActiveBuffer().id
+          selection: angular.copy(selection.getRange())
+          cursor: angular.copy(selection.getCursor())
+
+        
+    activity.client("ace").handleEvent "selection", (type, event) ->
+      buffer = session.buffers[event.buffId]
       
-      # When the active file changes, update the cursor after the fact to reflect
-      # the final position
-      bufferGuard.setViewValue(buffer.id)
-      #cursorGuard.setViewValue(ctrl.editor.getCursorPosition())
-
-      #ignoreCursorMove = false
-            
-    $scope.$watch ( -> settings.editor.theme ), (theme) ->
-      ctrl.editor.setTheme("ace/theme/#{theme}")
+      if buffer != session.getActiveBuffer()
+        # Sometimes cursor events are in angular, sometimes out
+        unless $scope.$root.$$phase then $scope.$apply -> session.activateBuffer(buffer)
+        else session.activateBuffer(buffer)
+        
+        controller.activate(buffer.id)
+        
+      selection = controller.sessions[event.buffId].getSelection()
       
-    #
-    # Interface with activity stream
-    #
-    
-    # Write to the activity stream
-    $scope.$watch "cursor.buffer", (buffId) ->
-      if buffer = session.buffers[buffId]
-        activity.record "session.buffer", ["sessions", visitor.session.public_id, "buffer"], buffer.id
+      if event.cursor
+        selection.moveCursorToPosition(event.cursor)
       
-    $scope.$watch "cursor.position", (position) ->
-      activity.record "session.cursor", ["sessions", visitor.session.public_id, "cursor"], position
-    , true
-    
-    # Read from the activity stream (handle events)
-    activity.addHandler "reset", (path, options) ->
-      session.reset(options, soft: true)
-
-    # Read from the activity stream (handle events)
-    activity.addHandler "files.add", (path, buffer) ->
-      session.addBuffer(buffer.filename, buffer.content, buffer)
-
-
-    # Read from the activity stream (handle events)
-    activity.addHandler "files.remove", (path, buffer) ->
-      session.removeBuffer(buffer.filename)
-
-    activity.addHandler "session.buffer", (path, buffId) ->
-      cursor.buffer = buffId
-    
-    activity.addHandler "session.cursor", (path, position) ->
-      cursor.position = angular.copy(position)
-    
-    # When an external change requires the buffer to change
-    bufferGuard.render = ->
-      if buffer = session.buffers[bufferGuard.modelValue]
-        session.activateBuffer(buffer.filename)
-
-    # When an external change requires the cursor to move
-    cursorGuard.render = ->
-      position = cursorGuard.modelValue
+      if event.selection
+        selection.setSelectionRange(event.selection)
+      else
+        selection.clearSelection()
       
-      $timeout ->
-        ctrl.editor.gotoLine(position.row + 1, position.column)
-        ctrl.editor.focus()
-
-    $scope.$on "resize", -> $timeout -> ctrl.editor.resize()
+      controller.editor.focus()
     
-    ctrl.edit(aceEl)
+    
+    $scope.$watch "session.activeBuffer", (buffer, old) ->
+      controller.activate(buffer.id)
 
-    ctrl.editor.on "changeSelection", ->
-      unless ignoreCursorMove or $scope.$$phase then $scope.$apply ->
-        cursorGuard.setViewValue(ctrl.editor.getCursorPosition())
+      selection = controller.editor.getSession().getSelection()
+      
+      activity.client("ace").record "selection",
+        buffId: buffer.id
+        selection: angular.copy(selection.getRange())
+        cursor: angular.copy(selection.getCursor())
+    
+    
+    $scope.$watch "session.readonly", (readonly) ->
+      controller.editor.setReadOnly(!!readonly)
+
+    
+    $scope.$watch "settings.theme", (theme) ->
+      controller.editor.setTheme("ace/theme/#{theme}")
+    
+    $scope.$on "resize", ->
+      controller.editor.resize(true)
+
 ]

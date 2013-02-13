@@ -1,14 +1,14 @@
 #= require ../services/annotations
-#= require ../services/cursor
+#= require ../services/activity
 
 module = angular.module("plunker.panes")
 
 module.requires.push "plunker.annotations"
 module.requires.push "plunker.session"
-module.requires.push "plunker.cursor"
+module.requires.push "plunker.activity"
 
 
-module.run [ "panes", "annotations", "session", "cursor", (panes, annotations, session, cursor) ->
+module.run [ "panes", "annotations", "session", "activity", (panes, annotations, session, activity) ->
 
   panes.add
     id: "linter"
@@ -34,7 +34,7 @@ module.run [ "panes", "annotations", "session", "cursor", (panes, annotations, s
               No matching notes
             </li>
             <li ng-repeat="note in relevantNotes(notes, filters)" class="alert alert-{{note.type}}">
-              <a ng-click="moveCursorTo(session.buffers[buffId].filename, note.row, note.column)" class="note-line">Line {{note.row + 1}}</a>
+              <a ng-click="moveCursorTo(buffId, note.row, note.column)" class="note-line">Line {{note.row + 1}}</a>
               <p class="note-text" ng-bind="note.text"></p>
             </li>
           </ul>
@@ -71,10 +71,11 @@ module.run [ "panes", "annotations", "session", "cursor", (panes, annotations, s
               return
       , true
       
-      $scope.moveCursorTo = (filename, row, column) ->
-        if buffer = session.getBufferByFilename(filename)
-          cursor.buffer = buffer.id
-          cursor.position.row = row
-          cursor.position.column = column
+      $scope.moveCursorTo = (buffId, row, column) ->
+        activity.client("linter").playback "selection",
+          buffId: buffId
+          cursor:
+            row: row
+            column: column
       
 ]

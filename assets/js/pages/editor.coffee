@@ -33,10 +33,12 @@ module.config ["$routeProvider", ($routeProvider) ->
       dirtyCheck: ["$q", "notifier", "session", ($q, notifier, session) ->
         dfd = $q.defer()
         
-        if session.isDirty() then notifier.confirm "You have unsaved changes. This action will reset your plunk. Are you sure you would like to proceed?",
+        if session.isDirty() and not session.skipDirtyCheck then notifier.confirm "You have unsaved changes. This action will reset your plunk. Are you sure you would like to proceed?",
           confirm: -> dfd.resolve()
           deny: -> dfd.reject()
         else dfd.resolve()
+        
+        delete session.skipDirtyCheck
         
         dfd.promise
       ]
@@ -50,7 +52,7 @@ module.config ["$routeProvider", ($routeProvider) ->
               notifier.error "Import error", error
         else {}
       ]
-    controller: [ "$rootScope", "$scope", "$location", "$browser", "$timeout", "$route", "session", "source", ($rootScope, $scope, $location, $browser, $timeout, $route, session, source) ->
+    controller: [ "$rootScope", "$scope", "$location", "$browser", "$timeout", "$route", "session", "source", "notifier", ($rootScope, $scope, $location, $browser, $timeout, $route, session, source, notifier) ->
       session.reset(source) if source?
       
       $scope.$watch ( -> session.getEditPath()), (path) ->

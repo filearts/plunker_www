@@ -6,5 +6,5 @@ module.exports.middleware = (options = {}) ->
       res.expose[key] ||= value
     
     for key, value of res.expose
-      res.locals[key] = JSON.stringify(value).replace(/<\//g,"<\\/") 
+      res.locals[key] = value 
     next()

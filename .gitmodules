@@ -37,3 +37,6 @@
 [submodule "assets/vendor/URL"]
 	path = assets/vendor/URL
 	url = git://github.com/stevoland/URL.js.git
+[submodule "assets/vendor/script"]
+	path = assets/vendor/script
+	url = git://github.com/ded/script.js.git

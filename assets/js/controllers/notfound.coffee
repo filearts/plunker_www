@@ -16,6 +16,9 @@ module.config ["$routeProvider", ($routeProvider) ->
         </div>
       </div>
     """
+    controller: ["$rootScope", ($rootScope) ->
+      $rootScope.page_title = "Page not found"
+    ]
 ]
 
 module.run ["menu", (menu) ->

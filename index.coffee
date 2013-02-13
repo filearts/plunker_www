@@ -40,7 +40,7 @@ assetOptions =
     ext = path.extname(filename)
     base = path.basename(filename, ext)
     
-    return path.join dir, "{base}-#{pkginfo.version}#{ext}"
+    return path.join dir, "#{base}-#{pkginfo.version}#{ext}"
   helperContext: app.locals
 
 app.set "views", "#{__dirname}/views"
@@ -165,6 +165,22 @@ app.get "/sitemap.xml", (req, res) ->
 
 apiUrl = nconf.get("url:api")
   
+###
+app.get "/", (req, res) ->
+  request.get "#{apiUrl}/plunks/", (err, response, body) ->
+    return res.send(500) if err
+    return res.send(response.statusCode) if response.statusCode >= 400
+    
+    try
+      trending = JSON.parse(body)
+    catch e
+      return res.render "landing"
+    
+    res.locals.bootstrap =
+      trending: trending
+      
+    res.render "landing"  
+###
 
 app.get "/plunks", (req, res) -> res.render "landing"
 app.get "/plunks/trending", (req, res) -> res.render "landing"
@@ -182,7 +198,14 @@ app.get "/:id", (req, res) ->
     return res.send(500) if err
     return res.send(response.statusCode) if response.statusCode >= 400
     
-    res.locals.bootstrap = body.replace(/<\//g,"<\\/")
+    try
+      plunk = JSON.parse(body)
+    catch e
+      return res.render "landing"
+    
+    res.locals.bootstrap =
+      plunks: [plunk]
+      page_title: plunk.description
     res.render "landing"
 
 app.get "/*", (req, res) ->

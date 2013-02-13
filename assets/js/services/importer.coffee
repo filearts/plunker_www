@@ -33,10 +33,14 @@ module.service "importer", [ "$q", "$http", "plunks", ($q, $http, plunks) ->
     
     if matches = source.match(plunkerRegex)
       plunks.findOrCreate(id: matches[1]).refresh().then (plunk) ->
+        files = {}
+        files[filename] = {filename: filename, content: file.content} for filename, file of plunk.files
+        
+        
         deferred.resolve
           description: plunk.description
           tags: angular.copy(plunk.tags)
-          files: angular.copy(plunk.files)
+          files: files
           plunk: angular.copy(plunk)
       , (error) ->
         deferred.reject("Plunk not found")

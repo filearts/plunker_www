@@ -98,17 +98,15 @@ module.config ["$routeProvider", ($routeProvider) ->
       """
     resolve:
       plunk: ["$route", "plunks", ($route, plunks) ->
-        if _plunker.bootstrap
-          plunk = plunks.findOrCreate(_plunker.bootstrap)
-          plunk.$$refreshed_at = Date.now() # Tell the app that this is a *server* copy
-        else
-          plunk = plunks.findOrCreate(id: $route.current.params.plunk_id)
-          plunk.refresh() unless plunk.$$refreshed_at
+        plunk = plunks.findOrCreate(id: $route.current.params.plunk_id)
+        plunk.refresh() unless plunk.$$refreshed_at
         plunk
       ]
       
-    controller: ["$scope", "$routeParams", "visitor", "plunk", ($scope, $routeParams, visitor, plunk) ->
-      $scope.plunk = plunk
+    controller: ["$rootScope", "$scope", "$routeParams", "visitor", "plunk", ($rootScope, $scope, $routeParams, visitor, plunk) ->
+      $rootScope.page_title = plunk.description or "Untitled plunk"
+      
+      $scope.plunk = $rootScope.plunk = plunk
       $scope.visitor = visitor
     ]
 ]

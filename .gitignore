@@ -18,5 +18,7 @@ node_modules
 npm-debug.log
 
 config.json
+config.production.json
+config.development.json
 
 build

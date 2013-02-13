@@ -4,11 +4,12 @@
 #= require ../../vendor/angular-ui/modules/directives/select2/select2
 
 
-#= require "../services/session"
-#= require "../services/notifier"
+#= require ../services/session
+#= require ../services/notifier
 
-#= require "../directives/inlineuser"
-#= require "../directives/plunkinfo"
+#= require ../directives/inlineuser
+#= require ../directives/plunkinfo
+#= require ../directives/restorer
 
 
 module = angular.module "plunker.sidebar", [
@@ -17,6 +18,7 @@ module = angular.module "plunker.sidebar", [
   "plunker.notifier"
   "plunker.inlineuser"
   "plunker.plunkinfo"
+  "plunker.restorer"
 ]
 
 module.directive "plunkerSidebarFile", [ "notifier", "session", (notifier, session) ->
@@ -26,6 +28,10 @@ module.directive "plunkerSidebarFile", [ "notifier", "session", (notifier, sessi
     buffer: "="
   template: """
     <li class="file" ng-class="{active: active}">
+      <ul class="participants">
+        <li ng-class="participant.style" ng-repeat="(id, participant) in buffer.participants" title="{{participant.handle}}">
+        </li>
+      </ul>
       <a ng-click="activateBuffer(buffer)" ng-dblclick="promptFileRename(buffer)">{{buffer.filename}}</a>
       <ul class="file-ops">
         <li class="delete">
@@ -74,6 +80,7 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
   replace: true
   template: """
     <div class="plunker-sidebar">
+      <plunker-restorer></plunker-restorer>
       <details open>
         <summary class="header">Files</summary>
         <ul class="plunker-filelist nav nav-list">

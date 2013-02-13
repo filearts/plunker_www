@@ -46,7 +46,9 @@ generateRouteHandler = (filter, options = {}) ->
     resolve:
       filtered: resolvers[filter]
     reloadOnSearch: true
-    controller: ["$scope", "menu", "filtered", ($scope, menu, filtered) ->
+    controller: ["$rootScope", "$scope", "menu", "filtered", ($rootScope, $scope, menu, filtered) ->
+      $rootScope.page_title = "Explore"
+      
       $scope.plunks = filtered
       $scope.filters = filters
       $scope.activeFilter = filters[filter]

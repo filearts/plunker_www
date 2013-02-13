@@ -8,7 +8,7 @@ module = angular.module "plunker.session", [
   "plunker.activity"
 ]
 
-module.service "session", [ "$q", "$timeout", "plunks", "notifier", "activity", ($q, $timeout, plunks, notifier, activity) ->
+module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier", "activity", ($rootScope, $q, $timeout, plunks, notifier, activity) ->
 
   genid = (len = 16, prefix = "", keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") ->
     prefix += keyspace.charAt(Math.floor(Math.random() * keyspace.length)) while len-- > 0
@@ -20,7 +20,7 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", "activity", 
   
     $$counter = 0
   
-    $$uid = (prefix = "__") ->  prefix + genid()
+    $$uid = genid.bind(null, 16, "__")
   
     $$asyncOp = (operation, fn) ->
       dfd = $q.defer()
@@ -43,11 +43,36 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", "activity", 
       @private = true
   
       @buffers = {}
+      
+      if state = window.localStorage.getItem("plnkr_dirty_exit")
+        try
+          @lastSession = JSON.parse(state)
+        catch e
+          console.log "[ERR] Invalid saved state."
   
       @reset()
       
+      
+      client = activity.client("session")
+      session = @
+      
+      client.handleEvent "reset", (type, event) -> session.reset(event, soft: true)
+      client.handleEvent "files.add", (type, event) -> $rootScope.$apply ->
+        session.addBuffer(event.filename, event.content, id: event.buffId)
+      client.handleEvent "files.remove", (type, event) -> $rootScope.$apply ->
+        if buffer = session.buffers[event.buffId]
+          session.removeBuffer(buffer.filename)
+      client.handleEvent "files.rename", (type, event) -> $rootScope.$apply ->
+        if buffer = session.buffers[event.buffId]
+          session.renameBuffer(buffer.filename, event.filename)
+      
       window.onbeforeunload = =>
         if @isDirty() then "You have unsaved work on this Plunk."
+        
+      setInterval ->
+        if session.isDirty() then window.localStorage.setItem("plnkr_dirty_exit", JSON.stringify(session.toJSON(includeSource: true, includePlunk: true)))
+        else window.localStorage.removeItem("plnkr_dirty_exit")
+      , 1000
     
     isSaved: -> !!@plunk and @plunk.isSaved()
     isWritable: -> !!@plunk and @plunk.isWritable()
@@ -66,12 +91,16 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", "activity", 
       buffer = @buffers[buffId]
   
     getBufferByFilename: (filename) ->
+      test = (against) ->
+        if filename.test then filename.test(against)
+        else filename == against
+        
       for bufId, buffer of @buffers
-        if buffer.filename == filename
+        if test(buffer.filename)
           return buffer
   
       return
-      
+    
     getEditPath: ->
       if @plunk then @plunk.id or ""
       else @source or ""
@@ -88,12 +117,14 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", "activity", 
           filename: buffer.filename
           content: buffer.content
         json.files[buffer.filename].id = buffId if options.includeBufferId
+    
+      json.source = angular.copy(@source) if options.includeSource
+      json.plunk = angular.copy(@plunk) if options.includePlunk
   
       json
   
     reset: (json = {}, options = {}) ->
       $$savedBuffers = {}
-      $$history = []
   
       @resetting = true
       
@@ -106,26 +137,31 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", "activity", 
       @description = json.description or ""
       @tags = json.tags or []
       @private = !!json.private
-  
-      angular.copy {}, @buffers
-  
-      $$history.length = 0
       
-      @addBuffer(file.filename, file.content, file) for filename, file of json.files if json.files
+      @removeBuffer(buffer) for buffId, buffer of @buffers
+  
+      #angular.copy {}, @buffers
+  
+      #$$history.length = 0
+      
+      
+      @addBuffer(file.filename, file.content, {id: file.id, activate: true}) for filename, file of json.files if json.files
   
       @addBuffer("index.html", "") unless $$history.length
   
-      @activateBuffer("index.html") if @getBufferByFilename("index.html")
+      @activateBuffer(buffer) if buffer = @getBufferByFilename(/^index\./i)
 
       @updated_at = Date.now()
-      @reset_at = Date.now() + 36000 # Far in future to make sure isDirty is false until next tick
+      @reset_at = Date.now() + 36000 unless options.dirty # Far in future to make sure isDirty is false until next tick
       @saved_at = null
       
-      activity.record "reset", [], @toJSON(includeBufferId: true)
+      @skipDirtyCheck = true if options.dirty
+      
+      activity.client("session").record "reset", @toJSON(includeBufferId: true)
 
       
       # Update @reset_at to next tick value to capture subsequent change events in setting initial value
-      $timeout =>
+      unless options.dirty then $timeout =>
         @reset_at = Date.now()
         @resetting = false
 
@@ -166,6 +202,7 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", "activity", 
             content: buffer.content
         
         buffers
+      
       inFlightSavedAt = Date.now()
         
 
@@ -315,24 +352,29 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", "activity", 
       if @getBufferByFilename(filename) then return notifier.warning """
         File not added: A file named '#{filename}' already exists.
       """.trim()
-  
+      
       buffId = options.id or $$uid()
       
       @buffers[buffId] =
         id: buffId
         filename: filename
         content: content
+        participants: {}
   
       $$history.push(buffId)
       
-      activity.record "files.add", ["files", buffId], angular.copy(@buffers[buffId]) unless @resetting
+      unless @resetting then activity.client("session").record "files.add",
+        buffId: buffId
+        filename: filename
+        content: content
   
       @activateBuffer(filename) if options.activate is true
   
       @
   
     removeBuffer: (filename) ->
-      unless buffer = @getBufferByFilename(filename) then return notifier.warning """
+      if angular.isObject(filename) then buffer = filename
+      else unless buffer = @getBufferByFilename(filename) then return notifier.warning """
         Cannot remove file: A file named '#{filename}' does not exist.
       """.trim()
   
@@ -342,13 +384,18 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", "activity", 
       $$history.splice(idx, 1)
       delete @buffers[buffer.id]
       
-      activity.record "files.remove", ["files", buffer.id], angular.copy(buffer) unless @resetting
+      if idx == 0 and $$history.length then @activateBuffer(@buffers[$$history[0]])
+      
+      unless @resetting then activity.client("session").record "files.remove",
+        buffId: buffer.id
   
       @
   
   
     activateBuffer: (filename) ->
-      unless buffer = @getBufferByFilename(filename) then return notifier.warning """
+      debugger unless filename
+      if angular.isObject(filename) then buffer = filename
+      else unless buffer = @getBufferByFilename(filename) then return notifier.warning """
         Cannot activate file: A file named '#{filename}' does not exist.
       """.trim()
   
@@ -357,18 +404,24 @@ module.service "session", [ "$q", "$timeout", "plunks", "notifier", "activity", 
   
       $$history.splice(idx, 1)
       $$history.unshift(buffer.id)
+      
+      @activeBuffer = buffer
   
       @
   
   
     renameBuffer: (filename, new_filename) ->
-      unless buffer = @getBufferByFilename(filename) then return notifier.warning """
+      if angular.isObject(filename) then buffer = filename
+      else unless buffer = @getBufferByFilename(filename) then return notifier.warning """
         Cannot rename file: A file named '#{filename}' does not exist.
       """.trim()
   
       buffer.filename = new_filename
       
-      activity.record "files.rename", ["files", buffer.id, "filename"], filename, new_filename unless @resetting
+      unless @resetting then activity.client("session").record "files.rename",
+        buffId: buffer.id
+        filename: new_filename
+        previous: filename
       
       @updated_at = Date.now()
   

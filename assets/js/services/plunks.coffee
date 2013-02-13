@@ -191,8 +191,8 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
 
     
     query: (options = {}) ->
-      results = []
-      links = {}
+      results = options.results || []
+      links = options.links || {}
       options = angular.copy(options)
       
       options.params ||= {}

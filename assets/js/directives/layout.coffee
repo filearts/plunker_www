@@ -43,7 +43,7 @@ module.directive "plunkerEditorLayout", [ "panes", (panes) ->
         spacing_closed: 8
         onresize: -> $scope.$broadcast "resize", arguments...
       west:
-        size: 160
+        size: 200
         minSize: 160
         maxSize: 320
       center:
@@ -51,6 +51,7 @@ module.directive "plunkerEditorLayout", [ "panes", (panes) ->
           defaults:
             spacing_open: 4
             spacing_closed: 0
+            onresize: -> $scope.$broadcast "resize", arguments...
           center:
             size: "50%"
           east:

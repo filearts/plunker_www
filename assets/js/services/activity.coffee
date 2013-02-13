@@ -1,23 +1,34 @@
 module = angular.module "plunker.activity", []
 
 module.value "activity", do ->
-  $$emit = (arr, args) -> fn.apply(this, args) for fn in arr if arr
+  $$emit = (arr, type, event) -> fn.call(this, type, event) for fn in arr if arr
+  $$register = (arr, handler) ->
+    arr.push(handler)
+    -> if 0 <= idx = arr.indexOf(handler) then arr.splice(idx, 1)
+    
+  $$guard = false
   
-  ###
   class Client
     constructor: (@server, @name) ->
       @watchers = []
       @handlers = []
     
-    record: (event, path, args...) -> @server.emitEvent(@, event, path, args)
-    playback: (event, path, args...) -> @server.emitAction(@, event, path, args)
+    record: (type, event) -> @server.emitEvent(@, type, event) unless $$guard
+    playback: (type, event) ->
+      $$guard = true
+      @server.emitAction(@, type, event)
+      $$guard = false
       
-    watch: (watcher) -> @watchers.push(watcher)
-    handle: (handler) -> @handlers.push(handler)
+    watch: (watcher) -> $$register(@watchers, watcher)
+    handle: (handler) -> $$register(@handlers, handler)
+    
+    watchEvent: (eventType, handler) ->
+      @watch (type, event) ->
+        if type is eventType then handler(type, event)
     
     handleEvent: (eventType, handler) ->
-      @handle (event, path, args) ->
-        if event is eventType then handler(event, path, args...)
+      @handle (type, event) ->
+        if type is eventType then handler(type, event)
   
   new class Server
     constructor: ->
@@ -26,15 +37,16 @@ module.value "activity", do ->
     # Create or return an existing client
     client: (name) -> @clients[name] ||= new Client(@, name)
   
-    emitAction: (emitter, event, path, args) ->
+    emitAction: (emitter, type, event) ->
       for name, client of @clients when name != emitter.name
-        $$emit(client.handlers, event, path, args...)
+        $$emit(client.handlers, type, event)
   
-    emitEvent: (emitter, event, path, args) ->
+    emitEvent: (emitter, type, event) ->
       for name, client of @clients when name != emitter.name
-        $$emit(client.watchers, event, path, args...)
-  ###  
-  
+        $$emit(client.watchers, type, event)
+        
+        
+  ###
   $$handlers = {}
   $$watchers = []
   
@@ -51,3 +63,4 @@ module.value "activity", do ->
     
     addWatcher: (fn) -> $$register($$watchers, fn)
     addHandler: (event, fn) -> $$register($$handlers[event] ?= [], fn)
+  ###

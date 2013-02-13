@@ -29,7 +29,9 @@ module.config ["$routeProvider", ($routeProvider) ->
         user.refresh() unless user.$$refreshed_at
       ]
       
-    controller: ["$scope", "visitor", "user", "menu", ($scope, visitor, user, menu) ->
+    controller: ["$rootScope", "$scope", "visitor", "user", "menu", ($rootScope, $scope, visitor, user, menu) ->
+      $rootScope.page_title = user.login
+      
       $scope.user = user
       $scope.visitor = visitor
       
@@ -40,12 +42,4 @@ module.config ["$routeProvider", ($routeProvider) ->
       
       menu.activate "users"
     ]
-]
-
-module.run ["menu", (menu) ->
-  menu.addItem "users",
-    title: "Explore users"
-    href: "/users"
-    'class': "icon-group"
-    text: "Users"
 ]

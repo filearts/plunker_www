@@ -38,6 +38,8 @@ module.factory "visitor", ["$http", "$rootScope", "$window", "url", "notifier", 
       $window._handleOAuthError = (error) ->
         console.error "AUTH", self, arguments...
         notifier.error "Authentication error", self, arguments...
+    
+    isMember: -> !!@logged_in
         
     applySessionData: (data) ->
       angular.copy(data.user or {}, @user)
