@@ -164,23 +164,7 @@ app.get "/sitemap.xml", (req, res) ->
   
 
 apiUrl = nconf.get("url:api")
-  
-###
-app.get "/", (req, res) ->
-  request.get "#{apiUrl}/plunks/", (err, response, body) ->
-    return res.send(500) if err
-    return res.send(response.statusCode) if response.statusCode >= 400
-    
-    try
-      trending = JSON.parse(body)
-    catch e
-      return res.render "landing"
-    
-    res.locals.bootstrap =
-      trending: trending
-      
-    res.render "landing"  
-###
+
 
 app.get "/plunks", (req, res) -> res.render "landing"
 app.get "/plunks/trending", (req, res) -> res.render "landing"
