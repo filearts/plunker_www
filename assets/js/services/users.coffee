@@ -5,16 +5,22 @@
 module = angular.module "plunker.users", [
   "plunker.url"
   "plunker.visitor"
-  "plunker.plunks"
   "plunker.instantiator"
 ]
 
+console.log "Users service loaded"
 
-module.run ["instantiator", "users", (instantiator, users) ->
+
+module.run ["instantiator", "members", (instantiator, users) ->
+  console.log "Users instantiator"
   instantiator.register "users", users.findOrCreate
 ]
 
-module.service "users", [ "$http", "$rootScope", "$q", "url", "visitor", "instantiator", ($http, $rootScope, $q, url, visitor, instantiator) ->
+module.value "members", {}
+
+###
+module.service "members", [ "$http", "$rootScope", "$q", "url", "visitor", "instantiator", ($http, $rootScope, $q, url, visitor, instantiator) ->
+  console.log "Users service", @
   $$users = {}
   
   $$findOrCreate = (json = {}) ->
@@ -110,3 +116,4 @@ module.service "users", [ "$http", "$rootScope", "$q", "url", "visitor", "instan
       
       return results
 ]
+###

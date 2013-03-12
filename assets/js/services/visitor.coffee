@@ -4,7 +4,10 @@
 #= require ../services/notifier
 
 
-module = angular.module("plunker.visitor", ["plunker.url", "plunker.notifier"])
+module = angular.module "plunker.visitor", [
+  "plunker.url"
+  "plunker.notifier"
+]
 
 module.factory "visitor", ["$http", "$rootScope", "$window", "url", "notifier", ($http, $rootScope, $window, url, notifier) ->
   new class Visitor

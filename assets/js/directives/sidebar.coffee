@@ -1,5 +1,7 @@
 #= require ../../vendor/select2/select2
 
+#= require ../../vendor/jquery.autosize/jquery.autosize
+
 #= require ../../vendor/angular-ui/common/module
 #= require ../../vendor/angular-ui/modules/directives/select2/select2
 
@@ -27,12 +29,12 @@ module.directive "plunkerSidebarFile", [ "notifier", "session", (notifier, sessi
   scope:
     buffer: "="
   template: """
-    <li class="file" ng-class="{active: active}">
+    <li class="file" ng-class="{active: active, dirty: dirty, changed: changed}">
       <ul class="participants">
         <li ng-class="participant.style" ng-repeat="(id, participant) in buffer.participants" title="{{participant.handle}}">
         </li>
       </ul>
-      <a ng-click="activateBuffer(buffer)" ng-dblclick="promptFileRename(buffer)">{{buffer.filename}}</a>
+      <a class="filename" ng-click="activateBuffer(buffer)" ng-dblclick="promptFileRename(buffer)">{{buffer.filename}}</a>
       <ul class="file-ops">
         <li class="delete">
           <button ng-click="promptFileDelete(buffer)" class="btn btn-mini">
@@ -45,8 +47,13 @@ module.directive "plunkerSidebarFile", [ "notifier", "session", (notifier, sessi
   link: ($scope, $el, attrs) ->
     buffer = $scope.buffer
     
+    $scope.$watch ( -> session.isDirty(["buffers", buffer.id])), (dirty) ->
+      $scope.dirty = dirty and Date.now()
+      $scope.changed = dirty and not $scope.active
+    
     $scope.$watch ( -> session.getActiveBuffer() == buffer), (active) ->
-      $scope.active = active
+      $scope.active = active and Date.now()
+      $scope.changed = false
     
     $scope.activateBuffer = (buffer) ->
       session.activateBuffer(buffer.filename)
@@ -85,7 +92,6 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
         <summary class="header">Files</summary>
         <ul class="plunker-filelist nav nav-list">
           <plunker-sidebar-file buffer="buffer" ng-repeat="(id, buffer) in session.buffers | orderBy:'filename'">
-            <a ng-click="session.activateBuffer(buffer.filename)">{{buffer.filename}}</a>
           </plunker-sidebar-file>
           <li class="newfile">
             <a ng-click="promptFileAdd()"><i class="icon-file"></i> New file</a>
@@ -98,7 +104,7 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
           <div>
             <label for="plunk-description">
               <div>Description:</div>
-              <textarea id="plunk-description" rows="4" ng-model="session.description"></textarea>
+              <textarea id="plunk-description" rows="2" ng-model="session.description"></textarea>
             </label>
             <label for="plunk-tags">
               <div>Tags:</div>
@@ -128,4 +134,9 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
     $scope.promptFileAdd = ->
       notifier.prompt "New filename", "",
         confirm: (filename) -> session.addBuffer(filename, "", activate: true)
+    $desc = $el.find("#plunk-description")
+    $desc.autosize(append: "\n")
+    
+    $scope.$watch "session.description", -> $desc.trigger("autosize")
+    $scope.$on "resize", -> $desc.trigger("autosize")
 ]

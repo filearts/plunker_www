@@ -18,7 +18,7 @@ module.directive "plunkerPaneselector", [ "panes", (panes) ->
     <div class="plunker-paneselector">
       <ul>
         <li ng-repeat="pane in panes.panes | orderBy:'order'" class="{{pane.class}} plunker-pane-{{pane.id}}" ng-hide="pane.hidden" ng-class="{active:pane==panes.active}">
-          <a ui-jq="popover" ui-options="{placement: 'left', title: pane.title, content: pane.description, trigger: 'hover'}" ng-click="panes.toggle(pane)">
+          <a ng-click="panes.toggle(pane)">
             <i class="icon-{{pane.icon}}"></i>
           </a>
         </li>

@@ -40,3 +40,12 @@
 [submodule "assets/vendor/script"]
 	path = assets/vendor/script
 	url = git://github.com/ded/script.js.git
+[submodule "assets/vendor/semver"]
+	path = assets/vendor/semver
+	url = git://github.com/isaacs/node-semver.git
+[submodule "assets/vendor/jquery.autosize"]
+	path = assets/vendor/jquery.autosize
+	url = git://github.com/jackmoore/autosize.git
+[submodule "assets/vendor/ui-bootstrap"]
+	path = assets/vendor/ui-bootstrap
+	url = git://github.com/angular-ui/bootstrap.git

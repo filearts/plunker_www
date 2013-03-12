@@ -32,6 +32,14 @@ module.run [ "panes", "settings", (panes, settings) ->
               <input class="input-mini" id="opts-editor-tabSize" ng-model="settings.editor.tab_size" type="number" />
             </div>
           </div>
+          <div class="control-group">
+            <div class="controls">
+              <label class="checkbox">
+                <input class="input-mini" id="opts-editor-lineWrap" ng-model="settings.editor.wrap.enabled" type="checkbox" />
+                Line wrapping
+              </label>
+            </div>
+          </div>
           <hr />
           <h4>Previewer:</h4>
           <div class="control-group">

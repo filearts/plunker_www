@@ -1,11 +1,12 @@
 #= require ../../vendor/angular
 
 #= require ../controllers/explore
-#= require ../controllers/preview
 #= require ../controllers/users
 #= require ../controllers/tags
 #= require ../controllers/editor
 #= require ../controllers/profile
+#= require ../controllers/packages
+#= require ../controllers/preview
 #= require ../controllers/notfound
 
 #= require ../services/menu
@@ -20,6 +21,7 @@ module = angular.module "plunker.landing", [
   "plunker.tags"
   "plunker.profile"
   "plunker.editorPage"
+  "plunker.packages"
   "plunker.preview"
   "plunker.notfound"
   "plunker.menu"

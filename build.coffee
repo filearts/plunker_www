@@ -23,13 +23,13 @@ assets
 if fs.existsSync("#{__dirname}/build") then rimraf.sync("#{__dirname}/build")
   
 console.log "Building landing.js"
-js("pages/landing")
+js("apps/landing")
 
 console.log "Building landing.css"
-css("pages/landing")
+css("apps/landing")
 
 console.log "Building editor.js"
-js("pages/editor")
+js("apps/editor")
 
 console.log "Building editor.css"
-css("pages/editor")
+css("apps/editor")

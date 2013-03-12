@@ -80,6 +80,11 @@
     }
   }
   
+  .file.changed .filename:after {
+    color: #333;
+    content: " *";
+  }
+  
   .file:hover {
     .file-ops {
       display: inline-block;
@@ -137,6 +142,13 @@
     width: 100%;
     font-size: 12px;
     margin-bottom: 0;
+  }
+  
+  #plunk-description {
+            transition: height 0.2s;
+    -webkit-transition: height 0.2s;
+       -moz-transition: height 0.2s;
+    vertical-align: top;
   }
   
   div > div {

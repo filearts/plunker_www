@@ -7,7 +7,7 @@ html#ng-app(ng-app="plunker.landing", lang="en", class="ng-app:plunker.landingPa
     base(href="/")
     - var page_title = bootstrap && bootstrap.page_title ? " - " + bootstrap.page_title : "";
     title(ng-bind-template="Plunker - {{page_title}}") Plunker#{page_title}
-    != css("pages/landing")
+    != css("apps/landing")
     // if lt IE 9
       script(src="http://html5shim.googlecode.com/svn/trunk/html5.js")
     // if lte IE 8
@@ -36,7 +36,7 @@ html#ng-app(ng-app="plunker.landing", lang="en", class="ng-app:plunker.landingPa
         "bootstrap": !{bootstrap_escaped}
       };
       // -->
-    != js("pages/landing")
+    != js("apps/landing")
     script
       var _gaq = _gaq || [];
       _gaq.push(['_setAccount', 'UA-28928507-3']);

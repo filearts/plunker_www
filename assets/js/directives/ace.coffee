@@ -198,6 +198,8 @@ module.directive "plunkerEditSession", ["modes", "settings", "annotations", "act
     session = new EditSession(model.$modelValue or "")
     session.setUndoManager(new UndoManager())
     session.setTabSize(settings.editor.tab_size)
+    session.setUseWrapMode(!!settings.editor.wrap.enabled)
+    session.setWrapLimitRange(settings.editor.wrap.range.min, settings.editor.wrap.range.max)
     session.setUseWorker(true)
     
     
@@ -262,6 +264,13 @@ module.directive "plunkerEditSession", ["modes", "settings", "annotations", "act
     $scope.$watch "settings.soft_tabs", (soft_tabs) ->
       session.setUseSoftTabs(!!soft_tabs)
     
+    $scope.$watch "settings.wrap.enabled", (wrapping) ->
+      session.setUseWrapMode(!!wrapping)
+    
+    $scope.$watch "settings.wrap.range", (range) ->
+      session.setWrapLimitRange(range.min, range.max)
+    , true
+    
     
     # Handle clean-up
     $scope.$on "$destroy", ->
@@ -303,10 +312,8 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
   ]
   link: ($scope, $el, attrs, controller) ->
     # Configure ACE to allow it to be packaged in the plnkr source files where paths may be mangled
-    ace.config.set "workerPath", "/vendor/ace/src-min/"
-    ace.config.set "modePath", "/vendor/ace/src-min/"
-    ace.config.set "themePath", "/vendor/ace/src-min/"
-
+    ace.config.set "basePath", "/vendor/ace/src-min/"
+    
     $aceEl = $el.find(".plunker-ace-canvas").get(0)
 
     controller.editor = new Editor(new Renderer($aceEl, "ace/theme/#{settings.editor.theme || 'textmate'}"))

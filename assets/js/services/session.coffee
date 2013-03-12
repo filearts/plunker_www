@@ -13,9 +13,25 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
   genid = (len = 16, prefix = "", keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") ->
     prefix += keyspace.charAt(Math.floor(Math.random() * keyspace.length)) while len-- > 0
     prefix
+    
+  valueAtPath = (obj, path = []) ->
+    path = [path] if path and not angular.isArray(path)
+    
+    return obj unless path.length
+    return obj unless obj?
+    
+    ref = obj
+    
+    for seg in path
+      ref = ref[seg]
+      
+      return ref unless ref?
+    
+    return ref
 
   new class Session
-    $$savedBuffers = {}
+    $$cleanState = {}
+    $$savedState = {}
     $$history = []
   
     $$counter = 0
@@ -76,13 +92,18 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
     
     isSaved: -> !!@plunk and @plunk.isSaved()
     isWritable: -> !!@plunk and @plunk.isWritable()
-    
-    isDirty: ->
-      if @plunk and (@description != @plunk.description or !angular.equals(@tags, @plunk.tags)) then true
-      else if @updated_at <= @reset_at then false
-      else if @saved_at is null then true
-      else if @saved_at < @updated_at then true
-      else false
+
+    isPlunkDirty: (path, state) ->
+      previous = valueAtPath(state or $$savedState, path)
+      current = valueAtPath(@toJSON(raw: true), path)
+      
+      return !angular.equals(previous, current)
+
+    isDirty: (path, state) ->
+      previous = valueAtPath(state or $$cleanState, path)
+      current = valueAtPath(@toJSON(raw: true), path)
+      
+      return !angular.equals(previous, current)
   
     getActiveBuffer: ->
       throw new Error("Attempting return the active buffer while the Session is out of sync") unless $$history.length
@@ -95,7 +116,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
         if filename.test then filename.test(against)
         else filename == against
         
-      for bufId, buffer of @buffers
+      for buffId, buffer of @buffers
         if test(buffer.filename)
           return buffer
   
@@ -104,66 +125,67 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
     getEditPath: ->
       if @plunk then @plunk.id or ""
       else @source or ""
-  
-    toJSON: (options = {}) ->
-      json =
-        description: @description
-        tags: @tags
-        'private': @private
-        files: {}
-  
-      for buffId, buffer of @buffers
-        json.files[buffer.filename] =
-          filename: buffer.filename
-          content: buffer.content
-        json.files[buffer.filename].id = buffId if options.includeBufferId
     
-      json.source = angular.copy(@source) if options.includeSource
-      json.plunk = angular.copy(@plunk) if options.includePlunk
-  
+    toJSON: (options = {}) ->
+      if options.raw
+        json =
+          description: @description
+          tags: @tags
+          private: @private
+          buffers: angular.copy(@buffers)
+          source: angular.copy(@source)
+      
+        buffer.content = "" for buffId, buffer of json.buffers if options.dirtyContent
+        
+        json
+      else
+        json =
+          description: @description
+          tags: @tags
+          'private': @private
+          files: {}
+    
+        for buffId, buffer of @buffers
+          json.files[buffer.filename] =
+            filename: buffer.filename
+            content: if options.dirtyContent then "" else buffer.content
+          json.files[buffer.filename].id = buffId if options.includeBufferId
+      
+        json.source = angular.copy(@source) if options.includeSource
+        json.plunk = angular.copy(@plunk) if options.includePlunk
+    
       json
   
     reset: (json = {}, options = {}) ->
-      $$savedBuffers = {}
-  
-      @resetting = true
+      $$savedState = {}
+      
+      @$resetting = true
       
       unless options.soft
         @plunk = null
         @plunk = plunks.findOrCreate(json.plunk) if json.plunk
-  
+        
         @source = json.source or ""
   
       @description = json.description or ""
       @tags = json.tags or []
-      @private = !!json.private
+      @private = !!json.plunk?.private or !!json.private
       
       @removeBuffer(buffer) for buffId, buffer of @buffers
-  
-      #angular.copy {}, @buffers
-  
-      #$$history.length = 0
-      
       
       @addBuffer(file.filename, file.content, {id: file.id, activate: true}) for filename, file of json.files if json.files
-  
       @addBuffer("index.html", "") unless $$history.length
   
       @activateBuffer(buffer) if buffer = @getBufferByFilename(/^index\./i)
 
-      @updated_at = Date.now()
-      @reset_at = Date.now() + 36000 unless options.dirty # Far in future to make sure isDirty is false until next tick
-      @saved_at = null
-      
       @skipDirtyCheck = true if options.dirty
       
       activity.client("session").record "reset", @toJSON(includeBufferId: true)
-
       
-      # Update @reset_at to next tick value to capture subsequent change events in setting initial value
-      unless options.dirty then $timeout =>
-        @reset_at = Date.now()
-        @resetting = false
+      $$cleanState = @toJSON(raw: true, dirtyContent: options.dirty)
+      $$savedState = @toJSON(raw: true) if @plunk?.isSaved()
+
+      @$resetting = false
 
       @
   
@@ -183,7 +205,8 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
           dfd.reject(err)
           notifier.error """
             Open failed: #{err}
-          """.trim()        
+          """.trim()
+    
   
     save: (options = {}) ->
       if @plunk and not @plunk.isWritable() then return notifier.warning """
@@ -191,97 +214,78 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       """.trim()
       
       self = @
-
-      lastSavedBuffers = angular.copy($$savedBuffers)
-      inFlightBuffers = do ->
-        buffers = {}
-        
-        for id, buffer of self.buffers
-          buffers[id] =
-            filename: buffer.filename
-            content: buffer.content
-        
-        buffers
       
-      inFlightSavedAt = Date.now()
+      update = (plunk) =>
+        lastCleanState = angular.copy($$savedState)
+        inFlightState = @toJSON(raw: true)
         
-
-      if plunk = @plunk
-        delta = {}
-        delta.description = @description if @description != plunk.description
+        json = {}
       
-        # Update tags
-        if plunk.isSaved()
-          tagDelta = {}
-          tagsChanged = false
-    
-          for tag in @tags
-            tagDelta[tag] = true
-            tagsChanged = true
-    
-          for tag in plunk.tags when tag not in @tags
-            tagDelta[tag] = false
-            tagsChanged = true
-    
-          if tagsChanged
-            delta.tags = tagDelta
-        else
-          delta.tags = angular.copy(@tags)
-    
-        fileDeltas = {}
-    
-        # Schedule all files for deletion, initially
-        for id, prev_file of $$savedBuffers
-          fileDeltas[prev_file.filename] = null
-    
-        for id, buffer of @buffers
-          if prev_file = $$savedBuffers[id]
-            fileDelta = {}
-    
-            if buffer.filename != prev_file.filename
-              fileDelta.filename = buffer.filename
-            if buffer.content != prev_file.content
-              fileDelta.content = buffer.content
-            
-            if fileDelta.filename or fileDelta.content
-              fileDeltas[prev_file.filename] = fileDelta
-            else
-              delete fileDeltas[prev_file.filename]
-          else
-            fileDeltas[buffer.filename] =
-              filename: buffer.filename
-              content: buffer.content
-         
-        for fn, chg of fileDeltas
-          delta.files = fileDeltas
-          break
+        if @isDirty("description") then json.description = @description 
+        
+        if @isDirty("tags")
+          json.tags = {}
           
-        delta = angular.extend delta, options
+          # Mark all previous tags for deletion
+          for tag in lastCleanState.tags
+            json.tags[tag] = null
+            
+          for tag in @tags
+            json.tags[tag] = true
+          
+        if @isDirty("buffers")
+          json.files = {}
+          
+          # Here there is the challenge that someone renames a file from
+          # A to B and then creates a file named A. The file delta should show
+          # a change of contents of A to match B's contents and a creation of
+          # B with A's contents.
+                    
+          # Step 1: recognize any file deletions
+          for buffId, prev of lastCleanState.buffers when not @buffers[buffId]
+            json.files[prev.filename] = null
+            
+          # Step 2: recognize updates to all existing files
+          for buffId, buffer of inFlightState.buffers when @isDirty(["buffers", buffId])
+            if prev = lastCleanState.buffers[buffId]
+              json.files[prev.filename] = {}
+              json.files[prev.filename].filename = buffer.filename unless prev.filename is buffer.filename
+              json.files[prev.filename].content = buffer.content unless prev.content is buffer.content
+          
+          # Step 3: recognise all new files
+          for buffId, buffer of inFlightState.buffers when @isDirty(["buffers", buffId])
+            unless lastCleanState.buffers[buffId]
+              if renameConflict = json.files[buffer.filename]
+                # Adjust the existing rename to become a new file
+                json.files[renameConflict.filename] = content: renameConflict.content
+                
+              # Create the new file
+              json.files[buffer.filename] = content: buffer.content
+        
+        json = angular.extend json, options
 
         $$asyncOp.call @, "save", (dfd) ->
-          plunk.save(delta).then (plunk) ->
-            $$savedBuffers = inFlightBuffers
-            self.saved_at = inFlightSavedAt
+          plunk.save(json).then (plunk) ->
+            $$cleanState = angular.copy(inFlightState)
+            $$savedState = angular.copy(inFlightState)
             notifier.success "Plunk updated"
             dfd.resolve(self)
           , (err) ->
-            $$savedBuffers = lastSavedBuffers
-    
             dfd.reject(err)
             notifier.error """
               Save failed: #{err}
             """.trim()
 
-      else
-        delta = @toJSON()
-        plunk = plunks.findOrCreate()
-
-        delta = angular.extend delta, options
-
+      create = (plunk) =>
+        lastCleanState = angular.copy($$savedState)
+        inFlightState = @toJSON(raw: true)
+      
+        json = angular.extend @toJSON(), options
+        
         $$asyncOp.call @, "save", (dfd) ->
-          plunk.save(delta).then (plunk) ->
-            self.saved_at = inFlightSavedAt
-            $$savedBuffers = inFlightBuffers
+          plunk.save(json).then (plunk) ->
+            $$cleanState = angular.copy(inFlightState)
+            $$savedState = angular.copy(inFlightState)
             self.plunk = plunk
             notifier.success "Plunk created"
             dfd.resolve(self)
@@ -290,7 +294,9 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
             notifier.error """
               Save failed: #{err}
             """.trim()
-
+            
+      if @plunk?.isSaved() then update(@plunk)
+      else create(@plunk || plunks.findOrCreate())
   
     fork: (options = {}) ->
       unless @plunk?.isSaved() then return notifier.warning """
@@ -300,26 +306,18 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       json = angular.extend @toJSON(), options
       self = @
       
-      lastSavedBuffers = angular.copy($$savedBuffers)
-      inFlightBuffers = do ->
-        buffers = {}
-        
-        for id, buffer of self.buffers
-          buffers[id] =
-            filename: buffer.filename
-            content: buffer.content
-      inFlightSavedAt = Date.now()
+      inFlightState = @toJSON(raw: true)
       
       $$asyncOp.call @, "fork", (dfd) ->
         plunks.fork(self.plunk, json).then (plunk) ->
           self.plunk = plunk
-          self.saved_at = inFlightSavedAt
-          $$savedBuffers = inFlightBuffers
+          $$cleanState = angular.copy(inFlightState)
+          $$savedState = angular.copy(inFlightState)
+  
+          notifier.success "Plunk forked"
   
           dfd.resolve(self)
         , (err) ->
-          $$savedBuffers = lastSavedBuffers
-  
           dfd.reject(err)
   
           notifier.error """
@@ -363,7 +361,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
   
       $$history.push(buffId)
       
-      unless @resetting then activity.client("session").record "files.add",
+      unless @$resetting then activity.client("session").record "files.add",
         buffId: buffId
         filename: filename
         content: content
@@ -386,7 +384,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       
       if idx == 0 and $$history.length then @activateBuffer(@buffers[$$history[0]])
       
-      unless @resetting then activity.client("session").record "files.remove",
+      unless @$resetting then activity.client("session").record "files.remove",
         buffId: buffer.id
   
       @
@@ -418,12 +416,10 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
   
       buffer.filename = new_filename
       
-      unless @resetting then activity.client("session").record "files.rename",
+      unless @$resetting then activity.client("session").record "files.rename",
         buffId: buffer.id
         filename: new_filename
         previous: filename
-      
-      @updated_at = Date.now()
   
       @
 ]

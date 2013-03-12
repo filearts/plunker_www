@@ -24,7 +24,11 @@ module.config ["$routeProvider", ($routeProvider) ->
       </div>
     """
     resolve:
-      user: ["$route", "users", ($route, users) ->
+      test: ->
+        console.log "Resolving test"
+        true
+      user: ["$route", "members", ($route, users) ->
+        console.log "Resolving users"
         user = users.findOrCreate(login: $route.current.params.login)
         user.refresh() unless user.$$refreshed_at
       ]

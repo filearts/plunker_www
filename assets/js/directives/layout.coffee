@@ -46,6 +46,7 @@ module.directive "plunkerEditorLayout", [ "panes", (panes) ->
         size: 200
         minSize: 160
         maxSize: 320
+        onresize: -> $scope.$broadcast "resize", arguments...
       center:
         children:
           defaults:
