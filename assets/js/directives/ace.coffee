@@ -1,11 +1,11 @@
-#= require ../../vendor/ace/src/ace
+#= require ./../../vendor/ace/src/ace
 
-#= require ../services/session
-#= require ../services/modes
-#= require ../services/settings
-#= require ../services/annotations
-#= require ../services/activity
-#= require ../services/participants
+#= require ./../services/session
+#= require ./../services/modes
+#= require ./../services/settings
+#= require ./../services/annotations
+#= require ./../services/activity
+#= require ./../services/participants
 
 
 module = angular.module "plunker.ace", [

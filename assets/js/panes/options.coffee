@@ -1,4 +1,4 @@
-#= require ../services/settings
+#= require ./../services/settings
 
 module = angular.module("plunker.panes")
 
@@ -10,7 +10,7 @@ module.run [ "panes", "settings", (panes, settings) ->
   panes.add
     id: "options"
     icon: "cog"
-    size: 328
+    size: 230
     order: 1000
     title: "Editor Options"
     description: """
@@ -18,40 +18,30 @@ module.run [ "panes", "settings", (panes, settings) ->
     """
     template: """
       <div class="plunker-options">
-        <form class="form-horizontal">
-          <h4>Editor:</h4>
-          <div class="control-group">
-            <label class="control-label" for="opts-editor-theme">Theme:</label>
-            <div class="controls">
+        <form>
+          <fieldset>
+            <legend>Editor</legend>
+            <label>Theme:
               <select class="input-medium" id="opts-editor-theme" ng-model="settings.editor.theme" ng-options="theme for theme in themes"></select>
-            </div>
-          </div>
-          <div class="control-group">
-            <label class="control-label" for="opts-editor-tabSize">Tab size:</label>
-            <div class="controls">
+            </label>
+            <label>Tab size:
               <input class="input-mini" id="opts-editor-tabSize" ng-model="settings.editor.tab_size" type="number" />
-            </div>
-          </div>
-          <div class="control-group">
-            <div class="controls">
-              <label class="checkbox">
-                <input class="input-mini" id="opts-editor-lineWrap" ng-model="settings.editor.wrap.enabled" type="checkbox" />
-                Line wrapping
-              </label>
-            </div>
-          </div>
-          <hr />
-          <h4>Previewer:</h4>
-          <div class="control-group">
-            <label class="control-label" for="opts-previewer-delay">Refresh interval:</label>
-            <div class="controls">
+            </label>
+            <label class="checkbox">
+              <input class="input-mini" id="opts-editor-lineWrap" ng-model="settings.editor.wrap.enabled" type="checkbox" />
+              Line wrapping
+            </label>
+          </fieldset>
+          <fieldset>
+            <legend>Previewer</legend>
+            <label>Refresh interval:
               <input class="input-small" id="opts-previewer-delay" ng-model="settings.previewer.delay" ng-disabled="!settings.previewer.auto_refresh" type="number" />
-              <label class="checkbox">
-                <input type="checkbox" ng-model="settings.previewer.auto_refresh" />
-                Auto refresh
-              </label>
-            </div>
-          </div>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" ng-model="settings.previewer.auto_refresh" />
+              Auto refresh
+            </label>
+          </fieldset>
         </form>
       </div>
     """

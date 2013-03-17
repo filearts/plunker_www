@@ -49,3 +49,9 @@
 [submodule "assets/vendor/ui-bootstrap"]
 	path = assets/vendor/ui-bootstrap
 	url = git://github.com/angular-ui/bootstrap.git
+[submodule "assets/vendor/typeahead"]
+	path = assets/vendor/typeahead
+	url = git://github.com/twitter/typeahead.js.git
+[submodule "assets/vendor/typeahead-bootstrap"]
+	path = assets/vendor/typeahead-bootstrap
+	url = git://github.com/jharding/typeahead.js-bootstrap.css.git

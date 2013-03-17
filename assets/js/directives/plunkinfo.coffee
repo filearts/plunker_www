@@ -1,4 +1,4 @@
-#= require ../directives/inlineplunk
+#= require ./../directives/inlineplunk
 
 module = angular.module "plunker.plunkinfo", [
   "plunker.inlineplunk"

@@ -1,25 +1,24 @@
-#= require ../../vendor/angular
+#= require ./../../vendor/angular
 
-#= require ../controllers/explore
-#= require ../controllers/users
-#= require ../controllers/tags
-#= require ../controllers/editor
-#= require ../controllers/profile
-#= require ../controllers/packages
-#= require ../controllers/preview
-#= require ../controllers/notfound
+#= require ./../controllers/explore
+#= require ./../controllers/members
+#= require ./../controllers/tags
+#= require ./../controllers/editor
+#= require ./../controllers/packages
+#= require ./../controllers/preview
+#= require ./../controllers/notfound
 
-#= require ../services/menu
-#= require ../services/plunks
+#= require ./../services/menu
+#= require ./../services/plunks
+#= require ./../services/users
 
-#= require ../directives/userpanel
+#= require ./../directives/userpanel
 
 
 module = angular.module "plunker.landing", [
   "plunker.explore"
-  "plunker.users"
   "plunker.tags"
-  "plunker.profile"
+  "plunker.members"
   "plunker.editorPage"
   "plunker.packages"
   "plunker.preview"

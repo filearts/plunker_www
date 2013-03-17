@@ -1,8 +1,8 @@
-#= require ../../vendor/semver/semver
+#= require ./../../vendor/semver/semver
 
-#= require ../services/url
-#= require ../services/visitor
-#= require ../services/api
+#= require ./../services/url
+#= require ./../services/visitor
+#= require ./../services/api
 
 
 module = angular.module "plunker.catalogue", [
@@ -11,31 +11,22 @@ module = angular.module "plunker.catalogue", [
   "plunker.api"
 ]
 
-module.service "catalogue", [ "$http", "api", ($http, api) ->
-  class Package
-    constructor: (pkgDef) ->
-      angular.copy pkgDef, @
-      
-      for version of @versions
-        version.semver = version.version
-        delete version.version
-     
-      
-  api.define "packages",
-    constructor: Package
+module.config [ "apiProvider", (apiProvider) ->
+  apiProvider.define "catalogue", 
     basePath: "/packages"
     primaryKey: "name"
     
     parser: (json) ->
-      
+      json.versions ||= []
+      version.dependencies ||= {} for version in json.versions
       json
     
     api:
       find:
         isArray: true
     
-    methods:
-      getLatestVersion: (unstable = false) ->
+    initialize: ->
+      @getLatestVersion = (unstable = false) ->
         latestVersionDef = null
         
         for versionDef in @versions
@@ -46,6 +37,8 @@ module.service "catalogue", [ "$http", "api", ($http, api) ->
             latestVersionDef = versionDef
         
         latestVersionDef
-          
-    
+]
+
+module.service "catalogue", [ "$http", "api", ($http, api) ->
+  api.get("catalogue")
 ]

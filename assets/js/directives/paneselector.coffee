@@ -1,14 +1,11 @@
-#= require ../../vendor/angular-ui/common/module
-#= require ../../vendor/angular-ui/modules/directives/jq/jq
+#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.2.0
 
-#= require ../../vendor/bootstrap/js/bootstrap-tooltip
-#= require ../../vendor/bootstrap/js/bootstrap-popover
-
-#= require ../services/panes
+#= require ./../services/panes
 
 module = angular.module "plunker.paneselector", [
   "plunker.panes"
-  "ui.directives"
+  "ui.bootstrap"
+  "ui.bootstrap.tooltip"
 ]
 
 module.directive "plunkerPaneselector", [ "panes", (panes) ->
@@ -17,7 +14,7 @@ module.directive "plunkerPaneselector", [ "panes", (panes) ->
   template: """
     <div class="plunker-paneselector">
       <ul>
-        <li ng-repeat="pane in panes.panes | orderBy:'order'" class="{{pane.class}} plunker-pane-{{pane.id}}" ng-hide="pane.hidden" ng-class="{active:pane==panes.active}">
+        <li tooltip="{{pane.title}}" tooltip-placement="left" ng-repeat="pane in panes.panes | orderBy:'order'" class="{{pane.class}} plunker-pane-{{pane.id}}" ng-hide="pane.hidden" ng-class="{active:pane==panes.active}">
           <a ng-click="panes.toggle(pane)">
             <i class="icon-{{pane.icon}}"></i>
           </a>

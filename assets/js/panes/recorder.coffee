@@ -1,9 +1,9 @@
-#= require ../services/panes
-#= require ../services/activity
-#= require ../services/session
+#= require ./../services/panes
+#= require ./../services/activity
+#= require ./../services/session
 
 
-#= require ../directives/player
+#= require ./../directives/player
 
 module = angular.module("plunker.panes")
 

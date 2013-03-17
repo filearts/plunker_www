@@ -1,13 +1,13 @@
-#= require ../../vendor/jquery.cookie/jquery.cookie
-#= require ../../vendor/script/dist/script
+#= require ./../../vendor/jquery.cookie/jquery.cookie
+#= require ./../../vendor/script/dist/script
 
-#= require ../services/participants
-#= require ../services/visitor
-#= require ../services/notifier
-#= require ../services/activity
-#= require ../services/url
+#= require ./../services/participants
+#= require ./../services/visitor
+#= require ./../services/notifier
+#= require ./../services/activity
+#= require ./../services/url
 
-#= require ../directives/overlay
+#= require ./../directives/overlay
 
 
 module = angular.module("plunker.panes")

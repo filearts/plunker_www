@@ -53,10 +53,12 @@ app.use lactate.static "#{__dirname}/build", lactateOptions
 app.use lactate.static "#{__dirname}/assets", lactateOptions
 app.use "/css/font", lactate.static("#{__dirname}/assets/vendor/Font-Awesome-More/font/", lactateOptions)
 
-if process.env.NODE_ENV is "production"
+if nconf.get("NODE_ENV") is "production"
+  console.log "Starting Plunker in: PRODUCTION"
   app.locals.js = (route) -> """<script src="/js/#{route}-#{pkginfo.version}.js"></script>"""
   app.locals.css = (route) -> """<link rel="stylesheet" href="/css/#{route}-#{pkginfo.version}.css" />"""
 else
+  console.log "Starting Plunker in: DEVELOPMENT"
   app.use assets(assetOptions)
   
 app.use express.cookieParser()

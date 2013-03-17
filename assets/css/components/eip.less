@@ -1,0 +1,54 @@
+.eip-container {
+  display: inline-block;
+  
+  .eip-show, .eip-edit {
+    display: inline-block;
+  }
+  
+  .eip-form {
+    margin: 0;
+  }
+  
+  ul.eip-ops {
+    display: none;
+    list-style: none;
+    margin: 0 0 0 8px;
+    padding: 0;
+    
+    > li {
+      display: inline-block;
+      margin: 0;
+      padding: 0;
+      
+      > a:hover {
+        cursor: pointer;
+        color: #005580;
+      }
+    }
+  }
+  
+  ul.eip-ops-show {
+    display: inline-block;
+  }
+  
+  :hover ul.eip-ops {
+    display: inline-block;
+  }
+}
+
+.hide-edit>.eip-container .eip-op-edit {
+  display: none;
+}
+
+
+.hide-destroy>.eip-container .eip-op-destroy {
+  display: none;
+}
+
+.hide-save>.eip-container .eip-op-save {
+  display: none;
+}
+
+.hide-cancel>.eip-container .eip-op-cancel {
+  display: none;
+}

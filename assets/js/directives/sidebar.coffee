@@ -1,26 +1,29 @@
-#= require ../../vendor/select2/select2
+#= require ./../../vendor/select2/select2
 
-#= require ../../vendor/jquery.autosize/jquery.autosize
+#= require ./../../vendor/jquery.autosize/jquery.autosize
 
-#= require ../../vendor/angular-ui/common/module
-#= require ../../vendor/angular-ui/modules/directives/select2/select2
+#= require ./../../vendor/angular-ui/common/module
+#= require ./../../vendor/angular-ui/modules/directives/select2/select2
+
+#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.2.0
 
 
-#= require ../services/session
-#= require ../services/notifier
+#= require ./../services/session
+#= require ./../services/notifier
 
-#= require ../directives/inlineuser
-#= require ../directives/plunkinfo
-#= require ../directives/restorer
+#= require ./../directives/inlineuser
+#= require ./../directives/plunkinfo
+#= require ./../directives/restorer
 
 
 module = angular.module "plunker.sidebar", [
-  "ui.directives"
   "plunker.session"
   "plunker.notifier"
   "plunker.inlineuser"
   "plunker.plunkinfo"
   "plunker.restorer"
+  "ui.directives"
+  "ui.bootstrap"
 ]
 
 module.directive "plunkerSidebarFile", [ "notifier", "session", (notifier, session) ->
@@ -37,7 +40,7 @@ module.directive "plunkerSidebarFile", [ "notifier", "session", (notifier, sessi
       <a class="filename" ng-click="activateBuffer(buffer)" ng-dblclick="promptFileRename(buffer)">{{buffer.filename}}</a>
       <ul class="file-ops">
         <li class="delete">
-          <button ng-click="promptFileDelete(buffer)" class="btn btn-mini">
+          <button ng-click="promptFileDelete(buffer)" class="btn btn-mini" tooltip="Delete this file" tooltip-placement="right">
             <i class="icon-remove"></i>
           </button>
         </li>
@@ -94,7 +97,9 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
           <plunker-sidebar-file buffer="buffer" ng-repeat="(id, buffer) in session.buffers | orderBy:'filename'">
           </plunker-sidebar-file>
           <li class="newfile">
-            <a ng-click="promptFileAdd()"><i class="icon-file"></i> New file</a>
+            <a ng-click="promptFileAdd()">
+              <i class="icon-file"></i> New file
+            </a>
           </li>
         </ul>
       </details>
@@ -114,11 +119,15 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
               <div>User:</div>
               <plunker-inline-user user="session.plunk.user"></plunker-inline-user>
             </div>
-            <label ng-hide="session.isSaved()">
+            <div ng-hide="session.isSaved()">
               <div>Privacy:</div>
-              <input type="checkbox" ng-model="session.private" />
-              <abbr title="Only users who know the url of the plunk will be able to view it">private plunk</abbr>
-            </label>
+              <label>
+                <span tooltip="Only users who know the url of the plunk will be able to view it" tooltip-placement="right">
+                  <input type="checkbox" ng-model="session.private" />
+                  private plunk
+                </span>
+              </label>
+            </div>
             <div ng-show="session.isSaved()">
               <div>Privacy:</div>
               <abbr ng-show="session.private" title="Only users who know the url of the plunk will be able to view it"><i class="icon-lock"></i> private plunk</abbr>

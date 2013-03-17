@@ -1,4 +1,4 @@
-#= require ../services/settings
+#= require ./../services/settings
 
 module = angular.module("plunker.panes")
 

@@ -1,4 +1,4 @@
-#= require ../services/activity
+#= require ./../services/activity
 
 module = angular.module "plunker.cursor", [
   "plunker.activity"

@@ -1,3 +1,6 @@
+#= require ./../../vendor/jquery-timeago/jquery.timeago
+
+
 module = angular.module "plunker.timeago", []
 
 module.directive "timeago", [ "$timeout", "$filter", ($timeout, $filter) ->

@@ -1,6 +1,6 @@
-#= require ../../vendor/bootstrap/js/bootstrap-alert.js
+#= require ./../../vendor/bootstrap/js/bootstrap-alert.js
 
-#= require ../services/session
+#= require ./../services/session
 
 
 module = angular.module "plunker.restorer", [

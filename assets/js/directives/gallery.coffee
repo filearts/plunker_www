@@ -1,6 +1,6 @@
-#= require ../../vendor/masonry/jquery.masonry
+#= require ./../../vendor/masonry/jquery.masonry
 
-#= require ../directives/card
+#= require ./../directives/card
 
 module = angular.module "plunker.gallery", ["plunker.card"]
 

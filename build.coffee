@@ -11,7 +11,7 @@ pkginfo = require("./package.json")
 assets
   src: "#{__dirname}/assets"
   build: true
-  minifyBuilds: false
+  minifyBuilds: true
   buildDir: "build"
   buildFilenamer: (filename) ->
     dir = path.dirname(filename)
@@ -20,7 +20,9 @@ assets
     
     return path.join dir, "#{base}-#{pkginfo.version}#{ext}"
 
+
 if fs.existsSync("#{__dirname}/build") then rimraf.sync("#{__dirname}/build")
+
   
 console.log "Building landing.js"
 js("apps/landing")

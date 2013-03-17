@@ -1,4 +1,4 @@
-#= require ../services/plunks
+#= require ./../services/plunks
 
 plunkerRegex = ///
   ^

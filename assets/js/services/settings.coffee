@@ -4,7 +4,7 @@ module.service "settings", [ () ->
   
   settings =
     previewer:
-      delay: 400
+      delay: 1000
       auto_refresh: true
     editor:
       tab_size: 2

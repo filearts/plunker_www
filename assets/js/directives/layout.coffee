@@ -1,14 +1,14 @@
-#= require ../../vendor/jquery-ui
-#= require ../../vendor/jquery-layout/jquery.layout
+#= require ./../../vendor/jquery-ui
+#= require ./../../vendor/jquery-layout/jquery.layout
 
-#= require ../services/panes
+#= require ./../services/panes
 
-#= require ../directives/sidebar
-#= require ../directives/ace
-#= require ../directives/multipane
-#= require ../directives/paneselector
+#= require ./../directives/sidebar
+#= require ./../directives/ace
+#= require ./../directives/multipane
+#= require ./../directives/paneselector
 
-#= require_tree ../panes
+#= require_tree ./../panes
 
 module = angular.module "plunker.layout", [
   "plunker.panes"

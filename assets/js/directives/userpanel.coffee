@@ -1,6 +1,4 @@
-#= require ../../vendor/bootstrap/js/bootstrap-dropdown
-
-#= require ../services/visitor
+#= require ./../services/visitor
 
 
 module = angular.module("plunker.userpanel", ["plunker.visitor"])

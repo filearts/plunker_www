@@ -1,13 +1,15 @@
-#= require ../services/url
-#= require ../services/visitor
-#= require ../services/instantiator
-#= require ../services/users
+#= require ./../services/url
+#= require ./../services/visitor
+#= require ./../services/instantiator
+#= require ./../services/api
+#= require ./../services/users
 
 
 module = angular.module "plunker.plunks", [
   "plunker.url"
   "plunker.visitor"
   "plunker.instantiator"
+  "plunker.api"
   "plunker.users"
 ]
 
@@ -16,7 +18,7 @@ module.run ["instantiator", "plunks", (instantiator, plunks) ->
   instantiator.register "plunks", plunks.findOrCreate
 ]
 
-module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "instantiator", ($http, $rootScope, $q, url, visitor, instantiator) ->
+module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "instantiator", "api", ($http, $rootScope, $q, url, visitor, instantiator, api) ->
   $$plunks = {}
   $$feeds = {}
   
@@ -31,7 +33,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
     else
       plunk = new Plunk(json)
     
-    plunk.user = instantiator.findOrCreate("users", json.user) if json.user
+    plunk.user = api.get("users").findOrCreate(json.user) if json.user
     
     return plunk
   

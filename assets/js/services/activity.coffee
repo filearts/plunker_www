@@ -45,22 +45,3 @@ module.value "activity", do ->
       for name, client of @clients when name != emitter.name
         $$emit(client.watchers, type, event)
         
-        
-  ###
-  $$handlers = {}
-  $$watchers = []
-  
-  $$register = (arr, fn) ->
-    arr.push(fn)
-    -> if (idx = arr.indexOf(fn)) >= 0 then arr.splice(idx, 1)
-  
-  $$emit = (arr, args) ->
-    fn.apply(this, args) for fn in arr if arr
-
-  new class Activity
-    record: (args...) -> $$emit($$watchers, args)
-    play: (event, args...) -> $$emit($$handlers[event], args)
-    
-    addWatcher: (fn) -> $$register($$watchers, fn)
-    addHandler: (event, fn) -> $$register($$handlers[event] ?= [], fn)
-  ###

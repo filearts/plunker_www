@@ -1,10 +1,10 @@
-#= require ../services/quickview
+#= require ./../services/quickview
 
-#= require ../directives/inlineuser
-#= require ../directives/inlineplunk
-#= require ../directives/taglist
+#= require ./../directives/inlineuser
+#= require ./../directives/inlineplunk
+#= require ./../directives/taglist
 
-#= require ../../vendor/jquery-timeago/jquery.timeago
+#= require ./../../vendor/jquery-timeago/jquery.timeago
 
 module = angular.module "plunker.card", [
   "plunker.inlineuser"

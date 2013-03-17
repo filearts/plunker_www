@@ -1,4 +1,4 @@
-#= require ../services/quickview
+#= require ./../services/quickview
 
 module = angular.module "plunker.inlineplunk", ["plunker.quickview"]
 

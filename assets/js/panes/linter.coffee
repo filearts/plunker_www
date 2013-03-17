@@ -1,5 +1,5 @@
-#= require ../services/annotations
-#= require ../services/activity
+#= require ./../services/annotations
+#= require ./../services/activity
 
 module = angular.module("plunker.panes")
 
@@ -49,8 +49,14 @@ module.run [ "panes", "annotations", "session", "activity", (panes, annotations,
       $scope.notesUpdated = false
       $scope.filters =
         error: true
-        warning: true
+        warning: false
         info: false
+      
+      $scope.relevant = 0
+      $scope.counts =
+        error: 0
+        warning: 0
+        info: 0
       
       $scope.relevantNotes = (input, filters) ->
         output = []
@@ -64,11 +70,13 @@ module.run [ "panes", "annotations", "session", "activity", (panes, annotations,
         pane.class = "" if active
       
       $scope.$watch "annotations", (annotations) ->
-        unless pane.active
-          for buffId, notes of annotations
-            if $scope.relevantNotes(notes, $scope.filters).length
-              pane.class = "pulse-info"
-              return
+        $scope.relevant = 0
+        
+        for buffId, notes of annotations
+          for note in notes
+            $scope.counts[note.type]++
+            
+          $scope.relevant += $scope.relevantNotes(notes, $scope.filters).length
       , true
       
       $scope.moveCursorTo = (buffId, row, column) ->

@@ -1,6 +1,6 @@
-#= require ../services/menu
+#= require ./../services/menu
 
-#= require ../directives/timeago
+#= require ./../directives/timeago
 
 
 module = angular.module "plunker.tags", [

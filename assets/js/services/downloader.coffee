@@ -1,4 +1,4 @@
-#= require ../../vendor/jszip/jszip.js
+#= require ./../../vendor/jszip/jszip.js
 
 
 module = angular.module("plunker.downloader", [])

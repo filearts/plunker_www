@@ -1,6 +1,6 @@
-#= require ../services/plunks
-#= require ../services/notifier
-#= require ../services/activity
+#= require ./../services/plunks
+#= require ./../services/notifier
+#= require ./../services/activity
 
 module = angular.module "plunker.session", [
   "plunker.plunks"

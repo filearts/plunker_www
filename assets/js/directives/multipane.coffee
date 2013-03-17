@@ -1,4 +1,4 @@
-#= require ../services/panes
+#= require ./../services/panes
 
 module = angular.module "plunker.multipane", [
   "plunker.panes"
@@ -8,7 +8,7 @@ module.directive "plunkerPane", [ "$compile", "panes", ($compile, panes) ->
   restrict: "E"
   replace: true
   scope:
-    pane: "="
+    pane: "=usePane"
   template: """
     <div class="plunker-pane" ng-show="pane==panes.active"></div>
   """
@@ -32,7 +32,7 @@ module.directive "plunkerMultipane", [ "panes", (panes) ->
   replace: true
   template: """
     <div class="plunker-multipane">
-      <plunker-pane pane="pane" ng-repeat="pane in panes.panes"></plunker-pane>
+      <plunker-pane use-pane="pane" ng-repeat="pane in panes.panes"></plunker-pane>
     </div>
   """
   link: ($scope, $el, attrs) ->

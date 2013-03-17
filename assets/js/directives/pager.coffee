@@ -1,4 +1,4 @@
-#= require ../../vendor/URL/lib/URL
+#= require ./../../vendor/URL/lib/URL
 
 
 module = angular.module "plunker.pager", []

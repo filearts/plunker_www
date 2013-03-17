@@ -1,4 +1,4 @@
-#= require ../services/menu
+#= require ./../services/menu
 
 module = angular.module "plunker.notfound", [
   "plunker.menu"

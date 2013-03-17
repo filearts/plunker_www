@@ -1,7 +1,7 @@
-#= require ../../vendor/jquery.cookie/jquery.cookie
+#= require ./../../vendor/jquery.cookie/jquery.cookie
 
-#= require ../services/url
-#= require ../services/notifier
+#= require ./../services/url
+#= require ./../services/notifier
 
 
 module = angular.module "plunker.visitor", [

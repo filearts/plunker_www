@@ -1,6 +1,7 @@
-#= require ../directives/inlineuser
+#= require ./../directives/inlineuser
 
-#= require ../../vendor/jquery-timeago/jquery.timeago
+#= require ./../../vendor/jquery-timeago/jquery.timeago
+
 
 module = angular.module "plunker.quickview", ["plunker.inlineuser"]
 

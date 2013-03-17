@@ -1,14 +1,14 @@
-#= require ../../vendor/angular.js
-#= require ../../vendor/bootstrap/js/bootstrap-button.js
+#= require ./../../vendor/angular.js
+#= require ./../../vendor/bootstrap/js/bootstrap-button.js
 
-#= require ../services/importer
-#= require ../services/session
-#= require ../services/notifier
+#= require ./../services/importer
+#= require ./../services/session
+#= require ./../services/notifier
 
-#= require ../directives/userpanel
-#= require ../directives/toolbar
-#= require ../directives/overlay
-#= require ../directives/layout
+#= require ./../directives/userpanel
+#= require ./../directives/toolbar
+#= require ./../directives/overlay
+#= require ./../directives/layout
 
 module = angular.module "plunker.editorPage", [
   "plunker.userpanel"

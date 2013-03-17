@@ -1,5 +1,5 @@
-#= require ../services/activity
-#= require ../services/session
+#= require ./../services/activity
+#= require ./../services/session
 
 
 module = angular.module "plunker.player", [

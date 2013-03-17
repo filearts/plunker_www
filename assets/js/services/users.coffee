@@ -1,119 +1,36 @@
-#= require ../services/url
-#= require ../services/visitor
-#= require ../services/instantiator
+#= require ./../services/url
+#= require ./../services/visitor
+#= require ./../services/api
+
 
 module = angular.module "plunker.users", [
   "plunker.url"
   "plunker.visitor"
-  "plunker.instantiator"
+  "plunker.api"
+  "plunker.plunks"
 ]
 
-console.log "Users service loaded"
-
-
-module.run ["instantiator", "members", (instantiator, users) ->
-  console.log "Users instantiator"
-  instantiator.register "users", users.findOrCreate
-]
-
-module.value "members", {}
-
-###
-module.service "members", [ "$http", "$rootScope", "$q", "url", "visitor", "instantiator", ($http, $rootScope, $q, url, visitor, instantiator) ->
-  console.log "Users service", @
-  $$users = {}
-  
-  $$findOrCreate = (json = {}) ->
-    if json.login
-      unless $$users[json.login]
-        $$users[json.login] = new User(json)
-      
-      user = $$users[json.login]
-      
-      angular.extend(user, json)
-    else
-      user = new User(json)
+module.config ["apiProvider", (apiProvider) ->
+  apiProvider.define "users",
+    basePath: "/users"
+    primaryKey: "login"
     
-    return user
-  
-  $$mapUsers = (jsonArray, options = {upsert: true}) ->
-    results = []
-
-    for json in jsonArray
-      json.$$refreshed_at = new Date()
-      
-      results.push $$findOrCreate(json, options)
-
-    results
-
-  
-  class User
-    constructor: (json) ->
-      if user = $$users[json.login]
-        angular.extend(user, json)
-        return user
-      
-      self = @
-      
-      angular.copy(json, self)
-      
-      Object.defineProperty self, "thumbed", get: ->
-        plunks.query(url: "#{url.api}/users/#{self.login}/thumbed")
-      Object.defineProperty self, "plunks", get: ->
-        plunks.query(url: "#{url.api}/users/#{self.login}/plunks")
+    api:
+      find:
+        isArray: true
     
-    refresh: (options = {}) ->
-      self = @
-      
-      options.params ||= {}
-      options.params.sessid = visitor.session.id
-      
-      self.$$refreshing ||= $http.get("#{url.api}/users/#{@login}", options).then (res) ->
-        angular.copy(res.data, self)
+    initialize: ["plunks", "url", (plunks, url) ->
+      @getPlunks = (options = {}) ->
+        options.url ||= "#{url.api}/users/#{@login}/plunks"
+        plunks.query(options)
         
-        self.$$refreshing = null
-        self.$$refreshed_at = new Date()
-        
-        self
-
-      
-  users =
-    findOrCreate: (defaults = {}) -> $$findOrCreate(defaults, upsert: true)
-    
-    query: (options = {}) ->
-      results = []
-      links = {}
-      
-      options.params ||= {}
-      options.params.sessid = visitor.session.id
-      options.params.pp = 12
-      
-      results.url = options.url || "#{url.api}/users"
-      results.links = (rel) ->
-        if rel then links[rel] or ""
-        else links
-          
-      results.pageTo = (href) ->
-        results.url = href
-        results.refresh()
-      
-      (results.refresh = ->
-        results.$$refreshing ||= $http.get(results.url, options).then (res) ->
-          angular.copy {}, links
-          
-          if link = res.headers("link")
-            link.replace /<([^>]+)>;\s*rel="(\w+)"/gi, (match, href, rel) ->
-              links[rel] = href
-          
-          results.length = 0
-          results.push(plunk) for plunk in $$mapUsers(res.data)
-          
-          results.$$refreshing = null
-          results.$$refreshed_at = new Date()
-          
-          results
-      )()
-      
-      return results
+      @getFavorites = (options = {}) ->
+        options.url ||= "#{url.api}/users/#{@login}/thumbed"
+        plunks.query(options)
+    ]
 ]
-###
+
+module.service "users", [ "$http", "api", "plunks", "url", ($http, api, plunks, url) ->
+  users = api.get("users")
+    
+]

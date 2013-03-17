@@ -1,7 +1,9 @@
-#= require ../services/visitor
-#= require ../services/session
-#= require ../services/downloader
-#= require ../services/panes
+#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.2.0
+
+#= require ./../services/visitor
+#= require ./../services/session
+#= require ./../services/downloader
+#= require ./../services/panes
 
 module = angular.module "plunker.toolbar", [
   "plunker.visitor"
@@ -9,6 +11,7 @@ module = angular.module "plunker.toolbar", [
   "plunker.downloader"
   "plunker.notifier"
   "plunker.panes"
+  "ui.bootstrap"
 ]
 
 module.directive "plunkerToolbar", ["$location", "session", "downloader", "notifier", "panes", ($location, session, downloader, notifier, panes) ->
@@ -18,21 +21,30 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
   template: """
     <div class="plunker-toolbar btn-toolbar">
       <div class="btn-group" ng-show="!session.plunk || session.plunk.isWritable()">
-        <button ng-disabled="!session.isPlunkDirty()" ng-click="session.save()" title="Save your work as a new Plunk" class="btn btn-primary"><i class="icon-save"></i><span class="shrink"> Save</span></button>
+        <button ng-disabled="!session.isPlunkDirty()" ng-click="session.save()" class="btn btn-primary" tooltip-placement="bottom" tooltip="Save your work as a new Plunk">
+          <i class="icon-save"></i><span class="shrink"> Save</span>
+        </button>
       </div>
       <div class="btn-group" ng-show="session.isSaved()">
-        <button ng-click="session.fork()" title="Save your changes as a fork of this Plunk" class="btn"><i class="icon-git-fork"></i><span class="shrink"> Fork</span></button>
-        <button data-toggle="dropdown" class="btn dropdown-toggle"><span class="caret"></span></button>
+        <button ng-click="session.fork()" class="btn" tooltip-placement="bottom" tooltip="Save your changes as a fork of this Plunk">
+          <i class="icon-git-fork"></i><span class="shrink"> Fork</span>
+        </button>
+        <button data-toggle="dropdown" class="btn dropdown-toggle" tooltip-placement="bottom" tooltip="Fork and toggle the privacy of this Plunk"><span class="caret"></span></button>
         <ul class="dropdown-menu" ng-switch on="session.private">
           <li ng-switch-when="false"><a ng-click="session.fork({private: true})">Fork to private plunk</a></li>
           <li ng-switch-when="true"><a ng-click="session.fork({private: false})">Fork to public plunk</a></li>
         </ul>
       </div>
       <div ng-show="session.plunk.isWritable() && session.plunk.isSaved()" class="btn-group">
-        <button ng-click="promptDestroy()" title="Delete the current plunk" class="btn btn-danger"><i class="icon-trash"></i></button>
+        <button ng-click="promptDestroy()" class="btn btn-danger" tooltip-placement="bottom" tooltip="Delete the current plunk">
+          <i class="icon-trash"></i>
+        </button>
       </div>
-      <div class="btn-group"><a href="/edit/" title="Start a new plunk from a blank slate" class="btn btn-success"><i class="icon-file"></i><span class="shrink"> New</span></a>
-        <button data-toggle="dropdown" class="btn btn-success dropdown-toggle"><span class="caret"></span></button>
+      <div class="btn-group">
+        <button ng-click="promptReset()" class="btn btn-success" tooltip-placement="bottom" tooltip="Create a new Plunk">
+          <i class="icon-file"></i><span class="shrink"> New</span>
+        </button>
+        <button data-toggle="dropdown" class="btn btn-success dropdown-toggle" tooltip-placement="bottom" tooltip="Create a new Plunk from a template"><span class="caret"></span></button>
         <ul class="dropdown-menu">
           <li><a href="/edit/gist:1986619">jQuery<a href="/edit/gist:1992850" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
           <li><a href="/edit/gist:2006604">jQuery UI</a></li>
@@ -65,17 +77,17 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
         </ul>
       </div>
       <div class="btn-group">
-        <button ng-click="triggerDownload()" class="btn" title="Save your work as a zip file">
+        <button ng-click="triggerDownload()" class="btn" tooltip-placement="bottom" tooltip="Download your Plunk as a zip file">
           <i class="icon-download-alt" />
         </button>
       </div>
       <div class="btn-group" ng-show="session.isSaved()">
-        <button ng-click="toggleFavorite()" class="btn" ng-class="{starred: session.plunk.thumbed, 'active': session.plunk.thumbed}" title="Save this Plunk in your favorites">
+        <button ng-click="toggleFavorite()" class="btn" ng-class="{starred: session.plunk.thumbed, 'active': session.plunk.thumbed}" tooltip-placement="bottom" tooltip="Save this Plunk to your favorites">
           <i class="icon-star" />
         </button>
       </div>
       <div class="btn-group">
-        <button ng-click="togglePreview()" class="btn btn-inverse" ng-class="{active: panes.active.id=='preview'}" title="Run this plunk" ng-switch on="panes.active.id=='preview'">
+        <button ng-click="togglePreview()" class="btn btn-inverse" ng-class="{active: panes.active.id=='preview'}" ng-switch on="panes.active.id=='preview'" tooltip-placement="bottom" tooltip="Preview your work">
           <div ng-switch-when="false">
             <i class="icon-play" />
             <span class="shrink">Run</span>
@@ -91,6 +103,11 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
   link: ($scope, el, attrs) ->
     $scope.session = session
     $scope.panes = panes
+    
+    $scope.promptReset = ->
+      if session.isDirty() and not session.skipDirtyCheck then notifier.confirm "You have unsaved changes. This action will reset your plunk. Are you sure you would like to proceed?",
+        confirm: -> session.reset()
+      else session.reset()
     
     $scope.promptDestroy = ->
       notifier.confirm "Confirm Deletion", "Are you sure that you would like to delete this plunk?",

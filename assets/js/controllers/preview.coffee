@@ -1,10 +1,10 @@
-#= require ../services/plunks
-#= require ../services/visitor
+#= require ./../services/plunks
+#= require ./../services/visitor
 
-#= require ../directives/gallery
-#= require ../directives/overlay
-#= require ../directives/plunkinfo
-#= require ../directives/timeago
+#= require ./../directives/gallery
+#= require ./../directives/overlay
+#= require ./../directives/plunkinfo
+#= require ./../directives/timeago
 
 module = angular.module "plunker.preview", [
   "plunker.plunks"
