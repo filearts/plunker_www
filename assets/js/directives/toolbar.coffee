@@ -42,7 +42,7 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
       </div>
       <div class="btn-group">
         <button ng-click="promptReset()" class="btn btn-success" tooltip-placement="bottom" tooltip="Create a new Plunk">
-          <i class="icon-file"></i><span class="shrink"> New</span>
+          <i class="icon-file"></i><span class="shrink">New</span>
         </button>
         <button data-toggle="dropdown" class="btn btn-success dropdown-toggle" tooltip-placement="bottom" tooltip="Create a new Plunk from a template"><span class="caret"></span></button>
         <ul class="dropdown-menu">

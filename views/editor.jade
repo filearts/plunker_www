@@ -53,8 +53,9 @@ html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editor
     nav.navbar.navbar-fixed-top
       div.navbar-inner
         div.container-fluid
-          a.brand(href="/") Plunker
-            sub.version(ng-bind-template="v{{package.version}}")
+          a.brand(href="/")
+            span.brandname Plunker
+              sub.version(ng-bind-template="v{{package.version}}")
 
           <plunker-userpanel></plunker-userpanel>
           <plunker-toolbar></plunker-toolbar>
