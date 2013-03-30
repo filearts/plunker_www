@@ -7,6 +7,8 @@
 
 #= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.2.0
 
+#= require ./../../vendor/script/dist/script
+
 
 #= require ./../services/session
 #= require ./../services/notifier
@@ -94,7 +96,7 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
       <details open>
         <summary class="header">Files</summary>
         <ul class="plunker-filelist nav nav-list">
-          <plunker-sidebar-file buffer="buffer" ng-repeat="(id, buffer) in session.buffers | orderBy:'filename'">
+          <plunker-sidebar-file buffer="buffer" ng-repeat="(id, buffer) in session.buffers">
           </plunker-sidebar-file>
           <li class="newfile">
             <a ng-click="promptFileAdd()">
@@ -133,6 +135,15 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
               <abbr ng-show="session.private" title="Only users who know the url of the plunk will be able to view it"><i class="icon-lock"></i> private plunk</abbr>
               <abbr ng-hide="session.private" title="Everyone can see this plunk"><i class="icon-unlock"></i> public plunk</abbr>
             </div>
+            <div class="share" ng-show="session.isSaved()">
+              <div id="sidebar-share" class="addthis_toolbox addthis_default_style" ng-show="addthis">
+                <a class="addthis_button_preferred_1"></a>
+                <a class="addthis_button_preferred_2"></a>
+                <a class="addthis_button_preferred_3"></a>
+                <a class="addthis_button_compact"></a>
+                <a class="addthis_counter addthis_bubble_style"></a>
+              </div>
+            </div>
           </div>
         </form>
       </details>
@@ -145,7 +156,33 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
         confirm: (filename) -> session.addBuffer(filename, "", activate: true)
     $desc = $el.find("#plunk-description")
     $desc.autosize(append: "\n")
+
+    window.addthis_config =
+      data_track_clickback: true
+      data_ga_property: 'UA-28928507-3'
+      data_ga_social: true
     
-    $scope.$watch "session.description", -> $desc.trigger("autosize")
+    window.addthis_share =
+      title: "Check out what I made on Plunker"
+
+    $scope.$watch "session.description", (description) ->
+      $desc.trigger("autosize")
+      
+      window.addthis_share.description = description
     $scope.$on "resize", -> $desc.trigger("autosize")
+    
+    $(".share").on "click", (e) ->
+      e.stopPropagation()
+      e.preventDefault()
+    
+    dereg = $scope.$watch "session.isSaved()", (saved) ->
+
+      
+      if saved
+        $script "//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-4f60c7714e5b5629", "addthis"
+        $script.ready "addthis", ->
+          $scope.$apply ->
+            $scope.addthis = true
+          
+          dereg()
 ]

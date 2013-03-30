@@ -23,7 +23,7 @@ module.directive "plunkerRestorer", [ "session", (session) ->
       close: -> window.localStorage.removeItem("plnkr_dirty_state")
         
     $scope.restoreSession = ->
-      session.reset($scope.savedState, dirty: true)
+      session.reset($scope.savedState)
       window.localStorage.removeItem("plnkr_dirty_state")
       $($el).alert("close")
     

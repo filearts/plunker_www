@@ -6,6 +6,7 @@
 #= require ./../services/annotations
 #= require ./../services/activity
 #= require ./../services/participants
+#= require ./../services/panes
 
 
 module = angular.module "plunker.ace", [
@@ -15,6 +16,7 @@ module = angular.module "plunker.ace", [
   "plunker.annotations"
   "plunker.activity"
   "plunker.participants"
+  "plunker.panes"
 ]
 
 Editor = require("ace/editor").Editor
@@ -294,7 +296,7 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
       <div class="plunker-ace-canvas"></div>
     </div>
   """
-  controller: ["$scope", ($scope) ->
+  controller: ["$scope", "panes", ($scope, panes) ->
     $scope.session = session
     $scope.settings = settings.editor
     $scope.participants = participants
@@ -307,7 +309,40 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
     @activate = (@buffId) -> @editor.setSession(@sessions[@buffId])
     
     @markDirty = -> session.updated_at = Date.now()
-
+    
+    @bindKeys = ->
+      @editor.commands.addCommand
+        name: "Save"
+        bindKey:
+          win: "Ctrl-S"
+          mac: "Command-S"
+        exec: ->  $scope.$apply ->
+          session.save() if session.isPlunkDirty()
+      
+      @editor.commands.addCommand
+        name: "Preview"
+        bindKey:
+          win: "Ctrl-Return"
+          mac: "Command-Return"
+        exec: -> $scope.$apply ->
+          panes.toggle(previewer) if previewer = panes.findById("preview")
+      
+      @editor.commands.addCommand
+        name: "Next buffer"
+        bindKey:
+          win: "Ctrl-Down"
+          mac: "Command-Down"
+        exec: -> $scope.$apply ->
+          session.switchBuffer(1)
+      
+      @editor.commands.addCommand
+        name: "Previous buffer"
+        bindKey:
+          win: "Ctrl-Up"
+          mac: "Command-Up"
+        exec: -> $scope.$apply ->
+          session.switchBuffer(-1)
+      
     @
   ]
   link: ($scope, $el, attrs, controller) ->
@@ -317,10 +352,9 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
     $aceEl = $el.find(".plunker-ace-canvas").get(0)
 
     controller.editor = new Editor(new Renderer($aceEl, "ace/theme/#{settings.editor.theme || 'textmate'}"))
+    controller.bindKeys()
     
     MultiSelect(controller.editor)
-    
-    
     
     controller.editor.on "changeSelection", ->
       unless $scope.$$phase

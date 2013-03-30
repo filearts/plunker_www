@@ -116,6 +116,8 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       options.params ||= {}
       options.params.sessid = visitor.session.id
       
+      options.cache ?= false
+      
       self.$$refreshing ||= $http.get("#{url.api}/plunks/#{@id}", options).then (res) ->
         angular.copy(res.data, self)
         
@@ -123,6 +125,8 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
         self.$$refreshed_at = new Date()
         
         self
+      , (err) ->
+        self.$$refreshing = null
     
     star: (starred = !@thumbed, options = {}) ->
       self = @
@@ -131,6 +135,8 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       
       options.params ||= {}
       options.params.sessid = visitor.session.id
+      
+      options.cache ?= false
       
       success = (res) ->
         self.thumbs = res.data.thumbs
@@ -142,16 +148,21 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
         
         self
       
+      error = (err) ->
+        self.$$refreshing = null
+      
       if starred
-        self.$$refreshing ||= $http.post("#{url.api}/plunks/#{@id}/thumb", {}, options).then(success)
+        self.$$refreshing ||= $http.post("#{url.api}/plunks/#{@id}/thumb", {}, options).then(success, error)
       else
-        self.$$refreshing ||= $http.delete("#{url.api}/plunks/#{@id}/thumb", options).then(success)
+        self.$$refreshing ||= $http.delete("#{url.api}/plunks/#{@id}/thumb", options).then(success, error)
     
     save: (delta = {}, options = {}) ->
       self = @
       
       options.params ||= {}
       options.params.sessid = visitor.session.id
+      
+      options.cache ?= false
       
       self.$$refreshing ||= $http.post(options.url or "#{url.api}/plunks/#{@id or ''}", delta, options).then (res) ->
         angular.copy(res.data, self)
@@ -160,6 +171,8 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
         self.$$refreshed_at = new Date()
         
         self
+      , (err) ->
+        self.$$refreshing = null
 
     destroy: (options = {}) ->
       self = @
@@ -167,11 +180,15 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       options.params ||= {}
       options.params.sessid = visitor.session.id
       
+      options.cache ?= false
+      
       self.$$refreshing ||= $http.delete("#{url.api}/plunks/#{@id}", options).then (res) ->
         delete $$plunks[self.id]
         angular.copy({}, self)
         
         self
+      , (err) ->
+        self.$$refreshing = null
 
       
   plunks =
@@ -185,6 +202,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       options.url ||= "#{url.api}/plunks/#{id}/forks"
       options.params ||= {}
       options.params.sessid = visitor.session.id
+      options.params.api = 1
       
       
       plunk = $$findOrCreate()
@@ -225,6 +243,8 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
           results.$$refreshed_at = new Date()
           
           results
+        , (err) ->
+          results.$$refreshing = null
       )()
       
       return results

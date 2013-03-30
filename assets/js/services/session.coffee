@@ -86,7 +86,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
         if @isDirty() then "You have unsaved work on this Plunk."
         
       setInterval ->
-        if session.isDirty() then window.localStorage.setItem("plnkr_dirty_exit", JSON.stringify(session.toJSON(includeSource: true, includePlunk: true)))
+        if session.isDirty() then window.localStorage.setItem("plnkr_dirty_exit", JSON.stringify(session.toJSON(includeBufferId: true, includeSource: true, includePlunk: true, includeState: true)))
         else window.localStorage.removeItem("plnkr_dirty_exit")
       , 1000
     
@@ -104,6 +104,54 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       current = valueAtPath(@toJSON(raw: true), path)
       
       return !angular.equals(previous, current)
+      
+    getSaveDelta: ->
+      json = {}
+      lastCleanState = angular.copy($$savedState)
+      inFlightState = @toJSON(raw: true)
+    
+      if @isPlunkDirty("description") then json.description = @description 
+      
+      if @isPlunkDirty("tags")
+        json.tags = {}
+        
+        # Mark all previous tags for deletion
+        for tag in lastCleanState.tags
+          json.tags[tag] = null
+          
+        for tag in @tags
+          json.tags[tag] = true
+        
+      if @isPlunkDirty("buffers")
+        json.files = {}
+        
+        # Here there is the challenge that someone renames a file from
+        # A to B and then creates a file named A. The file delta should show
+        # a change of contents of A to match B's contents and a creation of
+        # B with A's contents.
+                  
+        # Step 1: recognize any file deletions
+        for buffId, prev of lastCleanState.buffers when not @buffers[buffId]
+          json.files[prev.filename] = null
+          
+        # Step 2: recognize updates to all existing files
+        for buffId, buffer of inFlightState.buffers when @isDirty(["buffers", buffId])
+          if prev = lastCleanState.buffers[buffId]
+            json.files[prev.filename] = {}
+            json.files[prev.filename].filename = buffer.filename unless prev.filename is buffer.filename
+            json.files[prev.filename].content = buffer.content unless prev.content is buffer.content
+        
+        # Step 3: recognise all new files
+        for buffId, buffer of inFlightState.buffers when @isDirty(["buffers", buffId])
+          unless lastCleanState.buffers[buffId]
+            if renameConflict = json.files[buffer.filename]
+              # Adjust the existing rename to become a new file
+              json.files[renameConflict.filename] = content: renameConflict.content
+              
+            # Create the new file
+            json.files[buffer.filename] = content: buffer.content
+
+      json
   
     getActiveBuffer: ->
       throw new Error("Attempting return the active buffer while the Session is out of sync") unless $$history.length
@@ -134,8 +182,6 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
           private: @private
           buffers: angular.copy(@buffers)
           source: angular.copy(@source)
-      
-        buffer.content = "" for buffId, buffer of json.buffers if options.dirtyContent
         
         json
       else
@@ -148,14 +194,22 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
         for buffId, buffer of @buffers
           json.files[buffer.filename] =
             filename: buffer.filename
-            content: if options.dirtyContent then "" else buffer.content
+            content: buffer.content
           json.files[buffer.filename].id = buffId if options.includeBufferId
       
         json.source = angular.copy(@source) if options.includeSource
         json.plunk = angular.copy(@plunk) if options.includePlunk
+        if options.includeState
+          json.$$cleanState = angular.copy($$cleanState)
+          json.$$savedState = angular.copy($$savedState)
     
       json
   
+    # Reset the internal state of the session (and possibly of the associated plunk)
+    #
+    # Options:
+    #  * soft: Do not reset the internal Plunk
+    #  * dirty: Mark the session as dirty upon opening
     reset: (json = {}, options = {}) ->
       $$savedState = {}
       
@@ -163,7 +217,9 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       
       unless options.soft
         @plunk = null
-        @plunk = plunks.findOrCreate(json.plunk) if json.plunk
+        if json.plunk
+          delete json.plunk.$$refreshing
+          @plunk = plunks.findOrCreate(json.plunk)
         
         @source = json.source or ""
   
@@ -178,12 +234,10 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
   
       @activateBuffer(buffer) if buffer = @getBufferByFilename(/^index\./i)
 
-      @skipDirtyCheck = true if options.dirty
-      
       activity.client("session").record "reset", @toJSON(includeBufferId: true)
       
-      $$cleanState = @toJSON(raw: true, dirtyContent: options.dirty)
-      $$savedState = @toJSON(raw: true) if @plunk?.isSaved()
+      $$cleanState = angular.copy(json.$$cleanState) || @toJSON(raw: true)
+      $$savedState = angular.copy(json.$$savedState) || @toJSON(raw: true) if @plunk?.isSaved()
 
       @$resetting = false
 
@@ -219,50 +273,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
         lastCleanState = angular.copy($$savedState)
         inFlightState = @toJSON(raw: true)
         
-        json = {}
-      
-        if @isDirty("description") then json.description = @description 
-        
-        if @isDirty("tags")
-          json.tags = {}
-          
-          # Mark all previous tags for deletion
-          for tag in lastCleanState.tags
-            json.tags[tag] = null
-            
-          for tag in @tags
-            json.tags[tag] = true
-          
-        if @isDirty("buffers")
-          json.files = {}
-          
-          # Here there is the challenge that someone renames a file from
-          # A to B and then creates a file named A. The file delta should show
-          # a change of contents of A to match B's contents and a creation of
-          # B with A's contents.
-                    
-          # Step 1: recognize any file deletions
-          for buffId, prev of lastCleanState.buffers when not @buffers[buffId]
-            json.files[prev.filename] = null
-            
-          # Step 2: recognize updates to all existing files
-          for buffId, buffer of inFlightState.buffers when @isDirty(["buffers", buffId])
-            if prev = lastCleanState.buffers[buffId]
-              json.files[prev.filename] = {}
-              json.files[prev.filename].filename = buffer.filename unless prev.filename is buffer.filename
-              json.files[prev.filename].content = buffer.content unless prev.content is buffer.content
-          
-          # Step 3: recognise all new files
-          for buffId, buffer of inFlightState.buffers when @isDirty(["buffers", buffId])
-            unless lastCleanState.buffers[buffId]
-              if renameConflict = json.files[buffer.filename]
-                # Adjust the existing rename to become a new file
-                json.files[renameConflict.filename] = content: renameConflict.content
-                
-              # Create the new file
-              json.files[buffer.filename] = content: buffer.content
-        
-        json = angular.extend json, options
+        json = angular.extend @getSaveDelta(), options
 
         $$asyncOp.call @, "save", (dfd) ->
           plunk.save(json).then (plunk) ->
@@ -303,7 +314,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
         Fork cancelled: You cannot fork a plunk that does not exist.
       """.trim()
   
-      json = angular.extend @toJSON(), options
+      json = angular.extend @getSaveDelta(), options
       self = @
       
       inFlightState = @toJSON(raw: true)
@@ -391,7 +402,6 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
   
   
     activateBuffer: (filename) ->
-      debugger unless filename
       if angular.isObject(filename) then buffer = filename
       else unless buffer = @getBufferByFilename(filename) then return notifier.warning """
         Cannot activate file: A file named '#{filename}' does not exist.
@@ -402,10 +412,23 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
   
       $$history.splice(idx, 1)
       $$history.unshift(buffer.id)
-      
+  
       @activeBuffer = buffer
   
       @
+    
+    switchBuffer: (go = 1) ->
+      filenames = []
+      filenames.push(buffer.filename) for buffId, buffer of @buffers
+      
+      filenames.sort()
+      
+      idx = filenames.indexOf(@activeBuffer.filename)
+      
+      go = go % filenames.length
+      go = (filenames.length + idx + go) % filenames.length
+      
+      @activateBuffer(filenames[go])
   
   
     renameBuffer: (filename, new_filename) ->

@@ -1,9 +1,9 @@
 {
-  "name": "plunker-beta",
-  "subdomain": "plunker-beta",
+  "name": "plunker-www",
+  "subdomain": "plunker-www",
   "domains": [
-    "beta.plnkr.co",
-    "beta.plunker.co"
+    "plnkr.co",
+    "plunker.co"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -13,7 +13,8 @@
   "engines": {
     "node": "0.8.x"
   },
-  "version": "0.1.9-12",
+  "version": "0.4.1",
+  "private": true,
   "description": "The code powering the public facing component of http://plnkr.co",
   "main": "server.js",
   "dependencies": {

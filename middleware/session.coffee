@@ -29,9 +29,10 @@ module.exports.middleware = (options = {}) ->
       return session
       
     finalize = (session) ->
-      res.expose ||= {}
-      res.expose.session = session
-      next()
+      if session
+        res.expose ||= {}
+        res.expose.session = session
+        next()
     
     if sessid = req.cookies.plnk_session then fetchSession(sessid)
     else createSession()

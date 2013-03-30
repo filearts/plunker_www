@@ -27,10 +27,10 @@ module.directive "plunkerUserpanel", [ ->
         </button>
         <ul class="dropdown-menu">
           <li>
-            <a href="/users/{{visitor.user.login}}">View profile</a>
+            <a href="/users/{{visitor.user.login}}">My plunks</a>
           </li>
           <li>
-            <a href="/users/{{visitor.user.login}}/favorites">View plunks</a>
+            <a href="/users/{{visitor.user.login}}/favorites">Starred plunks</a>
           </li>
           <li class="divider"></li>
           <li>

@@ -390,6 +390,14 @@ module.run [ "$rootScope", "$q", "$location", "panes", "session", "participants"
 
       $scope.stopStream = ->
         stream.stop() if stream.streaming
+      
+      $scope.$watch "stream.streaming", (streaming) ->
+        search = $location.search()
+        
+        if streaming then search.s = stream.id
+        else delete search.s
+        
+        $location.search(search).replace()
         
       if id = $location.search().s
         stream.id = id
