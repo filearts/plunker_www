@@ -44,6 +44,7 @@ module.provider "api", ->
               record = @
               
               refreshOptions.url ||= record.getUrl() 
+              refreshOptions.cache = false
               refreshOptions.params ||= {}
               refreshOptions.params.sessid = visitor.session.id
           

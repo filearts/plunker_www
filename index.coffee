@@ -109,7 +109,7 @@ app.post "/edit/", (req, res, next) ->
         filename: filename
         content: if typeof file is "string" then file else file.content or ""
       
-  res.local.bootstrap = bootstrap
+  res.locals.bootstrap = bootstrap
   res.render "editor"
 
 app.all "/edit", (req, res, next) -> res.redirect("/edit/", 302)

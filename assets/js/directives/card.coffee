@@ -40,7 +40,7 @@ module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", "visitor"
             <a title="Full description of Plunk" ng-href="{{plunk.id}}#README"><i class="icon-info"></i></a>
           </li>
           <li ng-show="plunk.thumbed">
-            <a title="You starred this Plunk" ng-href="/users/{{visitor.user.login}}/starred"><i class="icon-pushpin"></i></a>
+            <a title="You starred this Plunk" ng-href="/users/{{visitor.user.login}}/favorites"><i class="icon-pushpin"></i></a>
           </li>
         </ul>
       </div>

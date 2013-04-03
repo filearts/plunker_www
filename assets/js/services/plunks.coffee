@@ -215,6 +215,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       links = options.links || {}
       options = angular.copy(options)
       
+      options.cache ?= false
       options.params ||= {}
       options.params.sessid = visitor.session.id
       options.params.pp = 12
@@ -230,6 +231,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       
       (results.refresh = ->
         results.$$refreshing ||= $http.get(results.url, options).then (res) ->
+          console.log "plunks", res, res.headers()
           angular.copy {}, links
           
           if link = res.headers("link")

@@ -55,3 +55,6 @@
 [submodule "assets/vendor/typeahead-bootstrap"]
 	path = assets/vendor/typeahead-bootstrap
 	url = git://github.com/jharding/typeahead.js-bootstrap.css.git
+[submodule "assets/vendor/js-beautify"]
+	path = assets/vendor/js-beautify
+	url = git://github.com/einars/js-beautify.git

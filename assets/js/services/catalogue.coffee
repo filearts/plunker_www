@@ -13,7 +13,7 @@ module = angular.module "plunker.catalogue", [
 
 module.config [ "apiProvider", (apiProvider) ->
   apiProvider.define "catalogue", 
-    basePath: "/packages"
+    basePath: "/catalogue/packages"
     primaryKey: "name"
     
     parser: (json) ->
@@ -26,15 +26,16 @@ module.config [ "apiProvider", (apiProvider) ->
         isArray: true
     
     initialize: ->
-      @getLatestVersion = (unstable = false) ->
+      @getLatestVersion = (range = "*", options = {}) ->
         latestVersionDef = null
         
         for versionDef in @versions
-          unless latestVersionDef
-            latestVersionDef = versionDef
-        
-          else if (!versionDef.unstable or unstable) and semver.gt(versionDef.semver, latestVersionDef.semver)
-            latestVersionDef = versionDef
+          if semver.satisfies(versionDef.semver, range)
+            unless latestVersionDef
+              latestVersionDef = versionDef
+          
+            else if (!versionDef.unstable or options.unstable) and semver.gt(versionDef.semver, latestVersionDef.semver)
+              latestVersionDef = versionDef
         
         latestVersionDef
 ]

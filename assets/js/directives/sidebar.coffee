@@ -159,7 +159,7 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
 
     window.addthis_config =
       data_track_clickback: true
-      data_ga_property: 'UA-28928507-3'
+      data_ga_property: 'UA-28928507-1'
       data_ga_social: true
     
     window.addthis_share =

@@ -50,7 +50,7 @@ module.config ["$routeProvider", ($routeProvider) ->
               json
             , (error) ->
               notifier.error "Import error", error
-        else {}
+        else _plunker.bootstrap or {}
       ]
     controller: [ "$rootScope", "$scope", "$location", "$browser", "$timeout", "$route", "session", "source", "notifier", ($rootScope, $scope, $location, $browser, $timeout, $route, session, source, notifier) ->
       session.reset(source) if source?
