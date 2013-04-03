@@ -52,10 +52,8 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
           <li class="dropdown-submenu">
             <a tabindex="-1" href="#">AngularJS</a>
             <ul class="dropdown-menu">
-              <li><a href="/edit/gist:3510140">1.0.1<a href="/edit/gist:3189582" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
-              <li class="divider"></li>
-              <li><a href="/edit/gist:3662656">1.0.2<a href="/edit/gist:3662659" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
-              <li><a href="/edit/gist:3743008">1.0.2 + Jasmine</a></li>
+              <li><a href="/edit/gist:3510140">1.0.5<a href="/edit/gist:3189582" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
+              <li><a href="/edit/gist:5301635">1.0.5 + Jasmine</a></li>
               <li class="divider"></li>
               <li><a href="/edit/gist:3662702">1.1.0 (unstable)<a href="/edit/gist:3662696" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
             </ul>
@@ -66,14 +64,6 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
           <li><a href="/edit/gist:2050713">Backbone.js<a href="/edit/gist:2050746" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
           <li class="divider"></li>
           <li><a href="/edit/gist:3510115">YUI</a></li>
-          <li class="divider"></li>
-          <li>
-            <a href="javascript:void(0)" ng-click="promptImportGist()" title="Import code from a gist or another plunk">Import gist...</a>
-          </li>
-          <li class="divider"></li>
-          <li>
-            <div ng-click="builder.launch()" title="Launch the Plunk builder (coming soon...)"><i class="icon-beaker"></i>Launch builder...</div>
-          </li>
         </ul>
       </div>
       <div class="btn-group">
