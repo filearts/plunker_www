@@ -14,7 +14,7 @@ module = angular.module "plunker.toolbar", [
   "ui.bootstrap"
 ]
 
-module.directive "plunkerToolbar", ["$location", "session", "downloader", "notifier", "panes", ($location, session, downloader, notifier, panes) ->
+module.directive "plunkerToolbar", ["$location", "session", "downloader", "notifier", "panes", "visitor", ($location, session, downloader, notifier, panes, visitor) ->
   restrict: "E"
   scope: {}
   replace: true
@@ -55,7 +55,7 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
               <li><a href="/edit/gist:3510140">1.0.5<a href="/edit/gist:3189582" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
               <li><a href="/edit/gist:5301635">1.0.5 + Jasmine</a></li>
               <li class="divider"></li>
-              <li><a href="/edit/gist:3662702">1.1.0 (unstable)<a href="/edit/gist:3662696" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
+              <li><a href="/edit/gist:3662702">1.1.3 (unstable)<a href="/edit/gist:3662696" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
             </ul>
           </li>
           <li class="divider"></li>
@@ -83,9 +83,14 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
           <i class="icon-download-alt" />
         </button>
       </div>
-      <div class="btn-group pull-right" ng-show="session.isSaved()">
-        <button ng-click="toggleFavorite()" class="btn" ng-class="{starred: session.plunk.thumbed, 'active': session.plunk.thumbed}" tooltip-placement="bottom" tooltip="Save this Plunk to your favorites">
+      <div class="btn-group pull-right" ng-show="session.isSaved() && visitor.isMember()">
+        <button ng-click="toggleFavorite()" class="btn" ng-class="{activated: session.plunk.thumbed, 'active': session.plunk.thumbed}" tooltip-placement="bottom" tooltip="Save this Plunk to your favorites">
           <i class="icon-star" />
+        </button>
+      </div>
+      <div class="btn-group pull-right" ng-show="session.isSaved() && visitor.isMember()">
+        <button ng-click="toggleRemembered()" class="btn" ng-class="{activated: session.plunk.remembered, 'active': session.plunk.remembered}" tooltip-placement="bottom" tooltip="Save this Plunk to your list of templates">
+          <i class="icon-briefcase" />
         </button>
       </div>
     </div>
@@ -93,6 +98,7 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
   link: ($scope, el, attrs) ->
     $scope.session = session
     $scope.panes = panes
+    $scope.visitor = visitor
     
     $scope.promptReset = ->
       if session.isDirty() and not session.skipDirtyCheck then notifier.confirm "You have unsaved changes. This action will reset your plunk. Are you sure you would like to proceed?",
@@ -108,6 +114,9 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
     
     $scope.toggleFavorite = ->
       if session.plunk then session.plunk.star()
+    
+    $scope.toggleRemembered = ->
+      if session.plunk then session.plunk.remember()
     
     $scope.togglePreview = ->
       previewer = panes.findById("preview")

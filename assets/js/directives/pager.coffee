@@ -28,11 +28,12 @@ module.directive "plunkerPager", [ "$location", ($location) ->
   scope:
     collection: "="
     path: "@"
+    nav: "&"
   template: """
     <div class="plunker-pager pagination">
       <ul>
         <li ng-repeat="link in pages">
-          <a ng-href="{{link.href}}" title="{{link.rel | reltitle}}" ng-bind-html-unsafe="link.rel | relname"></a>
+          <a ng-href="{{link.href}}" ng-click="moveTo(link.src)" title="{{link.rel | reltitle}}" ng-bind-html-unsafe="link.rel | relname"></a>
         </li>
       </ul>
     </div>
@@ -51,13 +52,17 @@ module.directive "plunkerPager", [ "$location", ($location) ->
       
       URL.make(current)
 
+    $scope.moveTo = (url) ->
+      $scope.nav(url: url)
     
     $scope.$watch "collection.links()", (links) ->
       pages = []
-      pages.push(rel: "first", href: appUrl(href)) if href = links.first
-      pages.push(rel: "prev", href: appUrl(href)) if href = links.prev
-      pages.push(rel: "next", href: appUrl(href)) if href = links.next
-      pages.push(rel: "last", href: appUrl(href)) if href = links.last
+      if links
+        pages.push(rel: "first", href: appUrl(href), src: href) if href = links.first
+        pages.push(rel: "prev", href: appUrl(href), src: href) if href = links.prev
+        pages.push(rel: "next", href: appUrl(href), src: href) if href = links.next
+        pages.push(rel: "last", href: appUrl(href), src: href) if href = links.last
+        
       $scope.pages = pages
     , true
 

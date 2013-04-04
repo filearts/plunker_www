@@ -19,19 +19,26 @@ filters =
   trending:
     href: "/plunks/trending"
     text: "Trending"
-    order: "c"
+    order: "a"
+  views:
+    href: "/plunks/views"
+    text: "Most viewed"
+    order: "b"
   popular:
     href: "/plunks/popular"
-    text: "Popular"
-    order: "b"
+    text: "Most starred"
+    order: "c"
   recent:
     href: "/plunks/recent"
     text: "Recent"
-    order: "a"
+    order: "d"
 
 resolvers =
   trending: ["$location", "url", "plunks", ($location, url, plunks) ->
     plunks.query(url: "#{url.api}/plunks/trending", params: $location.search()).$$refreshing
+  ]
+  views: ["$location", "url", "plunks", ($location, url, plunks) ->
+    plunks.query(url: "#{url.api}/plunks/views", params: $location.search()).$$refreshing
   ]
   popular: ["$location", "url", "plunks", ($location, url, plunks) ->
     plunks.query(url: "#{url.api}/plunks/popular", params: $location.search()).$$refreshing
@@ -60,7 +67,7 @@ generateRouteHandler = (filter, options = {}) ->
 module.config ["$routeProvider", ($routeProvider) ->
   $routeProvider.when "/", generateRouteHandler("trending", {templateUrl: "partials/landing.html", skipActivate: true})
   $routeProvider.when "/plunks", generateRouteHandler("trending")
-  $routeProvider.when "/plunks/#{view}", generateRouteHandler(view) for view in ["trending", "popular", "recent"]
+  $routeProvider.when "/plunks/#{view}", generateRouteHandler(view) for view, viewDef of filters
 ]
 
 module.run ["menu", (menu) ->
@@ -77,7 +84,7 @@ module.run ["$templateCache", ($templateCache) ->
       <plunker-pager class="pull-right" collection="plunks"></plunker-pager>
       
       <ul class="nav nav-pills pull-left">
-        <li ng-repeat="(name, filter) in filters | orderBy:'text':true" ng-class="{active: filter == activeFilter}">
+        <li ng-repeat="(name, filter) in filters | orderBy:'order'" ng-class="{active: filter == activeFilter}">
           <a ng-href="{{filter.href}}" ng-bind="filter.text"></a>
         </li>
       </ul>
@@ -156,7 +163,7 @@ module.run ["$templateCache", ($templateCache) ->
       <plunker-pager class="pull-right" path="/plunks/" collection="plunks"></plunker-pager>
       
       <ul class="nav nav-pills pull-left">
-        <li ng-repeat="(name, filter) in filters | orderBy:'text':true" ng-class="{active: filter == activeFilter}">
+        <li ng-repeat="(name, filter) in filters | orderBy:'order'" ng-class="{active: filter == activeFilter}">
           <a ng-href="{{filter.href}}" ng-bind="filter.text"></a>
         </li>
       </ul>

@@ -1,3 +1,4 @@
+#= require ./../services/panes
 #= require ./../services/session
 
 #= require ./../directives/inlineuser

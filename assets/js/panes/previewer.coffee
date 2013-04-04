@@ -1,3 +1,4 @@
+#= require ./../services/panes
 #= require ./../services/url
 #= require ./../services/settings
 #= require ./../services/session

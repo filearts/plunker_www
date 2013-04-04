@@ -1,3 +1,4 @@
+#= require ./../services/panes
 #= require ./../services/annotations
 #= require ./../services/activity
 

@@ -1,4 +1,5 @@
 #= require ./../services/plunks
+#= require ./../services/updater
 
 plunkerRegex = ///
   ^
@@ -8,6 +9,16 @@ plunkerRegex = ///
     \s*                   # Trailing whitespace
   $
 ///i
+
+templateRegex = ///
+  ^
+    \s*                   # Leading whitespace
+    tpl:                  # Optional plunk:prefix
+    ([-\._a-zA-Z0-9]+)    # Plunk ID
+    \s*                   # Trailing whitespace
+  $
+///i
+
 
 githubRegex = ///
   ^
@@ -25,13 +36,39 @@ githubRegex = ///
 ///i
 
 
-module = angular.module("plunker.importer", ["plunker.plunks"])
+module = angular.module "plunker.importer", [
+  "plunker.plunks"
+  "plunker.updater"
+]
 
-module.service "importer", [ "$q", "$http", "plunks", ($q, $http, plunks) ->
+module.service "importer", [ "$q", "$http", "plunks", "updater", ($q, $http, plunks, updater) ->
   import: (source) ->
     deferred = $q.defer()
     
-    if matches = source.match(plunkerRegex)
+    if matches = source.match(templateRegex)
+      plunks.findOrCreate(id: matches[1]).refresh().then (plunk) ->
+        files = {}
+        files[filename] = {filename: filename, content: file.content} for filename, file of plunk.files
+        
+        finalize = ->
+          deferred.resolve
+            description: plunk.description
+            tags: angular.copy(plunk.tags)
+            files: files
+            plunk: angular.copy(plunk)
+            disableSave: true
+        
+        if index = plunk.files['index.html']
+          updater.update(index.content).then (markup) ->
+            index.content = markup
+            files['index.html'].content = markup
+            
+            finalize()
+        else finalize()
+        
+      , (error) ->
+        deferred.reject("Plunk not found")
+    else if matches = source.match(plunkerRegex)
       plunks.findOrCreate(id: matches[1]).refresh().then (plunk) ->
         files = {}
         files[filename] = {filename: filename, content: file.content} for filename, file of plunk.files

@@ -3,7 +3,10 @@
 #= require ./../../vendor/jquery-timeago/jquery.timeago
 
 
-module = angular.module "plunker.quickview", ["plunker.inlineuser"]
+module = angular.module "plunker.quickview", [
+  "plunker.inlineuser"
+  "plunker.plunkinfo"
+]
 
 module.directive "plunkerQuickView", [ "$timeout", ($timeout) ->
   restrict: "E"
@@ -17,20 +20,27 @@ module.directive "plunkerQuickView", [ "$timeout", ($timeout) ->
         </div>
         <div class="about">
           <h1>{{plunk.description}} <small>({{plunk.id}})</small></h1>
+
+          <plunker-plunk-info plunk="plunk"></plunker-plunk-info>
+          
+          <p><plunker-taglist tags="plunk.tags"></plunker-taglist></p>
+
           <plunker-inline-user user="plunk.user"></plunker-inline-user>
           <abbr class="timeago updated_at" title="{{plunk.updated_at}}" ng-bind="plunk.updated_at | date:'medium'"></abbr>
           
-          <ul class="operations">
+
+          
+          <ul class="operations" ng-hide="options.hideOperations">
             <li>
               <a class="btn btn-primary" ng-click="close()" ng-href="edit/{{plunk.id}}">
                 <i class="icon-edit"></i>
-                Launch in Editor
+                Edit
               </a>
             </li>
             <li>
               <a class="btn" ng-href="{{plunk.raw_url}}" target="_blank">
                 <i class="icon-fullscreen"></i>
-                Launch Fullscreen
+                Fullscreen
               </a>
             </li>
             <li>
@@ -41,32 +51,30 @@ module.directive "plunkerQuickView", [ "$timeout", ($timeout) ->
             </li>
           </ul>
           <div class="feed">
-            <div class="event" ng-repeat="event in plunk.feed | orderBy:'-date'" ng-class="{{event.type}}" ng-switch on="event.type">
+            <div class="event" ng-repeat="event in plunk.history" ng-switch on="event.event">
               <hr />
               <div ng-switch-when="fork">
-                <div class="type"><i ng-class="event.icon"></i></div>
+                <div class="type"><i class="icon-git-fork"></i></div>
                 <div class="details">
                   <plunker-inline-user user="event.user"></plunker-inline-user>
-                  forked this plunk off of <plunker-inline-plunk plunk="event.parent">{{event.parent.id}}</plunker-inline-plunk>
-                  by <plunker-inline-user user="event.parent.user"></plunker-inline-user>
-                  <abbr timeago="event.date"></abbr>.
+                  forked this plunk
+                  <abbr timeago="event.created_at"></abbr>.
                 </div>
               </div>
               <div ng-switch-when="create">
-                <div class="type"><i ng-class="event.icon"></i></div>
+                <div class="type"><i class="icon-file"></i></div>
                 <div class="details">
                   <plunker-inline-user user="event.user"></plunker-inline-user>
                   created this plunk
-                  <abbr timeago="event.date"></abbr>.
+                  <abbr timeago="event.created_at"></abbr>.
                 </div>
               </div>
-              <div ng-switch-when="forked">
-                <div class="type"><i ng-class="event.icon"></i></div>
+              <div ng-switch-when="update">
+                <div class="type"><i class="icon-save"></i></div>
                 <div class="details">
                   <plunker-inline-user user="event.user"></plunker-inline-user>
-                  created <plunker-inline-plunk plunk="event.child">{{event.child.id}}</plunker-inline-plunk>
-                  by forking this plunk
-                  <abbr timeago="event.date"></abbr>.
+                  saved this plunk
+                  <abbr timeago="event.created_at"></abbr>.
                 </div>
               </div>
             </div>
@@ -83,7 +91,7 @@ module.directive "plunkerQuickView", [ "$timeout", ($timeout) ->
 
 module.service "quickview", ["$rootScope", "$document", "$compile", "$location", ($rootScope, $document, $compile, $location) ->
   class QuickView
-    constructor: (@plunk) ->
+    constructor: (@plunk, options) ->
       @plunk.refresh() unless @plunk.$$refreshed_at
       
       $scope = $rootScope.$new()
@@ -92,6 +100,7 @@ module.service "quickview", ["$rootScope", "$document", "$compile", "$location",
       restoreOverflow = $body.css("overflow")
       
       $scope.plunk = @plunk
+      $scope.options = options
       
       $scope.close = @close = ->
         if $scope.$parent
@@ -102,13 +111,16 @@ module.service "quickview", ["$rootScope", "$document", "$compile", "$location",
       $el = link($scope)
       
       $body.prepend($el).css("overflow", "hidden")
+      
+      $rootScope.$on "$routeChangeStart", ->
+        activeQuickView?.close()
   
   activeQuickView = null    
   
-  show: (plunk) ->
+  show: (plunk, options = {}) ->
     activeQuickView.close() if activeQuickView
     
-    activeQuickView = new QuickView(plunk)
+    activeQuickView = new QuickView(plunk, options)
   
   hide: ->
     activeQuickView.close() if activeQuickView

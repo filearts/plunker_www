@@ -172,6 +172,7 @@ app.get "/plunks", (req, res) -> res.render "landing"
 app.get "/plunks/trending", (req, res) -> res.render "landing"
 app.get "/plunks/popular", (req, res) -> res.render "landing"
 app.get "/plunks/recent", (req, res) -> res.render "landing"
+app.get "/plunks/views", (req, res) -> res.render "landing"
 
 app.get "/users", (req, res) -> res.render "landing"
 app.get "/users/:username", (req, res) -> res.render "landing"

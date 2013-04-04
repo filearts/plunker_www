@@ -155,7 +155,32 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
         self.$$refreshing ||= $http.post("#{url.api}/plunks/#{@id}/thumb", {}, options).then(success, error)
       else
         self.$$refreshing ||= $http.delete("#{url.api}/plunks/#{@id}/thumb", options).then(success, error)
-    
+
+    remember: (remembered = !@remembered, options = {}) ->
+      self = @
+      
+      throw new Error("Impossible to remember a plunk when not logged in") unless visitor.logged_in
+      
+      options.params ||= {}
+      options.params.sessid = visitor.session.id
+      
+      options.cache ?= false
+      
+      success = (res) ->
+        self.remembered = remembered
+        
+        self.$$refreshing = null
+        self.$$refreshed_at = new Date()
+        
+        self
+      
+      error = (err) ->
+        self.$$refreshing = null
+      
+      if remembered
+        self.$$refreshing ||= $http.post("#{url.api}/plunks/#{@id}/remembered", {}, options).then(success, error)
+      else
+        self.$$refreshing ||= $http.delete("#{url.api}/plunks/#{@id}/remembered", options).then(success, error)
     save: (delta = {}, options = {}) ->
       self = @
       
@@ -231,7 +256,6 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       
       (results.refresh = ->
         results.$$refreshing ||= $http.get(results.url, options).then (res) ->
-          console.log "plunks", res, res.headers()
           angular.copy {}, links
           
           if link = res.headers("link")
