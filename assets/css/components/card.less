@@ -139,3 +139,26 @@
 .btn.starred {
   color: #08C;
 }
+
+.fade-enter-setup, .fade-leave-setup {
+  -webkit-transition:opacity cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+  -moz-transition:opacity cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+  -ms-transition:opacity cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+  -o-transition:opacity cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+  transition:opacity cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+}
+
+.fade-enter-setup {
+  opacity: 0;
+}
+
+.fade-enter-start {
+  opacity: 1;
+}
+.fade-leave-setup {
+  opacity: 1;
+}
+
+.fade-leave-start {
+  opacity: 0;
+}

@@ -117,7 +117,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
         
         # Mark all previous tags for deletion
         for tag in lastCleanState.tags
-          json.tags[tag] = null
+          json.tags[tag] = false
           
         for tag in @tags
           json.tags[tag] = true

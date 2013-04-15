@@ -1,3 +1,5 @@
+#= require ./../../vendor/jquery.lazyload/jquery.lazyload
+
 #= require ./../services/quickview
 
 #= require ./../directives/inlineuser
@@ -29,7 +31,7 @@ module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", "visitor"
           <li ng-show="visitor.logged_in && !plunk.thumbed"><button title="Star this Plunk" class="btn" ng-click="plunk.star()"><i class="icon-star"></i></button></li>
         </ul>
         <h4 title="{{plunk.description}}">{{plunk.description}}</h4>
-        <img ng-src="http://immediatenet.com/t/l3?Size=1024x768&URL={{plunk.raw_url}}?_={{plunk.updated_at | date:'yyyy-MM-ddTHH:mm:ssZ'}}" />
+        <img src="http://placehold.it/248x186&text=Loading..." data-original="http://immediatenet.com/t/l3?Size=1024x768&URL={{plunk.raw_url}}?_={{plunk.updated_at | date:'yyyy-MM-ddTHH:mm:ssZ'}}" />
         <plunker-taglist tags="plunk.tags"></plunker-taglist>
         <plunker-plunk-info plunk="plunk"></plunker-plunk-info>
         <ul class="meta">
@@ -55,6 +57,11 @@ module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", "visitor"
     
     $scope.$watch "plunk.updated_at", ->
       $timeout -> $("abbr.timeago", $el).timeago()
+    
+    $("img", $el).lazyload(event: "urlready")
+    
+    $scope.$watch "plunk.raw_url", -> 
+      $timeout -> $("img", $el).trigger("urlready")
       
     $scope.showQuickView = (plunk, $event) ->
       quickview.show(plunk)

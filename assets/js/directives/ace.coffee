@@ -1,4 +1,5 @@
 #= require ./../../vendor/ace/src/ace
+#= require ./../../vendor/snippetManager
 
 #= require ./../services/session
 #= require ./../services/modes
@@ -26,6 +27,9 @@ EditSession = require("ace/edit_session").EditSession
 MultiSelect = require("ace/multi_select").MultiSelect
 UndoManager = require("ace/undomanager").UndoManager
 Range = require("ace/range").Range
+
+require("ace/placeholder").PlaceHolder
+snippetManager = require("ace/snippets").snippetManager
 
 
 # Convert an ACE Range object row/col to an offset range
@@ -256,6 +260,11 @@ module.directive "plunkerEditSession", ["modes", "settings", "annotations", "act
       mode = modes.findByFilename(filename)
       session.setMode("ace/mode/#{mode.name}")
       
+      if mode.snips then $.get "/snippets/#{mode.name}.snippets", (res) ->
+        mode.snippets = snippetManager.parseSnippetFile(res)
+      
+        snippetManager.register(mode.snippets, mode.name)
+      
       controller.markDirty()
     
     
@@ -342,7 +351,12 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
           mac: "Command-Up"
         exec: -> $scope.$apply ->
           session.switchBuffer(-1)
-      
+          
+      @editor.commands.bindKey "Tab", (editor) ->
+        console.log "Trying to expand"
+        unless snippetManager.expandWithTab(editor)
+          editor.execCommand("indent")
+              
     @
   ]
   link: ($scope, $el, attrs, controller) ->

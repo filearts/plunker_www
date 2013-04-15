@@ -58,3 +58,6 @@
 [submodule "assets/vendor/js-beautify"]
 	path = assets/vendor/js-beautify
 	url = git://github.com/einars/js-beautify.git
+[submodule "assets/vendor/jquery.lazyload"]
+	path = assets/vendor/jquery.lazyload
+	url = git://github.com/tuupola/jquery_lazyload.git

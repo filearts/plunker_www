@@ -1,4 +1,9 @@
-module = angular.module("plunker.modes", [])
+#= require ./../services/url
+
+
+module = angular.module "plunker.modes", [
+  "plunker.url"
+]
 
 module.service "modes", -> new class Modes
   constructor: ->
@@ -12,6 +17,7 @@ module.service "modes", -> new class Modes
       coffee:
         title: "CoffeeScript"
         extensions: ["coffee"]
+        snips: true
       coldfusion:
         title: "ColdFusion"
         extensions: ["cfm"]
@@ -21,6 +27,7 @@ module.service "modes", -> new class Modes
       css:
         title: "CSS"
         extensions: ["css"]
+        snips: true
       groovy:
         title: "Groovy"
         extensions: ["groovy"]
@@ -30,6 +37,7 @@ module.service "modes", -> new class Modes
       html:
         title: "HTML"
         extensions: ["html", "htm"]
+        snips: true
       jade:
         title: "Jade"
         extensions: ["jade"]
@@ -39,6 +47,7 @@ module.service "modes", -> new class Modes
       javascript:
         title: "JavaScript"
         extensions: ["js"]
+        snips: true
       json:
         title: "JSON"
         extensions: ["json"]
@@ -54,6 +63,7 @@ module.service "modes", -> new class Modes
       markdown:
         title: "Markdown"
         extensions: ["md", "markdown"]
+        snips: true
       ocaml:
         title: "OCaml"
         extensions: ["ml", "mli"]

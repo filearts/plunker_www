@@ -99,9 +99,10 @@ app.post "/edit/", (req, res, next) ->
   res.header "X-XSS-Protection", 0
   
   bootstrap =
-    description: ""
-    tags: []
+    description: req.body.description or ""
+    tags: req.body.tags or []
     files: {}
+    'private': req.body.private != "false"
 
   if req.body.files
     for filename, file of req.body.files

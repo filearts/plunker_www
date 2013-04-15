@@ -2,9 +2,6 @@
 
 #= require ./../../vendor/jquery.autosize/jquery.autosize
 
-#= require ./../../vendor/angular-ui/common/module
-#= require ./../../vendor/angular-ui/modules/directives/select2/select2
-
 #= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.2.0
 
 #= require ./../../vendor/script/dist/script
@@ -12,6 +9,7 @@
 
 #= require ./../services/session
 #= require ./../services/notifier
+#= require ./../services/url
 
 #= require ./../directives/inlineuser
 #= require ./../directives/plunkinfo
@@ -24,7 +22,7 @@ module = angular.module "plunker.sidebar", [
   "plunker.inlineuser"
   "plunker.plunkinfo"
   "plunker.restorer"
-  "ui.directives"
+  "plunker.url"
   "ui.bootstrap"
 ]
 
@@ -72,20 +70,44 @@ module.directive "plunkerSidebarFile", [ "notifier", "session", (notifier, sessi
         confirm: -> session.removeBuffer(buffer.filename)
 ]
 
-module.directive "plunkerTagger", ->
-  restrict: "A"
+module.directive "plunkerTagger", ["$timeout", "url", ($timeout, url) ->
+  restrict: "E"
+  replace: true
   require: "ngModel"
-  priority: 1
+  template: """
+    <input type="hidden" ng-list>
+  """
   link: ($scope, element, args, ngModel) ->
-    ngModel.$parsers.push (viewValue = []) ->
-      tags = []
-      tags.push(option.text) for option in viewValue
-      tags
-      
-    ngModel.$formatters.push (modelValue) ->
-      options = []
-      options.push(id: tag, text: tag) for tag in modelValue
-      options
+    modelChange = false
+    
+    $select2 = $(element).select2
+      tags: []
+      minimumInputLength: 1
+      tokenSeparators: [',',' ']
+      placeholder: 'Enter tags'
+      initSelection: (el, cb) ->
+        cb({id: tag, text: tag} for tag in ngModel.$modelValue)
+      createSearchChoice: (term, data) ->
+        return null for item in data when item.text?.localeCompare(term) == 0
+        
+        id: term,
+        text: term
+      query: (query) ->
+        $.getJSON "#{url.api}/tags", {q: query.term}, (data) ->
+          results = []
+          results.push {id: item.tag, text: item.tag} for item in data
+          
+          query.callback results: results
+    
+    $select2.on "change", (e) ->
+      unless modelChange then $scope.$apply ->
+        ngModel.$setViewValue(e.val.join(","))
+    
+    ngModel.$render = ->
+      modelChange = true
+      $(element).select2("val", ngModel.$modelValue)
+      modelChange = false
+]
 
 module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) ->
   restrict: "E"
@@ -115,7 +137,7 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
             </label>
             <label for="plunk-tags">
               <div>Tags:</div>
-              <input id="plunker-tags" plunker-tagger ng-model="session.tags" ui-select2="{tokenSeparators: [',',' '], tags: [], placeholder: 'Enter tags'}" />
+              <plunker-tagger id="plunker-tags" ng-model="session.tags" />
             </label>
             <div ng-show="session.isSaved()">
               <div>User:</div>
@@ -174,6 +196,7 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
     $(".share").on "click", (e) ->
       e.stopPropagation()
       e.preventDefault()
+    
     
     dereg = $scope.$watch "session.isSaved()", (saved) ->
 

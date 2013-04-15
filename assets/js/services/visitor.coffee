@@ -27,18 +27,14 @@ module.factory "visitor", ["$http", "$rootScope", "$window", "url", "notifier", 
       $rootScope.$watch ( -> self.user?.id ), (user) ->
         self.logged_in = !!user
       
-      $window._handleOAuthSuccess = (auth) ->
-        request = $http
-          url: self.session.user_url
-          method: "POST"
-          data: { service: auth.service, token: auth.token }
-  
+      $window._handleOAuthSuccess = (auth) -> $rootScope.$apply ->
+        request = $http.post(self.session.user_url, { service: auth.service, token: auth.token })
         request.then (response) ->
           self.applySessionData(response.data)
         , (error) ->
           notifier.error "Login error", arguments...
       
-      $window._handleOAuthError = (error) ->
+      $window._handleOAuthError = (error) -> $rootScope.$apply ->
         console.error "AUTH", self, arguments...
         notifier.error "Authentication error", self, arguments...
     
