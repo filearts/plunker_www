@@ -50,7 +50,30 @@ module.config ["$routeProvider", ($routeProvider) ->
               json
             , (error) ->
               notifier.error "Import error", error
-        else _plunker.bootstrap or {}
+        else _plunker.bootstrap or files:
+          "index.html":
+            filename: "index.html"
+            snippet: """
+              <!DOCTYPE html>
+              <html>
+              
+                <head>
+                  <link rel="stylesheet" href="style.css">
+                  <script src="script.js"></script>
+                </head>
+              
+                <body>
+                  ${1:<h1>Hello Plunker!</h1>}
+                </body>
+              
+              </html>
+            """
+          "script.js":
+            filename: "script.js"
+            content: "// Code goes here\n\n"
+          "style.css":
+            filename: "style.css"
+            content: "/* Styles go here */\n\n"
       ]
     controller: [ "$rootScope", "$scope", "$location", "$browser", "$timeout", "$route", "session", "source", "notifier", ($rootScope, $scope, $location, $browser, $timeout, $route, session, source, notifier) ->
       session.reset(source) if source?

@@ -225,11 +225,11 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
   
       @description = json.description or ""
       @tags = json.tags or []
-      @private = !!json.plunk?.private or !!json.private
+      @private = true unless json.plunk?.private is false or json.private is false
       
       @removeBuffer(buffer) for buffId, buffer of @buffers
       
-      @addBuffer(file.filename, file.content, {id: file.id, activate: true}) for filename, file of json.files if json.files
+      @addBuffer(file.filename, file.content, {id: file.id, activate: true, snippet: file.snippet}) for filename, file of json.files if json.files
       @addBuffer("index.html", "") unless $$history.length
   
       @activateBuffer(buffer) if buffer = @getBufferByFilename(/^index\./i)
@@ -369,6 +369,8 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
         filename: filename
         content: content
         participants: {}
+        
+      @buffers[buffId].snippet = options.snippet if options.snippet
   
       $$history.push(buffId)
       

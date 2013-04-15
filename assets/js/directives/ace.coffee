@@ -184,7 +184,7 @@ module.directive "plunkerParticipant", ["session", "participants", (session, par
     $scope.$on "$destroy", -> cleanUp()
 ]
 
-module.directive "plunkerEditSession", ["modes", "settings", "annotations", "activity", (modes, settings, annotations, activity) ->
+module.directive "plunkerEditSession", ["$timeout", "modes", "settings", "annotations", "activity", ($timeout, modes, settings, annotations, activity) ->
   restrict: "E"
   replace: true
   require: ["ngModel", "^plunkerAce"]
@@ -282,7 +282,14 @@ module.directive "plunkerEditSession", ["modes", "settings", "annotations", "act
       session.setWrapLimitRange(range.min, range.max)
     , true
     
+    session.activate = ->
+      if buffer.snippet
+        $timeout ->
+          snippetManager.insertSnippet(controller.editor, buffer.snippet)
+          controller.editor.focus()
+          delete buffer.snippet
     
+
     # Handle clean-up
     $scope.$on "$destroy", ->
       controller.removeSession(buffer.id)
@@ -315,7 +322,9 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
     @addSession = (buffId, session) -> @sessions[buffId] = session
     @removeSession = (buffId) -> delete @sessions[buffId]
     
-    @activate = (@buffId) -> @editor.setSession(@sessions[@buffId])
+    @activate = (@buffId) ->
+      @editor.setSession(@sessions[@buffId])
+      @sessions[@buffId].activate?()
     
     @markDirty = -> session.updated_at = Date.now()
     
@@ -353,7 +362,6 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
           session.switchBuffer(-1)
           
       @editor.commands.bindKey "Tab", (editor) ->
-        console.log "Trying to expand"
         unless snippetManager.expandWithTab(editor)
           editor.execCommand("indent")
               
