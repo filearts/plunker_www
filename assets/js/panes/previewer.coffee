@@ -16,7 +16,7 @@ module.requires.push "plunker.notifier"
 module.service "previewer", ["$http", "$timeout", "url", "settings", "notifier", ($http, $timeout, url, settings, notifier) ->
 ]
 
-module.run [ "$q", "$http", "$timeout", "url", "panes", "session", "settings", ($q, $http, $timeout, url, panes, session, settings) ->
+module.run [ "$q", "$http", "$timeout", "url", "panes", "session", "settings", "notifier", ($q, $http, $timeout, url, panes, session, settings, notifier) ->
 
   class Preview
     constructor: (options = {}) ->
