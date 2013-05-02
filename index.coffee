@@ -131,7 +131,7 @@ authom.on "auth", (req, res, auth) ->
 
 
 authom.on "error", (req, res, data) ->
-  console.log "Auth error"
+  console.log "Auth error", data
   res.status 403
   res.render "auth/error", auth: data
   

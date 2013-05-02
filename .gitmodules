@@ -61,3 +61,6 @@
 [submodule "assets/vendor/jquery.lazyload"]
 	path = assets/vendor/jquery.lazyload
 	url = git://github.com/tuupola/jquery_lazyload.git
+[submodule "vendor/assets/tern"]
+	path = vendor/assets/tern
+	url = git://github.com/marijnh/tern.git

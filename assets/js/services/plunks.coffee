@@ -106,6 +106,14 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       Object.defineProperty self, "parent", get: ->
         if self.fork_of then $$findOrCreate(id: self.fork_of)
         else null
+      
+      unless @comments
+        @comments = []
+        @comments.then = (args...) ->
+          request = $http.get("#{url.api}/plunks/#{self.id}/comments").then (response) ->
+            self.comments.push(comment) for comment in response.data
+            self.comments
+          request.then(args...)
     
     isWritable: -> !@id or !!@token
     isSaved: -> !!@id

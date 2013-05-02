@@ -1,5 +1,6 @@
 #= require ./../../vendor/ace/src/ace
 #= require ./../../vendor/snippetManager
+#= require ./../../vendor/autocomplete
 
 #= require ./../services/session
 #= require ./../services/modes
@@ -8,6 +9,7 @@
 #= require ./../services/activity
 #= require ./../services/participants
 #= require ./../services/panes
+#= require ./../services/tern
 
 
 module = angular.module "plunker.ace", [
@@ -18,6 +20,7 @@ module = angular.module "plunker.ace", [
   "plunker.activity"
   "plunker.participants"
   "plunker.panes"
+  "plunker.tern"
 ]
 
 Editor = require("ace/editor").Editor
@@ -30,6 +33,10 @@ Range = require("ace/range").Range
 
 require("ace/placeholder").PlaceHolder
 snippetManager = require("ace/snippets").snippetManager
+
+console.log "AC", require("ace/autocomplete")
+
+Autocomplete = require("ace/autocomplete").Autocomplete
 
 
 # Convert an ACE Range object row/col to an offset range
@@ -312,7 +319,7 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
       <div class="plunker-ace-canvas"></div>
     </div>
   """
-  controller: ["$scope", "panes", ($scope, panes) ->
+  controller: ["$scope", "panes", "tern", ($scope, panes, tern) ->
     $scope.session = session
     $scope.settings = settings.editor
     $scope.participants = participants
@@ -327,6 +334,19 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
       @sessions[@buffId].activate?()
     
     @markDirty = -> session.updated_at = Date.now()
+    
+    @setupAutocomplete = ->
+      @editor.completer = new Autocomplete
+      
+      Autocomplete.addTo(@editor)
+      
+      tern.setSession(session)
+      
+      complete = 
+        getCompletions: (editSession, pos, prefix, cb) ->
+          tern.requestCompletions(session.getActiveBuffer().filename, pos, prefix, cb)
+      
+      @editor.completer.completers.push(complete)
     
     @bindKeys = ->
       @editor.commands.addCommand
@@ -375,6 +395,7 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
 
     controller.editor = new Editor(new Renderer($aceEl, "ace/theme/#{settings.editor.theme || 'textmate'}"))
     controller.bindKeys()
+    controller.setupAutocomplete()
     
     MultiSelect(controller.editor)
     
