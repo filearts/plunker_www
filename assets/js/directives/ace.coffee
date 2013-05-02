@@ -34,8 +34,6 @@ Range = require("ace/range").Range
 require("ace/placeholder").PlaceHolder
 snippetManager = require("ace/snippets").snippetManager
 
-console.log "AC", require("ace/autocomplete")
-
 Autocomplete = require("ace/autocomplete").Autocomplete
 
 
@@ -344,8 +342,8 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
       
       complete = 
         getCompletions: (editSession, pos, prefix, cb) ->
-          tern.requestCompletions(session.getActiveBuffer().filename, pos, prefix, cb)
-      
+          tern.requestCompletions(session.getActiveBuffer().filename, pos, cb)
+          
       @editor.completer.completers.push(complete)
     
     @bindKeys = ->

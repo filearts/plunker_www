@@ -27,7 +27,7 @@ module.factory "tern", [ () ->
   
   setSession: (set) -> session = set
   
-  requestCompletions: (filename, pos, prefix, cb) ->
+  requestCompletions: (filename, pos, cb) ->
     payload = 
       query:
         type: "completions"
@@ -46,12 +46,18 @@ module.factory "tern", [ () ->
         name: buffer.filename
         text: buffer.content
     
-    console.log "tern.request", payload
-    
     server.request payload, (err, response) ->
-      console.log "tern.response", arguments...
+      
+      range =
+        start:
+          row: response.start.line
+          column: response.start.ch
+        end:
+          row: response.end.line
+          column: response.end.ch
+      
       suggestions = []
-      suggestions.push(text: completion.name, value: completion.name) for completion in response.completions
+      suggestions.push(text: completion.name, value: completion.name, range: range) for completion in response.completions
       
       cb(err, suggestions)
 ]

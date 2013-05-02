@@ -21,6 +21,7 @@ module.run [ "panes", "session", "activity", (panes, session, activity) ->
     icon: "comments-alt"
     size: 328
     title: "Comments"
+    hidden: true
     description: """
       Comment on Plunks.
     """

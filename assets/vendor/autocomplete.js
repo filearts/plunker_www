@@ -450,10 +450,11 @@ exports.AcePopup = AcePopup;
 define('ace/autocomplete', function(require, exports, module) {
 "use strict";
 
-var HashHandler = require("./keyboard/hash_handler").HashHandler;
-var AcePopup = require("./autocomplete/popup").AcePopup;
-var util = require("./autocomplete/util");
-var event = require("./lib/event");
+var Range = require("ace/range").Range;
+var HashHandler = require("ace/keyboard/hash_handler").HashHandler;
+var AcePopup = require("ace/autocomplete/popup").AcePopup;
+var util = require("ace/autocomplete/util");
+var event = require("ace/lib/event");
 
 var Autocomplete = function() {
     this.keyboardHandler = new HashHandler();
@@ -545,15 +546,15 @@ var Autocomplete = function() {
         if (!data)
             data = this.popup.getData(this.popup.getRow());
         if (!data)
-  		return false;
-		if (data.completer && data.completer.insertMatch) {
-			data.completer.insertMatch(this.editor);
-		} else {
-			if (data.value)
-				data = data.value;
-			this.editor.removeWordLeft();
-			this.editor.insert(text);
-		}
+            return false;
+    		if (data.completer && data.completer.insertMatch) {
+    			  data.completer.insertMatch(data);
+    		} else {
+            data.range = Range.fromPoints(data.range.start, data.range.end);
+            this.editor.getSession().replace(data.range, data.value)
+      			//this.editor.removeWordLeft();
+      			//this.editor.insert(text);
+    		}
     };
 
     this.commands = {
@@ -615,16 +616,16 @@ var Autocomplete = function() {
         editor.on("mousedown", this.$mousedownListener);
 
         this.getCompletions(this.editor, function(err, results) {
-			var matches = results && results.matches;
-			if (!matches || !matches.length)
-				return this.detach();
-			if (matches.length == 1)
-				return this.insertMatch(matches[0]);
-
-			this.completions = new FilteredList(matches);
-            this.completions.setFilter(results.prefix);
-            this.openPopup(editor);
-		}.bind(this));
+      			var matches = results && results.matches;
+      			if (!matches || !matches.length)
+      				  return this.detach();
+      			//if (matches.length == 1)
+      			//	return this.insertMatch(matches[0]);
+      
+      			this.completions = new FilteredList(matches);
+                  this.completions.setFilter(results.prefix);
+                  this.openPopup(editor);
+    		}.bind(this));
     };
     
     this.cancelContextMenu = function() {
