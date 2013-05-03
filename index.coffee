@@ -6,7 +6,6 @@ assets = require("connect-assets")
 nconf = require("nconf")
 authom = require("authom")
 request = require("request")
-sharejs = require("share")
 lactate = require("lactate")
 path = require("path")
 xmlbuilder = require("xmlbuilder")
@@ -68,10 +67,6 @@ app.use require("./middleware/expose").middleware
   "url": nconf.get("url")
   "package": pkginfo
   "bootstrap": null
-
-sharejs.server.attach app,
-  db:
-    type: "none"
     
 app.use app.router
 
