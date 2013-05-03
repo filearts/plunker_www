@@ -1,3 +1,4 @@
+#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.2.0
 #= require ./../../vendor/jquery.lazyload/jquery.lazyload
 
 #= require ./../services/quickview
@@ -14,6 +15,7 @@ module = angular.module "plunker.card", [
   "plunker.quickview"
   "plunker.plunkinfo"
   "plunker.taglist"
+  "ui.bootstrap"
 ]
 
 module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", "visitor", ($timeout, $compile, quickview, visitor) ->
@@ -35,14 +37,17 @@ module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", "visitor"
         <plunker-taglist tags="plunk.tags"></plunker-taglist>
         <plunker-plunk-info plunk="plunk"></plunker-plunk-info>
         <ul class="meta">
-          <li ng-show="plunk.fork_of">
+          <li ng-show="plunk.fork_of" tooltip-placement="bottom" tooltip="This plunk was forked from another">
             <plunker-inline-plunk plunk="plunk.parent"><i class="icon-share-alt"></i></plunker-inline-plunk>
           </li>
-          <li ng-show="plunk.files['README.md']">
-            <a title="Full description of Plunk" ng-href="{{plunk.id}}#README"><i class="icon-info"></i></a>
+          <li ng-show="plunk.files['README.md']" tooltip-placement="bottom" tooltip="Full description of Plunk">
+            <a ng-href="{{plunk.id}}#README"><i class="icon-info"></i></a>
           </li>
-          <li ng-show="plunk.thumbed">
-            <a title="You starred this Plunk" ng-href="/users/{{visitor.user.login}}/favorites"><i class="icon-pushpin"></i></a>
+          <li ng-show="plunk.thumbed" tooltip-placement="bottom" tooltip="You starred this Plunk">
+            <a ng-href="/users/{{visitor.user.login}}/favorites"><i class="icon-pushpin"></i></a>
+          </li>
+          <li ng-show="plunk.private" tooltip-placement="bottom" tooltip="Private plunk - only you see this plunk listed here">
+            <a ng-href="{{plunk.id}}"><i class="icon-eye-close"></i></a>
           </li>
         </ul>
       </div>
