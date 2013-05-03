@@ -154,8 +154,8 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
             </div>
             <div ng-show="session.isSaved()">
               <div>Privacy:</div>
-              <abbr ng-show="session.private" title="Only users who know the url of the plunk will be able to view it"><i class="icon-lock"></i> private plunk</abbr>
-              <abbr ng-hide="session.private" title="Everyone can see this plunk"><i class="icon-unlock"></i> public plunk</abbr>
+              <abbr ng-show="session.plunk.private" tooltip-placement="right" tooltip="Only users who know the url of the plunk will be able to view it"><i class="icon-lock"></i> private plunk</abbr>
+              <abbr ng-hide="session.plunk.private" tooltip-placement="right" tooltip="Everyone can see this plunk"><i class="icon-unlock"></i> public plunk</abbr>
             </div>
             <div class="share" ng-show="session.isSaved()">
               <div id="sidebar-share" class="addthis_toolbox addthis_default_style" ng-show="addthis">
