@@ -178,6 +178,7 @@ app.get "/packages/:package", (req, res) -> res.render "landing"
 app.get "/packages/:package/edit", (req, res) -> res.render "landing"
 app.get "/packages/create", (req, res) -> res.render "landing"
 
+app.get "/group", (req, res) -> res.render "landing"
 
 app.get "/tags", (req, res) -> res.render "landing"
 app.get "/tags/:tagname", (req, res) -> res.render "landing"
