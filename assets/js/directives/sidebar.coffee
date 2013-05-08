@@ -186,10 +186,6 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
     
     window.addthis_share =
       title: "Check out what I made on Plunker"
-      url: "/edit/#{session.getEditPath()}"
-    
-    $scope.$watch "session.getEditPath()", (source) ->
-      window.addthis_share.url = window.location.origin + "/edit/#{source}"
 
     $scope.$watch "session.description", (description) ->
       $desc.trigger("autosize")
