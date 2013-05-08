@@ -28,6 +28,8 @@ module.factory "tern", [ () ->
   setSession: (set) -> session = set
   
   requestCompletions: (filename, pos, cb) ->
+    cb(null, []) unless session.getActiveBuffer().filename.match(/\.js$/)
+    
     payload = 
       query:
         type: "completions"

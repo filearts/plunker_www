@@ -616,9 +616,12 @@ var Autocomplete = function() {
         editor.on("mousedown", this.$mousedownListener);
 
         this.getCompletions(this.editor, function(err, results) {
-      			var matches = results && results.matches;
-      			if (!matches || !matches.length)
-      				  return this.detach();
+            var matches = results && results.matches;
+            if (err || !matches || !matches.length) {
+                editor.insert(" ");
+      			    
+                return this.detach();
+      			}
       			//if (matches.length == 1)
       			//	return this.insertMatch(matches[0]);
       
