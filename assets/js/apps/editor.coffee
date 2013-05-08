@@ -1,5 +1,6 @@
 #= require ./../../vendor/angular.js
 #= require ./../../vendor/bootstrap/js/bootstrap-button.js
+#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
 
 #= require ./../services/importer
 #= require ./../services/session
@@ -18,6 +19,7 @@ module = angular.module "plunker.editorPage", [
   "plunker.importer"
   "plunker.session"
   "plunker.notifier"
+  "ui.bootstrap"
 ]
 
 
@@ -96,6 +98,12 @@ module.config ["$routeProvider", ($routeProvider) ->
         lastValidRoute = $route.current
     ]
 ]
+
+module.config ["$tooltipProvider", ($tooltipProvider) ->
+  $tooltipProvider.options(appendToBody: true)
+]
+
+
 
 module.run ["$rootScope", ($rootScope) ->
   $rootScope[k] = v for k, v of window._plunker

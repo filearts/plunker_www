@@ -2,7 +2,7 @@
 
 #= require ./../../vendor/jquery.autosize/jquery.autosize
 
-#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.2.0
+#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
 
 #= require ./../../vendor/script/dist/script
 

@@ -1,7 +1,12 @@
+#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
+
 #= require ./../services/visitor
 
 
-module = angular.module("plunker.userpanel", ["plunker.visitor"])
+module = angular.module "plunker.userpanel", [
+  "plunker.visitor"
+  "ui.bootstrap"
+] 
 
 module.directive "plnkrPress", ["$parse", ($parse) ->
   (scope, element, attrs) ->
@@ -38,21 +43,10 @@ module.directive "plunkerUserpanel", [ ->
           </li>
         </ul>
       </div>
-      <div class="btn-group" ng-switch-when="false">
-        <button class="user-login btn dropdown-toggle" data-toggle="dropdown" title="Sign in">
-          <i class="icon-user" />
-          <span class="text shrink">Sign in</span>
-          <span class="caret"></span>
-        </button>
-        <ul class="dropdown-menu">
-          <li>
-            <a class="login login-github" data-service="github" href="javascript:void(0)" plnkr-press="visitor.login()">
-              <i class="icon-github" />
-              Sign in with Github
-            </a>
-          </li>
-        </ul>
-      </div>
+      <button ng-switch-when="false" ng-disabled="visitor.isLoading()" class="user-login btn btn-primary" tooltip="Sign in to get full access" tooltip-placement="bottom" ng-click="visitor.login()">
+        <i class="icon-github" />
+        <span class="text shrink">Sign in with Github</span>
+      </button>
     </div>
   """
   controller: ["$scope", "visitor", ($scope, visitor) ->

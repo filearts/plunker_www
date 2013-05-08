@@ -28,17 +28,20 @@ module.factory "visitor", ["$http", "$rootScope", "$window", "url", "notifier", 
         self.logged_in = !!user
       
       $window._handleOAuthSuccess = (auth) -> $rootScope.$apply ->
-        request = $http.post(self.session.user_url, { service: auth.service, token: auth.token })
-        request.then (response) ->
+        self.request = $http.post(self.session.user_url, { service: auth.service, token: auth.token })
+        self.request.then (response) ->
           self.applySessionData(response.data)
+          delete self.request
         , (error) ->
           notifier.error "Login error", arguments...
+          delete self.request
       
       $window._handleOAuthError = (error) -> $rootScope.$apply ->
         console.error "AUTH", self, arguments...
         notifier.error "Authentication error", self, arguments...
     
     isMember: -> !!@logged_in
+    isLoading: -> !!@request or !!@loginWindow
         
     applySessionData: (data) ->
       angular.copy(data.user or {}, @user)
@@ -51,11 +54,11 @@ module.factory "visitor", ["$http", "$rootScope", "$window", "url", "notifier", 
       if (screenHeight > height)
           top = Math.round((screenHeight / 2) - (height / 2))
       
-      login = window.open "#{url.www}/auth/github", "Sign in with Github", """
+      @loginWindow = window.open "#{url.www}/auth/github", "Sign in with Github", """
         left=#{left},top=#{top},width=#{width},height=#{height},personalbar=0,toolbar=0,scrollbars=1,resizable=1
       """
 
-      if login then login.focus()
+      if @loginWindow then @loginWindow.focus()
     
     logout: ->
       self = @
