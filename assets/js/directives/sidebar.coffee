@@ -180,12 +180,16 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
     $desc.autosize(append: "\n")
 
     window.addthis_config =
-      data_track_clickback: true
+      data_track_clickback: false
       data_ga_property: 'UA-28928507-1'
       data_ga_social: true
     
     window.addthis_share =
       title: "Check out what I made on Plunker"
+      url: "/edit/#{session.getEditPath()}"
+    
+    $scope.$watch "session.getEditPath()", (source) ->
+      window.addthis_share.url = window.location.origin + "/edit/#{source}"
 
     $scope.$watch "session.description", (description) ->
       $desc.trigger("autosize")
