@@ -52,10 +52,10 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
           <li class="dropdown-submenu">
             <a tabindex="-1" href="#">AngularJS</a>
             <ul class="dropdown-menu">
-              <li><a href="/edit/gist:3510140">1.0.5<a href="/edit/gist:3189582" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
-              <li><a href="/edit/gist:5301635">1.0.5 + Jasmine</a></li>
+              <li><a href="/edit/gist:3510140">1.0.6<a href="/edit/gist:3189582" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
+              <li><a href="/edit/gist:5301635">1.0.6 + Jasmine</a></li>
               <li class="divider"></li>
-              <li><a href="/edit/gist:3662702">1.1.3 (unstable)<a href="/edit/gist:3662696" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
+              <li><a href="/edit/gist:3662702">1.1.4 (unstable)<a href="/edit/gist:3662696" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
             </ul>
           </li>
           <li class="divider"></li>
