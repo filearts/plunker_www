@@ -163,6 +163,9 @@ app.get "/sitemap.xml", (req, res) ->
 
 apiUrl = nconf.get("url:api")
 
+app.get "/catalogue", (req, res) -> res.render "packages"
+app.get "/catalogue/*", (req, res) -> res.render "packages"
+
 
 app.get "/plunks", (req, res) -> res.render "landing"
 app.get "/plunks/trending", (req, res) -> res.render "landing"
@@ -172,11 +175,6 @@ app.get "/plunks/views", (req, res) -> res.render "landing"
 
 app.get "/users", (req, res) -> res.render "landing"
 app.get "/users/:username", (req, res) -> res.render "landing"
-
-app.get "/packages", (req, res) -> res.render "landing"
-app.get "/packages/:package", (req, res) -> res.render "landing"
-app.get "/packages/:package/edit", (req, res) -> res.render "landing"
-app.get "/packages/create", (req, res) -> res.render "landing"
 
 app.get "/group", (req, res) -> res.render "landing"
 

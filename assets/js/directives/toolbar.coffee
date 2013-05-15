@@ -4,6 +4,7 @@
 #= require ./../services/session
 #= require ./../services/downloader
 #= require ./../services/panes
+#= require ./../services/url
 
 module = angular.module "plunker.toolbar", [
   "plunker.visitor"
@@ -11,10 +12,11 @@ module = angular.module "plunker.toolbar", [
   "plunker.downloader"
   "plunker.notifier"
   "plunker.panes"
+  "plunker.url"
   "ui.bootstrap"
 ]
 
-module.directive "plunkerToolbar", ["$location", "session", "downloader", "notifier", "panes", "visitor", ($location, session, downloader, notifier, panes, visitor) ->
+module.directive "plunkerToolbar", ["$location", "session", "downloader", "notifier", "panes", "visitor", "url", ($location, session, downloader, notifier, panes, visitor, url) ->
   restrict: "E"
   scope: {}
   replace: true
@@ -26,10 +28,10 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
         </button>
       </div>
       <div class="btn-group" ng-show="session.isSaved()">
-        <button ng-disabled="!session.isPlunkDirty()" ng-click="session.fork()" class="btn" tooltip-placement="bottom" tooltip="Save your changes as a fork of this Plunk">
+        <button ng-click="session.fork()" class="btn" tooltip-placement="bottom" tooltip="Save your changes as a fork of this Plunk">
           <i class="icon-git-fork"></i><span class="shrink"> Fork</span>
         </button>
-        <button ng-disabled="!session.isPlunkDirty()" data-toggle="dropdown" class="btn dropdown-toggle" tooltip-placement="bottom" tooltip="Fork and toggle the privacy of this Plunk"><span class="caret"></span></button>
+        <button data-toggle="dropdown" class="btn dropdown-toggle" tooltip-placement="bottom" tooltip="Fork and toggle the privacy of this Plunk"><span class="caret"></span></button>
         <ul class="dropdown-menu" ng-switch on="session.private">
           <li ng-switch-when="false"><a ng-click="session.fork({private: true})">Fork to private plunk</a></li>
           <li ng-switch-when="true"><a ng-click="session.fork({private: false})">Fork to public plunk</a></li>
@@ -79,6 +81,11 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
         </button>
       </div>
       <div class="btn-group pull-right">
+        <a ng-href="{{url.embed}}/{{session.plunk.id}}/" target="_blank" class="btn" tooltip-placement="bottom" tooltip="Open the embedded view">
+          <i class="icon-external-link" />
+        </a>
+      </div>
+      <div class="btn-group pull-right">
         <button ng-click="triggerDownload()" class="btn" tooltip-placement="bottom" tooltip="Download your Plunk as a zip file">
           <i class="icon-download-alt" />
         </button>
@@ -99,6 +106,7 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
     $scope.session = session
     $scope.panes = panes
     $scope.visitor = visitor
+    $scope.url = url
     
     $scope.promptReset = ->
       if session.isDirty() and not session.skipDirtyCheck then notifier.confirm "You have unsaved changes. This action will reset your plunk. Are you sure you would like to proceed?",

@@ -55,13 +55,12 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", ($q, $http, plu
             description: plunk.description
             tags: angular.copy(plunk.tags)
             files: files
-            plunk: angular.copy(plunk)
-            disableSave: true
+            source: source
         
-        if index = plunk.files['index.html']
-          updater.update(index.content).then (markup) ->
-            index.content = markup
-            files['index.html'].content = markup
+        if index = files['index.html']
+          markup = updater.parse(index.content)
+          markup.updateAll().then ->
+            index.content = markup.toHtml()
             
             finalize()
         else finalize()

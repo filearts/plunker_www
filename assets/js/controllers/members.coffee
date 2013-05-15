@@ -1,8 +1,11 @@
 #= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
 
+#= require ./../../vendor/script/dist/script
+
 
 #= require ./../services/users
 #= require ./../services/menu
+#= require ./../services/url
 
 #= require ./../directives/gallery
 #= require ./../directives/pager
@@ -13,6 +16,7 @@ module = angular.module "plunker.members", [
   "plunker.gallery"
   "plunker.pager"
   "plunker.menu"
+  "plunker.url"
   "ui.bootstrap"
 ]
 
@@ -61,6 +65,11 @@ createProfileHandler = (pane = "plunks") ->
             <i class="icon-calendar"></i> Member since:
             <span class="join-date" ng-bind-template="{{user.created_at | date}}"></span>
           </p>
+          <div id="carbonads-container">
+            <div class="carbonad">
+              <div id="azcarbon"></div>
+            </div>
+          </div>
         </div>
         <div class="span9" ng-switch on="activePane">
           <ul class="nav nav-tabs">
@@ -92,8 +101,10 @@ createProfileHandler = (pane = "plunks") ->
       unless user.$$refreshed_at then user.refresh() else user
     ]
     
-  controller: ["$rootScope", "$scope", "$location", "visitor", "user", "menu", ($rootScope, $scope, $location, visitor, user, menu) ->
+  controller: ["$rootScope", "$scope", "$location", "visitor", "user", "menu", "url", ($rootScope, $scope, $location, visitor, user, menu, url) ->
     $rootScope.page_title = user.login
+    
+    $script(url.carbonadsV) if url.carbonadsV
     
     $scope.user = user
     $scope.visitor = visitor

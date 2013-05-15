@@ -12,7 +12,7 @@ module.directive "plunkerGallery", ["$timeout", "$location", ($timeout, $locatio
   template: """
     <div class="plunker-gallery">
       <ul class="gallery">
-        <li plunker-card ng-repeat="plunk in plunks" ng-animate="'fade'" plunk="plunk"></li>
+        <li plunker-card ng-repeat="plunk in plunks" plunk="plunk"></li>
       </ul>
     </div>
   """

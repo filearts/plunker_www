@@ -1,3 +1,5 @@
+#= require ./../../vendor/script/dist/script
+
 #= require ./../services/menu
 #= require ./../services/plunks
 #= require ./../services/url
@@ -53,7 +55,7 @@ generateRouteHandler = (filter, options = {}) ->
     resolve:
       filtered: resolvers[filter]
     reloadOnSearch: true
-    controller: ["$rootScope", "$scope", "menu", "filtered", ($rootScope, $scope, menu, filtered) ->
+    controller: ["$rootScope", "$scope", "$injector", "menu", "filtered", ($rootScope, $scope, $injector, menu, filtered) ->
       $rootScope.page_title = "Explore"
       
       $scope.plunks = filtered
@@ -61,11 +63,15 @@ generateRouteHandler = (filter, options = {}) ->
       $scope.activeFilter = filters[filter]
       
       menu.activate "plunks" unless options.skipActivate
+      
+      $injector.invoke(options.initialize) if options.initialize
     ]
   , options
 
 module.config ["$routeProvider", ($routeProvider) ->
-  $routeProvider.when "/", generateRouteHandler("trending", {templateUrl: "partials/landing.html", skipActivate: true})
+  initialLoad = [ "url", (url) -> $script(url.carbonadsH) if url.carbonadsH ]
+  
+  $routeProvider.when "/", generateRouteHandler("trending", {templateUrl: "partials/landing.html", skipActivate: true, initialize: initialLoad})
   $routeProvider.when "/plunks", generateRouteHandler("trending")
   $routeProvider.when "/plunks/#{view}", generateRouteHandler(view) for view, viewDef of filters
 ]
@@ -120,7 +126,6 @@ module.run ["$templateCache", ($templateCache) ->
           </a>
         </p>
       </div>
-      
       <div class="row">
         <div class="span4">
           <h4>Design goals</h4>
@@ -129,6 +134,15 @@ module.run ["$templateCache", ($templateCache) ->
             <li><strong>Ease of use</strong>: Plunker's features should just work and not require additional explanation.</li>
             <li><strong>Collaboration</strong>: From real-time collaboration to forking and commenting, Plunker seeks to encourage users to work together on their code.</li>
           </ul>
+        </div>
+        <div class="span4">
+          <h4>Advertisement</h4>
+          <div id="carbonads-container">
+            <div class="carbonad">
+              <div id="azcarbon"></div>
+            </div>
+          </div>
+          <a target="_blank" href="http://carbonads.net/dev_code.php">Advertise here</a>
         </div>
         <div class="span4">
           <h4>Features</h4>
@@ -142,17 +156,7 @@ module.run ["$templateCache", ($templateCache) ->
             <li>And many more to come...</li>
           </ul>
         </div>
-        <div class="span4">
-          <h4>Thanks</h4>
-          <p><a href="http://nodejitsu.com" title="NodeJitsu"><img src="/img/Nodejitsu.png" /></a>
-          is the what has allowed Plunker to be on the Internet. If you use Node.js and want
-          zero-downtime, command-line deploys, check them out.
-          </p>
-          <p><a href="http://mongolab.com" title="MongoLab"><img src="/img/Mongolab.png" /></a>
-          has generously provided the back-end storage for Plunker. If you are looking for
-          good service and easy set-up, check them out.
-          </p>
-        </div>
+
     
       </div>
       

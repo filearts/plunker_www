@@ -29,16 +29,24 @@ module.directive "plunkerPager", [ "$location", ($location) ->
     collection: "="
     path: "@"
     nav: "&"
+    nolink: "@"
   template: """
-    <div class="plunker-pager pagination">
-      <ul>
+    <div class="plunker-pager pagination" ng-switch on="nolink">
+      <ul ng-switch-when="false">
         <li ng-repeat="link in pages">
-          <a ng-href="{{link.href}}" ng-click="moveTo(link.src)" title="{{link.rel | reltitle}}" ng-bind-html-unsafe="link.rel | relname"></a>
+          <a ng-href="{{link.href}}" title="{{link.rel | reltitle}}" ng-bind-html-unsafe="link.rel | relname"></a>
+        </li>
+      </ul>
+      <ul ng-switch-when="true">
+        <li ng-repeat="link in pages">
+          <a ng-click="moveTo(link.src)" title="{{link.rel | reltitle}}" ng-bind-html-unsafe="link.rel | relname"></a>
         </li>
       </ul>
     </div>
   """
   link: ($scope, $el, attrs) ->
+    $scope.$watch "nolink", (nolink) -> $scope.nolink = !!nolink
+    
     appUrl = (url) ->
       current = URL.parse($location.absUrl())
       parsed = URL.parse(url).queryKey

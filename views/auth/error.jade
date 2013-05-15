@@ -7,7 +7,9 @@ html
   body
     script
       var auth = !{JSON.stringify(auth)};
+      
       if (window.opener && auth) {
         window.opener._handleOAuthError(auth);
       }
+      
       window.close();
