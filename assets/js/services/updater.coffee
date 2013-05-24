@@ -65,7 +65,7 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
       ref = new PackageRef(required)
       required = ref.toString()
       
-      unless entry = promise = @packages[required]
+      unless entry = promise = @packages[ref.name]
         entry = 
           currentVer: options.semver
           required: required
@@ -73,15 +73,18 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
           scripts: []
           styles: []
           dependencies: []
+          children: []
+          parent: options.parent
         
         if options.parent
+          options.parent.children.push(entry)
           unless 0 > idx = @dependencies.indexOf(options.parent)
             @dependencies.splice(Math.max(0, idx - 1), 0, entry)
           else
             console.error "[WTF] This should not happen"
         else @dependencies.push(entry)
         
-        @packages[entry.ref.toString()] = entry
+        @packages[ref.name] = entry
         
         promise = entry.ref.fetch().then (pkgRef) ->
           unless entry.currentVer == pkgRef.ver.semver then list = self.obsolete
@@ -96,6 +99,8 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
           
           return $q.all(childPromises).then -> entry
         , -> $q.reject(new Error("No suitable package found for #{required}"))
+      
+      else entry.ref = ref
       
       if options.el
         # Determine the type of the tag
@@ -136,27 +141,9 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
         $el = entry.styles.pop()
         $el.remove()
 
-      for url, idx in verDef.scripts
-        unless $el = entry.scripts[idx]
-          $prev = $last or $head.children().last()
-          
-          el = document.createElement("script")
-          el.setAttribute("data-require", entry.ref.toString())
-          el.setAttribute("data-semver", verDef.semver)
-          el.setAttribute("src", url)
-          
-          (entry.before?[0] or $prev[0]).parentNode.insertBefore(el, entry.before?[0] or $prev[0].nextSibling)
-          
-          entry.scripts.push($el = $(el))
-        else
-          $el.attr "src", url
-          $el.attr "data-semver", verDef.semver
-        
-        $last = $el
-      
       for url, idx in verDef.styles
         unless $el = entry.styles[idx]
-          $prev = $last or $head.children().last()
+          $prev = $last or $head.find("script[data-require], link[data-require]").last()
           
           el = document.createElement("link")
           el.setAttribute("data-require", entry.required)
@@ -173,6 +160,24 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
         
         $last = $el
             
+      for url, idx in verDef.scripts
+        unless $el = entry.scripts[idx]
+          $prev = $last or $head.find("script[data-require], link[data-require]").last()
+          
+          el = document.createElement("script")
+          el.setAttribute("data-require", entry.ref.toString())
+          el.setAttribute("data-semver", verDef.semver)
+          el.setAttribute("src", url)
+          
+          (entry.before?[0] or $prev[0]).parentNode.insertBefore(el, entry.before?[0] or $prev[0].nextSibling)
+          
+          entry.scripts.push($el = $(el))
+        else
+          $el.attr "src", url
+          $el.attr "data-semver", verDef.semver
+        
+        $last = $el
+      
     updateAll: ->
       markup = @
       

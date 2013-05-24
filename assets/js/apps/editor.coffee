@@ -1,10 +1,10 @@
 #= require ./../../vendor/angular.js
-#= require ./../../vendor/bootstrap/js/bootstrap-button.js
 #= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
 
 #= require ./../services/importer
 #= require ./../services/session
 #= require ./../services/notifier
+#= require ./../services/panes
 
 #= require ./../directives/userpanel
 #= require ./../directives/toolbar
@@ -19,6 +19,7 @@ module = angular.module "plunker.editorPage", [
   "plunker.importer"
   "plunker.session"
   "plunker.notifier"
+  "plunker.panes"
   "ui.bootstrap"
 ]
 
@@ -77,9 +78,13 @@ module.config ["$routeProvider", ($routeProvider) ->
             filename: "style.css"
             content: "/* Styles go here */\n\n"
       ]
-    controller: [ "$rootScope", "$scope", "$location", "$browser", "$timeout", "$route", "session", "source", "notifier", ($rootScope, $scope, $location, $browser, $timeout, $route, session, source, notifier) ->
+    controller: [ "$rootScope", "$scope", "$location", "$browser", "$timeout", "$route", "session", "source", "notifier", "panes", ($rootScope, $scope, $location, $browser, $timeout, $route, session, source, notifier, panes) ->
       session.reset(source) if source?
-      
+
+      unless panes.active
+        catalogue = panes.findById("catalogue")
+        panes.open(catalogue)
+
       $scope.$watch ( -> session.getEditPath()), (path) ->
         $location.path("/#{path}").replace()
         

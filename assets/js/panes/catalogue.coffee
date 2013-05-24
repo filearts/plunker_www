@@ -134,6 +134,7 @@ module.controller "plunkerCatalogueController", [ "$scope", "catalogue", "sessio
     $scope.query = ""
     
   $scope.updateInclude = state.updateInclude = (entry, verDef) ->
+    $scope.markup.updateEntry(child) for child in entry.children
     $scope.markup.updateEntry(entry, verDef)
     $scope.markup.parse($scope.clean = session.activeBuffer.content = $scope.markup.toHtml())
     $scope.markup.findAllDependencies()
