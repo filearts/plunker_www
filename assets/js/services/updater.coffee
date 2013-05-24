@@ -116,7 +116,9 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
       promises = []
       
       $("script[data-require], link[data-require]", @doc).each (el) ->
-        promises.push self.addRequired($(@).data("require"), el: @, semver: $(@).data("semver"))
+        required = $(@).data("require")
+        semver = $(@).data("semver")
+        promises.push self.addRequired(required, el: @, semver: semver) if required
         
       $q.all(promises)
     
