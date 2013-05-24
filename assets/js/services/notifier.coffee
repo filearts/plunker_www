@@ -33,12 +33,13 @@ module.factory "notifier", [ "$rootScope", ($rootScope) ->
           options.title = title
           options.text = text
         when 2
+          options.title = title
           if angular.isObject(text)
-            options = text
-            options.text = title
+            options = angular.extend(text, options)
+          else options.text = text
         when 1
           if angular.isObject(title)
-            options = title
+            options = angular.extend(title, options)
           else options.text = title
           
       options.layout ||= "bottomRight"

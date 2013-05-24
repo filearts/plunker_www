@@ -132,13 +132,7 @@ module.factory "catalogue", ["$http", "visitor", "url", ($http, visitor, url) ->
         
       request = $http.post("#{apiUrl}/catalogue/packages/#{pkg.name}/bump", {}, options).then (response) ->
         pkg.update(response.data)
-        
-        delete pkg.then
-        
-        pkg
-      
-      pkg.then = request.then.bind(request)
-      pkg
+
           
     destroy: (options = {}) ->
       pkg = @

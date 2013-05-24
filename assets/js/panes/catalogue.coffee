@@ -18,7 +18,7 @@ module.requires.push "plunker.updater"
 module.requires.push "plunker.session"
 
 
-module.run [ "$q", "$timeout", "panes", "url", "updater", "session", ($q, $timeout, panes, url, updater, session) ->
+module.run [ "$q", "$timeout", "panes", "url", "updater", "session", "catalogue", ($q, $timeout, panes, url, updater, session, catalogue) ->
 
   panes.add
     id: "catalogue"
@@ -34,6 +34,9 @@ module.run [ "$q", "$timeout", "panes", "url", "updater", "session", ($q, $timeo
     """
     
     link: ($scope, $el, attrs) ->
+      
+      $scope.$watch "pane.active", (active) ->
+        $scope.popular ||= catalogue.findAll() if active
       
       $scope.$watch ( -> session.getActiveBuffer()), (buffer) ->
         delete $scope.markup
@@ -73,7 +76,7 @@ module.directive "plunkerPackageBlock", [ () ->
       <div class="package-header">
         <h4>
           <ul class="package-meta inline pull-right">
-            <li><i class="icon-download"></i><span ng-bind="package.bumps"></span></li>
+            <li><i class="icon-download"></i><span ng-bind="package.bumps | shorten"></span></li>
           </ul>
           <a ng-click="click(package)" ng-bind="package.name"></a>
           <ul class="package-versions inline">
@@ -99,11 +102,18 @@ module.directive "plunkerPackageBlock", [ () ->
     
 ]
 
+module.filter "shorten", ->
+  (val) ->
+    val = parseInt(val, 10)
+    
+    if val >= 10000 then Math.round(val / 1000) + "k"
+    else if val >= 1000 then Math.round(val / 100) / 10 + "k"
+    else val
+
 module.controller "plunkerCatalogueController", [ "$scope", "catalogue", "session", "visitor", ($scope, catalogue, session, visitor) ->
   $scope.state = state = @
   $scope.visitor = visitor
   
-  $scope.popular = catalogue.findAll()
   
   $scope.moveTo = state.moveTo = (view) ->
     state.view = view
@@ -135,6 +145,8 @@ module.controller "plunkerCatalogueController", [ "$scope", "catalogue", "sessio
   
   $scope.insertPackage = state.insertPackage = (pkg, verDef) ->
     required = "#{pkg.name}@#{verDef.semver}"
+    
+    pkg.bump()
     
     $scope.markup.addRequired(required).then($scope.updateInclude)
   

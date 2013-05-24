@@ -95,6 +95,7 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
           childPromises.push(self.addRequired(dependency, parent: entry)) for dependency in pkgRef.ver.dependencies
           
           return $q.all(childPromises).then -> entry
+        , -> $q.reject(new Error("No suitable package found for #{required}"))
       
       if options.el
         # Determine the type of the tag

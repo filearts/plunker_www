@@ -96,7 +96,7 @@ module.run [ "panes", "session", "plunks", "url", "visitor", "quickview", (panes
         $scope.templates.pageTo(url)
       
       $scope.$watch "pane.active", (active) ->
-        unless activated
+        if active and not activated
           activated = true
           $scope.filter =
             if visitor.isMember() then "own"
@@ -108,9 +108,10 @@ module.run [ "panes", "session", "plunks", "url", "visitor", "quickview", (panes
         if $scope.filter is "own" and !member then $scope.filter = "forked"
       
       $scope.$watch "filter", (filter) ->
-        if filter is "forked" then $scope.templates = plunks.query(url: "#{url.api}/plunks/forked")    
-        else if filter is "own" then $scope.templates = plunks.query(url: "#{url.api}/plunks/remembered")
-        
-        $scope.templates.page = 1
+        if activated
+          if filter is "forked" then $scope.templates = plunks.query(url: "#{url.api}/plunks/forked")    
+          else if filter is "own" then $scope.templates = plunks.query(url: "#{url.api}/plunks/remembered")
+          
+          $scope.templates.page = 1
       
 ]

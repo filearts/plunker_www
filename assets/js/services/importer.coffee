@@ -1,5 +1,6 @@
 #= require ./../services/plunks
 #= require ./../services/updater
+#= require ./../services/notifier
 
 plunkerRegex = ///
   ^
@@ -39,9 +40,10 @@ githubRegex = ///
 module = angular.module "plunker.importer", [
   "plunker.plunks"
   "plunker.updater"
+  "plunker.notifier"
 ]
 
-module.service "importer", [ "$q", "$http", "plunks", "updater", ($q, $http, plunks, updater) ->
+module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q, $http, plunks, updater, notifier) ->
   import: (source) ->
     deferred = $q.defer()
     
@@ -112,7 +114,16 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", ($q, $http, plu
                 filename: filename
                 content: file.content 
           
-          deferred.resolve(json)
+          if index = json.files['index.html']
+            markup = updater.parse(index.content)
+            markup.updateAll().then ->
+              index.content = markup.toHtml()
+              
+              deferred.resolve(json)
+            , (err) ->
+              notifier.error "Auto-update failed", err.message
+              deferred.resolve(json)
+          else deferred.resolve(json)
     else deferred.reject("Not a recognized source")
           
     deferred.promise
