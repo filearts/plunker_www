@@ -25,9 +25,6 @@
 [submodule "assets/vendor/angular-ui"]
 	path = assets/vendor/angular-ui
 	url = git://github.com/angular-ui/angular-ui.git
-[submodule "assets/vendor/flatstrap"]
-	path = assets/vendor/flatstrap
-	url = git://github.com/littlesparkvt/flatstrap.git
 [submodule "assets/vendor/select2"]
 	path = assets/vendor/select2
 	url = git://github.com/ivaynberg/select2.git
@@ -49,15 +46,6 @@
 [submodule "assets/vendor/ui-bootstrap"]
 	path = assets/vendor/ui-bootstrap
 	url = git://github.com/angular-ui/bootstrap.git
-[submodule "assets/vendor/typeahead"]
-	path = assets/vendor/typeahead
-	url = git://github.com/twitter/typeahead.js.git
-[submodule "assets/vendor/typeahead-bootstrap"]
-	path = assets/vendor/typeahead-bootstrap
-	url = git://github.com/jharding/typeahead.js-bootstrap.css.git
-[submodule "assets/vendor/js-beautify"]
-	path = assets/vendor/js-beautify
-	url = git://github.com/einars/js-beautify.git
 [submodule "assets/vendor/jquery.lazyload"]
 	path = assets/vendor/jquery.lazyload
 	url = git://github.com/tuupola/jquery_lazyload.git

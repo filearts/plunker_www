@@ -9,7 +9,6 @@
 #= require ./../services/activity
 #= require ./../services/participants
 #= require ./../services/panes
-#= require ./../services/tern
 
 
 module = angular.module "plunker.ace", [
@@ -20,7 +19,6 @@ module = angular.module "plunker.ace", [
   "plunker.activity"
   "plunker.participants"
   "plunker.panes"
-  "plunker.tern"
 ]
 
 Editor = require("ace/editor").Editor
@@ -317,7 +315,7 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
       <div class="plunker-ace-canvas"></div>
     </div>
   """
-  controller: ["$scope", "panes", "tern", ($scope, panes, tern) ->
+  controller: ["$scope", "panes", ($scope, panes) ->
     $scope.session = session
     $scope.settings = settings.editor
     $scope.participants = participants
@@ -393,7 +391,7 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
 
     controller.editor = new Editor(new Renderer($aceEl, "ace/theme/#{settings.editor.theme || 'textmate'}"))
     controller.bindKeys()
-    controller.setupAutocomplete()
+    #controller.setupAutocomplete()
     
     MultiSelect(controller.editor)
     

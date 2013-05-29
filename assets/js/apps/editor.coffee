@@ -81,7 +81,7 @@ module.config ["$routeProvider", ($routeProvider) ->
     controller: [ "$rootScope", "$scope", "$location", "$browser", "$timeout", "$route", "session", "source", "notifier", "panes", ($rootScope, $scope, $location, $browser, $timeout, $route, session, source, notifier, panes) ->
       session.reset(source) if source?
 
-      unless panes.active
+      unless panes.active or session.getEditPath()
         catalogue = panes.findById("catalogue")
         panes.open(catalogue)
 

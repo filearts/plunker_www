@@ -1,6 +1,4 @@
-#= require ./../../vendor/js-beautify/beautify-css
-#= require ./../../vendor/js-beautify/beautify
-#= require ./../../vendor/js-beautify/beautify-html
+#= require ./../../vendor/dominatrix
 
 #= require ./../../vendor/semver/semver
 
@@ -50,7 +48,7 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
     parse: (markup) ->
       @doc.open()
       @doc.write(markup)
-      @doc.close()
+      @doc.documentElement?.innerHTML = markup
     
     updateOrInsert: (pkgDef, verDef) ->
       self = @
@@ -100,7 +98,9 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
           return $q.all(childPromises).then -> entry
         , -> $q.reject(new Error("No suitable package found for #{required}"))
       
-      else entry.ref = ref
+      else
+        entry.ref = ref
+        entry.ref.fetch()
       
       if options.el
         # Determine the type of the tag
@@ -143,15 +143,19 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
 
       for url, idx in verDef.styles
         unless $el = entry.styles[idx]
-          $prev = $last or $head.find("script[data-require], link[data-require]").last()
-          
           el = document.createElement("link")
           el.setAttribute("data-require", entry.required)
           el.setAttribute("data-semver", verDef.semver)
           el.setAttribute("rel", "stylesheet")
           el.setAttribute("href", url)
           
-          (entry.before?[0] or $prev[0]).parentNode.insertBefore(el, entry.before?[0] or $prev[0].nextSibling)
+          if ($prev = $last or $head.find("link[data-require]").last()).length
+            prev = $prev[0]
+            prev.parentNode.insertBefore(el, prev.nextSibling) # Insert after last builder stylesheet
+          else if ($prev = $head.find("style, link[rel=stylesheet], script").first()).length
+            prev = $prev[0]
+            prev.parentNode.insertBefore(el, prev) # Insert before first non-builder stylesheet
+          else $head.append(el)
           
           entry.styles.push($el = $(el))
         else
@@ -161,15 +165,20 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
         $last = $el
             
       for url, idx in verDef.scripts
+        before = after = null
         unless $el = entry.scripts[idx]
-          $prev = $last or $head.find("script[data-require], link[data-require]").last()
-          
           el = document.createElement("script")
           el.setAttribute("data-require", entry.ref.toString())
           el.setAttribute("data-semver", verDef.semver)
           el.setAttribute("src", url)
           
-          (entry.before?[0] or $prev[0]).parentNode.insertBefore(el, entry.before?[0] or $prev[0].nextSibling)
+          if ($prev = $last or $head.find("script[data-require]").last()).length
+            prev = $prev[0]
+            prev.parentNode.insertBefore(el, prev.nextSibling) # Insert after last builder script
+          else if ($prev = $head.find("style, link[rel=stylesheet], script").first()).length
+            prev = $prev[0]
+            prev.parentNode.insertBefore(el, prev) # Insert before first non-builder script
+          else $head.append(el)
           
           entry.scripts.push($el = $(el))
         else
@@ -184,11 +193,7 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
       @findAllDependencies().then (entries) ->
         markup.updateEntry(entry) for entry in entries
 
-    toHtml: ->
-      serializer = new XMLSerializer()
-      html = serializer.serializeToString(@doc)
-      
-      style_html(html, indent_size: settings.editor.tab_size)
+    toHtml: -> dominatrix.domToHtml(@doc)
         
   parse: (markup) -> new MarkupFile(markup)
   

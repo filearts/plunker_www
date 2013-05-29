@@ -45,6 +45,7 @@ module.directive "plunkerPager", [ "$location", ($location) ->
     </div>
   """
   link: ($scope, $el, attrs) ->
+    $scope.nolink = !!$scope.nolink
     $scope.$watch "nolink", (nolink) -> $scope.nolink = !!nolink
     
     appUrl = (url) ->

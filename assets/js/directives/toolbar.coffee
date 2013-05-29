@@ -54,10 +54,10 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
           <li class="dropdown-submenu">
             <a tabindex="-1" href="#">AngularJS</a>
             <ul class="dropdown-menu">
-              <li><a href="/edit/gist:3510140">1.0.6<a href="/edit/gist:3189582" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
-              <li><a href="/edit/gist:5301635">1.0.6 + Jasmine</a></li>
+              <li><a href="/edit/gist:3510140">1.0.x<a href="/edit/gist:3189582" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
+              <li><a href="/edit/gist:5301635">1.0.x + Jasmine</a></li>
               <li class="divider"></li>
-              <li><a href="/edit/gist:3662702">1.1.4 (unstable)<a href="/edit/gist:3662696" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
+              <li><a href="/edit/gist:3662702">1.1.x (unstable)<a href="/edit/gist:3662696" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
             </ul>
           </li>
           <li class="divider"></li>
@@ -80,7 +80,7 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
           </div>
         </button>
       </div>
-      <div class="btn-group pull-right">
+      <div class="btn-group pull-right" ng-show="session.isSaved()">
         <a ng-href="{{url.embed}}/{{session.plunk.id}}/" target="_blank" class="btn" tooltip-placement="bottom" tooltip="Open the embedded view">
           <i class="icon-external-link" />
         </a>

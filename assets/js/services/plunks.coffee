@@ -135,6 +135,8 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
         self
       , (err) ->
         self.$$refreshing = null
+        
+        $q.reject("Refresh failed")
     
     star: (starred = !@thumbed, options = {}) ->
       self = @
@@ -158,6 +160,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       
       error = (err) ->
         self.$$refreshing = null
+        $q.reject("Starring failed")
       
       if starred
         self.$$refreshing ||= $http.post("#{url.api}/plunks/#{@id}/thumb", {}, options).then(success, error)
@@ -184,6 +187,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       
       error = (err) ->
         self.$$refreshing = null
+        $q.reject("Remembering failed")
       
       if remembered
         self.$$refreshing ||= $http.post("#{url.api}/plunks/#{@id}/remembered", {}, options).then(success, error)
@@ -206,6 +210,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
         self
       , (err) ->
         self.$$refreshing = null
+        $q.reject("Save failed")
 
     destroy: (options = {}) ->
       self = @
@@ -222,6 +227,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
         self
       , (err) ->
         self.$$refreshing = null
+        $q.reject("Destroy failed")
 
       
   plunks =
@@ -279,6 +285,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
           results
         , (err) ->
           results.$$refreshing = null
+          $q.reject("Refresh failed")
       )()
       
       return results

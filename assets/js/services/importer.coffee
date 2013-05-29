@@ -1,3 +1,5 @@
+#= require ./../../vendor/dominatrix
+
 #= require ./../services/plunks
 #= require ./../services/updater
 #= require ./../services/notifier
@@ -20,6 +22,14 @@ templateRegex = ///
   $
 ///i
 
+fiddleRegex = ///
+  ^
+    \s*                   # Leading whitespace
+    fiddle:               # Optional plunk:prefix
+    ([-\._a-zA-Z0-9]+)    # Fiddle ID
+    \s*                   # Trailing whitespace
+  $
+///i
 
 githubRegex = ///
   ^
@@ -124,6 +134,77 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q
               notifier.error "Auto-update failed", err.message
               deferred.resolve(json)
           else deferred.resolve(json)
+    else if matches = source.match(fiddleRegex)
+      fiddleUrl = "http://jsfiddle.net/#{matches[1]}/show"
+      request = $http.jsonp("http://query.yahooapis.com/v1/public/yql?q=SELECT * FROM html WHERE url=\"#{fiddleUrl}\" AND xpath=\"/html\" and compat=\"html5\"&format=xml&callback=JSON_CALLBACK")
+      request.then (response) ->
+        if response.status >= 400 then deferred.reject("Failed to fetch fiddle")
+        else
+          unless fiddleHtml = response.data.results[0]
+            return deferred.reject("Failed to fetch fiddle")
+          
+          fiddleHtml = fiddleHtml.replace(/<script([^>]*)\/>/ig, "<script$1></script>")
+          fiddleHtml = fiddleHtml.replace(/(?:\/\/)?<!\[CDATA\[/g, "").replace(/(?:\/\/)?\]\]>/g, "").replace(/(?:\/\/)?\]\]>/g, "")
+          
+          doc = window.document.implementation.createHTMLDocument("")
+          doc.open()
+          doc.write(fiddleHtml)
+          doc.innerHTML = fiddleHtml
+          
+          console.log "DOC", doc
+          
+          json = 
+            'private': true
+          
+          angular.extend json,
+            source:
+              type: "fiddle"
+              url: fiddleUrl
+              title: $("title", doc).text()
+            files: {}
+          
+          json.description = $("title", doc).text()
+          
+          $("link[href]", doc).each ->
+            href = $(@).attr("href")
+            
+            $(@).attr "href", "http://jsfiddle.net#{href}" if href.charAt(0) is "/" and href.charAt(1) isnt "/"
+
+          $("script[src]", doc).each ->
+            href = $(@).attr("src")
+            
+            $(@).attr "src", "http://jsfiddle.net#{href}" if href.charAt(0) is "/" and href.charAt(1) isnt "/"
+          
+          if ($script = $("head script:not([src])", doc)).length
+          
+            if script = jQuery.trim($script.text())
+              json.files["script.js"] = 
+                filename: "script.js"
+                content: script
+              $script.text("").attr("src", "script.js")
+            else $script.remove()
+  
+          if ($style = $("head style", doc)).length
+            if style = jQuery.trim($style.text())
+              json.files["style.css"] =
+                filename: "style.css"
+                content: style
+              $style.replaceWith('<link rel="stylesheet" href="style.css">')
+            else $style.remove()
+          
+          serializer = new XMLSerializer()
+          json.files["index.html"] = index =
+            filename: "index.html"
+            content: dominatrix.domToHtml(doc)
+          
+          markup = updater.parse(index.content)
+          markup.updateAll().then ->
+            index.content = markup.toHtml()
+            
+            deferred.resolve(json)
+          , (err) ->
+            notifier.error "Auto-update failed", err.message
+            deferred.resolve(json)
     else deferred.reject("Not a recognized source")
           
     deferred.promise
