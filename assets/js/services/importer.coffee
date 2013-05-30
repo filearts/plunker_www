@@ -27,6 +27,7 @@ fiddleRegex = ///
     \s*                   # Leading whitespace
     fiddle:               # Optional plunk:prefix
     ([-\._a-zA-Z0-9]+)    # Fiddle ID
+    (?:@([0-9]*))?        # Fiddle version
     \s*                   # Trailing whitespace
   $
 ///i
@@ -79,6 +80,7 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q
         
       , (error) ->
         deferred.reject("Plunk not found")
+        
     else if matches = source.match(plunkerRegex)
       plunks.findOrCreate(id: matches[1]).refresh().then (plunk) ->
         files = {}
@@ -92,6 +94,7 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q
           plunk: angular.copy(plunk)
       , (error) ->
         deferred.reject("Plunk not found")
+        
     else if matches = source.match(githubRegex)
       request = $http.jsonp("https://api.github.com/gists/#{matches[1]}?callback=JSON_CALLBACK")
       
@@ -134,8 +137,11 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q
               notifier.error "Auto-update failed", err.message
               deferred.resolve(json)
           else deferred.resolve(json)
+          
     else if matches = source.match(fiddleRegex)
-      fiddleUrl = "http://jsfiddle.net/#{matches[1]}/show"
+      fiddleRef = matches[1] + if matches[2] then "/#{matches[2]}" else ""
+      fiddleUrl = "http://jsfiddle.net/#{fiddleRef}/show"
+      
       request = $http.jsonp("http://query.yahooapis.com/v1/public/yql?q=SELECT * FROM html WHERE url=\"#{fiddleUrl}\" AND xpath=\"/html\" and compat=\"html5\"&format=xml&callback=JSON_CALLBACK")
       request.then (response) ->
         if response.status >= 400 then deferred.reject("Failed to fetch fiddle")
@@ -150,8 +156,6 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q
           doc.open()
           doc.write(fiddleHtml)
           doc.innerHTML = fiddleHtml
-          
-          console.log "DOC", doc
           
           json = 
             'private': true
@@ -205,7 +209,7 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q
           , (err) ->
             notifier.error "Auto-update failed", err.message
             deferred.resolve(json)
-    else deferred.reject("Not a recognized source")
+    else return $q.reject("Not a recognized source")
           
     deferred.promise
 ]

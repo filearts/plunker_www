@@ -63,8 +63,8 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
       ref = new PackageRef(required)
       required = ref.toString()
       
-      unless entry = promise = @packages[ref.name]
-        entry = 
+      unless entry = @packages[ref.name]
+        @packages[ref.name] = entry = 
           currentVer: options.semver
           required: required
           ref: ref
@@ -81,27 +81,10 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
           else
             console.error "[WTF] This should not happen"
         else @dependencies.push(entry)
-        
-        @packages[ref.name] = entry
-        
-        promise = entry.ref.fetch().then (pkgRef) ->
-          unless entry.currentVer == pkgRef.ver.semver then list = self.obsolete
-          else list = self.current
-          
-          if options.parent and not (0 > idx = list.indexOf(options.parent))
-            list.splice(Math.max(0, idx - 1), 0, entry)
-          else list.push(entry)
-            
-          childPromises = []
-          childPromises.push(self.addRequired(dependency, parent: entry)) for dependency in pkgRef.ver.dependencies
-          
-          return $q.all(childPromises).then -> entry
-        , -> $q.reject(new Error("No suitable package found for #{required}"))
-      
       else
         entry.ref = ref
-        entry.ref.fetch()
-      
+
+
       if options.el
         # Determine the type of the tag
         type = if options.el.nodeName.toLowerCase() is "script" then "scripts" else "styles"
@@ -110,7 +93,19 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
       else if before = options.parent?.styles[0] or options.parent?.scripts[0]
         entry.before = before
       
-      return $q.when(promise)
+      entry.ref.fetch().then (pkgRef) ->
+        unless entry.currentVer == pkgRef.ver.semver then list = self.obsolete
+        else list = self.current
+        
+        if options.parent and not (0 > idx = list.indexOf(options.parent))
+          list.splice(Math.max(0, idx - 1), 0, entry)
+        else list.push(entry)
+          
+        childPromises = []
+        childPromises.push(self.addRequired(dependency, parent: entry)) for dependency in pkgRef.ver.dependencies
+        
+        return $q.all(childPromises).then -> entry
+      , -> $q.reject(new Error("No suitable package found for #{required}"))
       
     findAllDependencies: ->
       @dependencies = []
@@ -125,8 +120,9 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
         required = $(@).data("require")
         semver = $(@).data("semver")
         promises.push self.addRequired(required, el: @, semver: semver) if required
-        
+      
       $q.all(promises)
+        
     
     updateEntry: (entry, verDef) ->
       $head = $("head", @doc)
@@ -190,8 +186,11 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
     updateAll: ->
       markup = @
       
-      @findAllDependencies().then (entries) ->
-        markup.updateEntry(entry) for entry in entries
+      @findAllDependencies().then ->
+        promises = []
+        promises.push(markup.updateEntry(entry)) for entry in markup.dependencies
+        
+        $q.all(promises)
 
     toHtml: -> dominatrix.domToHtml(@doc)
         
