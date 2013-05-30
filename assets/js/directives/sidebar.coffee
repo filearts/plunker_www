@@ -118,7 +118,7 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
       <details open>
         <summary class="header">Files</summary>
         <ul class="plunker-filelist nav nav-list">
-          <plunker-sidebar-file buffer="buffer" ng-repeat="(id, buffer) in session.buffers">
+          <plunker-sidebar-file buffer="buffer" ng-repeat="buffer in session.getBufferArray() | orderBy:'filename'">
           </plunker-sidebar-file>
           <li class="newfile">
             <a ng-click="promptFileAdd()">

@@ -153,6 +153,13 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
 
       json
   
+    getBufferArray: do ->
+      buffers = []
+      ->
+        buffers.length = 0
+        buffers.push(buffer) for buffId, buffer of @buffers
+        buffers
+    
     getActiveBuffer: ->
       throw new Error("Attempting return the active buffer while the Session is out of sync") unless $$history.length
   
