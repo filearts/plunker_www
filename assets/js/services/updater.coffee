@@ -97,9 +97,10 @@ module.service "updater", [ "$q", "catalogue", "settings", "notifier", ($q, cata
         unless entry.currentVer == pkgRef.ver.semver then list = self.obsolete
         else list = self.current
         
-        if options.parent and not (0 > idx = list.indexOf(options.parent))
-          list.splice(Math.max(0, idx - 1), 0, entry)
-        else list.push(entry)
+        if list.indexOf(entry) < 0
+          if options.parent and not (0 > idx = list.indexOf(options.parent))
+            list.splice(Math.max(0, idx - 1), 0, entry) 
+          else list.push(entry)
           
         childPromises = []
         childPromises.push(self.addRequired(dependency, parent: entry)) for dependency in pkgRef.ver.dependencies
