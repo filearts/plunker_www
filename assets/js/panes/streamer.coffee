@@ -248,6 +248,7 @@ module.run [ "$rootScope", "$q", "$location", "panes", "session", "participants"
               buffId: op.p[1]
               offset: op.p[3]
               text: op.si
+            
           # Rename
           else if 3 == op.p.length and "files" == op.p[0] and "filename" == op.p[2]
             if op.od and op.oi then client.playback "files.rename",

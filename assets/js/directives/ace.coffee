@@ -37,78 +37,14 @@ Autocomplete = require("ace/autocomplete").Autocomplete
 
 # Convert an ACE Range object row/col to an offset range
 
-rangeToOffset = (doc, range) ->
-  lines = doc.getLines 0, range.start.row
-    
-  offset = 0
-
-  for line, i in lines
-    offset += if i < range.start.row
-      line.length
-    else
-      range.start.column
-
-  # Add the row number to include newlines.
-  offset + range.start.row * doc.getNewLineCharacter().length
-
-rangeToInterval = (doc, range) ->
-  firstRow = range.start.row
-  lastRow = range.end.row
-  lines = doc.getLines 0, lastRow
-  start = 0
-  end = 0
-
-  for line, i in lines
-    if i < firstRow then start += line.length
-    else if i == firstRow
-      start += range.start.column
-
-    if i < lastRow then end += line.length
-    else if i == lastRow
-      end += range.end.column
-  
-  # Add the row number to include newlines.
-  start += range.start.row * doc.getNewLineCharacter().length
-  end += range.end.row * doc.getNewLineCharacter().length
-  
-  [start, end]
+rangeToOffset = (doc, range) -> doc.positionToIndex(range.start)
+rangeToInterval = (doc, range) -> [doc.positionToIndex(range.start), doc.positionToIndex(range.end)]
 
 
 # Convert an offset range to an ace row/col range
 
-offsetToRange = (doc, offset, length = 0) ->
-  return Range.fromPoints offsetToPosition(doc, offset), offsetToPosition(doc, offset + length)
-  
-  # Again, very inefficient.
-  lines = doc.getAllLines()
-
-  row = 0
-  for line, row in lines
-    if offset <= line.length
-      unless start
-        start = row: row, column: offset
-        offset += length
-    if offset <= line.length
-      if start
-        end = row: row, column: offset
-        break
-
-    # +1 for the newline.
-    offset -= lines[row].length + doc.getNewLineCharacter().length
-  
-  new Range(start.row, start.column, end.row, end.column)
-
-offsetToPosition = (doc, offset) ->
-  lines = doc.getAllLines()
-  row = 0
-  
-  for line, row in lines
-    break if offset <= line.length
-
-    # +1 for the newline.
-    offset -= line.length + doc.getNewLineCharacter().length
-
-  row: row, column: offset
+offsetToRange = (doc, offset, length = 0) -> Range.fromPoints doc.indexToPosition(offset), doc.indexToPosition(offset + length)
+offsetToPosition = (doc, offset) -> doc.indexToPosition(offset)
 
 nextClass = do ->
   idx = -1
