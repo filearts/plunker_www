@@ -225,15 +225,7 @@ module.run [ "$rootScope", "$q", "$location", "panes", "session", "participants"
       
       unless stream.keep
         client.playback "reset", stream.doc.get()
-        
-      stream.doc.shout
-        e: "connect"
-        who: visitor.session.public_id
-      
-      stream.doc.on "shout", (event) ->
-        #notifier.alert event
-        console.log "SHOUT", arguments...
-        
+                
       stream.doc.on "remoteop", (ops, snapshot) ->
         for op in ops
           # Reset
@@ -296,6 +288,20 @@ module.run [ "$rootScope", "$q", "$location", "panes", "session", "participants"
         stream.doc.submitOp
           p: ["files", json.buffId, "content", json.offset]
           sd: json.text
+      
+      @cleanup.push do ->
+        ival = setInterval stream.checkup.bind(stream), 1000
+        ->
+          console.log "[INFO] Disabling stream sync check"
+          clearInterval(ival)
+    
+    checkup: ->
+      local = @getLocalState()
+      remote = @doc.snapshot
+      
+      unless angular.equals(local, remote)
+        console.log "[ERR] Session out of sync"
+        client.playback "reset", remote
 
     stop: ->
       while @cleanup.length
