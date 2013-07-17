@@ -1,3 +1,5 @@
+#= require ./../../vendor/diff_match_patch
+
 #= require ./../services/plunks
 #= require ./../services/notifier
 #= require ./../services/activity
@@ -49,6 +51,8 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
         @loading = ""
   
     constructor: ->
+      @currentRevisionIndex = 0
+      
       @plunk = null
       @source = ""
   
@@ -104,6 +108,56 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       current = valueAtPath(@toJSON(raw: true), path)
       
       return !angular.equals(previous, current)
+    
+    getRevision: (rel = 0, current = @toJSON()) ->
+      session = @
+      size = @plunk.history.length - 1
+      dmp = new diff_match_patch()
+      
+      rename = (fn, to) ->
+        if file = current.files[fn]
+          file.filename = to
+          delete current.files[fn]
+          current.files[to] = file
+      
+      patch = (fn, patches) ->
+        if file = current.files[fn]
+          [file.content] = dmp.patch_apply(patches, file.content)
+      
+      remove = (fn) ->
+        delete current.files[fn]
+      
+      for i in [0...rel]
+        for chg, j in @plunk.history[size - i].changes
+          # The changed file existed previously
+          if chg.pn
+            if chg.fn
+              # File changed
+              if chg.pl
+                #console.log "Patching", chg.fn, "to", chg.pl
+                patch(chg.fn, dmp.patch_fromText(chg.pl))
+              # File renamed
+              if chg.pn != chg.fn
+                #console.log "Renaming", chg.pn, "to", chg.fn
+                rename(chg.pn, chg.fn)
+            else # Deleted the file
+              #console.log "Adding", chg.fn, chg.pl
+              current.files[chg.pn] =
+                filename: chg.pn
+                content: chg.pl
+          else if chg.fn
+            #console.log "Deleting", chg.fn
+            remove(chg.fn)
+      
+      current
+    
+    revertTo: (rel = 0) ->
+      json = @getRevision(rel, angular.copy(@$$currentRevision ||= @toJSON()))
+      
+      @currentRevisionIndex = rel
+      
+      @reset json, soft: true
+      
       
     getSaveDelta: ->
       json = {}
@@ -185,7 +239,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       if options.raw
         json =
           description: @description
-          tags: @tags
+          tags: angular.copy(@tags)
           private: @private
           buffers: angular.copy(@buffers)
           source: angular.copy(@source)
@@ -194,7 +248,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       else
         json =
           description: @description
-          tags: @tags
+          tags: angular.copy(@tags)
           'private': @private
           files: {}
     

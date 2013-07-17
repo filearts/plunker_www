@@ -290,12 +290,14 @@ module.run [ "$rootScope", "$q", "$location", "panes", "session", "participants"
           sd: json.text
       
       @cleanup.push do ->
-        ival = setInterval stream.checkup.bind(stream), 1000
+        checkup = -> stream.checkup(client)
+        
+        ival = setInterval checkup, 1000
         ->
           console.log "[INFO] Disabling stream sync check"
           clearInterval(ival)
     
-    checkup: ->
+    checkup: (client) ->
       local = @getLocalState()
       remote = @doc.snapshot
       
