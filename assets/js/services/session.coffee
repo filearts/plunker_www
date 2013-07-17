@@ -1,5 +1,3 @@
-#= require ./../../vendor/diff_match_patch
-
 #= require ./../services/plunks
 #= require ./../services/notifier
 #= require ./../services/activity
@@ -152,11 +150,12 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       current
     
     revertTo: (rel = 0) ->
-      json = @getRevision(rel, angular.copy(@$$currentRevision ||= @toJSON()))
-      
-      @currentRevisionIndex = rel
-      
-      @reset json, soft: true
+      $script "/vendor/diff_match_patch/diff_match_patch.js", =>
+        json = @getRevision(rel, angular.copy(@$$currentRevision ||= @toJSON()))
+        
+        @currentRevisionIndex = rel
+        
+        @reset json, soft: true
       
       
     getSaveDelta: ->
