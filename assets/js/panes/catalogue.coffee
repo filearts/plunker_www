@@ -71,6 +71,7 @@ module.directive "plunkerPackageBlock", [ () ->
   scope:
     'package': "="
     click: "&"
+    insert: "&"
   template: """
     <div class="plunker-package-block">
       <div class="package-header">
@@ -79,6 +80,11 @@ module.directive "plunkerPackageBlock", [ () ->
             <li><i class="icon-download"></i><span ng-bind="package.bumps | shorten"></span></li>
           </ul>
           <a ng-click="click(package)" ng-bind="package.name"></a>
+          
+          <button class="btn btn-mini" ng-click="insert(package)" tooltip="Add the selected package and its dependencies to your active plunk">
+            <i class="icon-magic"></i>
+          </button>
+
           <ul class="package-versions inline">
             <li ng-repeat="version in package.versions | orderBy:'-semver' | limitTo:3">
               <a class="label" ng-class="{'label-warning': version.unstable}" ng-click="click({package: package, version: version})" ng-bind="version.semver"></a>
@@ -145,7 +151,9 @@ module.controller "plunkerCatalogueController", [ "$scope", "catalogue", "sessio
     $scope.markup.findAllDependencies()
   
   $scope.insertPackage = state.insertPackage = (pkg, verDef) ->
-    required = "#{pkg.name}@#{verDef.semver}"
+    semver = verDef?.semver or "*"
+    
+    required = "#{pkg.name}@#{semver}"
     
     pkg.bump()
     
@@ -271,7 +279,7 @@ module.directive "plunkerCatalogue", [ () ->
               Popular packages
             </h3>
           </div>
-          <plunker-package-block click="openVersion(package, version)" package="package" ng-repeat="package in popular"></plunker-package-block>
+          <plunker-package-block insert="insertPackage(package)" click="openVersion(package, version)" package="package" ng-repeat="package in popular"></plunker-package-block>
           <plunker-pager nolink="true" collection="popular" nav="popular.refresh(url)"></plunker-pager>
         </div>
         <div ng-switch-when="search">
@@ -281,7 +289,7 @@ module.directive "plunkerCatalogue", [ () ->
               Search results: <span ng-bind="query"></span>
             </h3>
           </div>
-          <plunker-package-block click="openVersion(package, version)" package="package" ng-repeat="package in results"></plunker-package-block>
+          <plunker-package-block insert="insertPackage(package)" click="openVersion(package, version)" package="package" ng-repeat="package in results"></plunker-package-block>
           <p ng-hide="!results || results.length">No results found for {{query}}.</p>
           <p ng-hide="results && !results.loading">Searching for {{query}}.</p>
         </div>
