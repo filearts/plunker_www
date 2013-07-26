@@ -42,7 +42,7 @@ module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings
               </div>
             </div>
           </div>
-          <iframe name="plunkerPreviewTarget" src="{{iframeUrl}}" class="plunker-previewer-iframe" frameborder="0" width="100%" height="100%" scrolling="auto"></iframe>
+          <iframe name="plunkerPreviewTarget" src="about:blank" class="plunker-previewer-iframe" frameborder="0" width="100%" height="100%" scrolling="auto"></iframe>
         </div>
         <div ng-switch-when="windowed">
           <div class="well">
@@ -75,24 +75,30 @@ module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings
       $scope.mode = "disabled"
       
       $scope.expand = -> $scope.mode = "windowed"
-      $scope.contract = -> $scope.mode = "embedded"
+      $scope.contract = -> $scope.mode = if pane.active then "embedded" else "disabled"
       
       $scope.refresh = -> $timeout ->
         return if $scope.mode is "disabled"
         
-        form = angular.element("""<form style="display: none;" method="post" action="#{$scope.previewUrl}" target="plunkerPreviewTarget"><form>""")
+        form = document.createElement("form")
+        form.style.display = "none"
+        form.setAttribute "method", "post"
+        form.setAttribute "action", $scope.previewUrl
+        form.setAttribute "target", "plunkerPreviewTarget"
         
         for filename, file of session.toJSON().files
-          field = angular.element("""<input type="hidden" name="files[#{filename}][content]">""")
-          field.attr "value", file.content
+          field = document.createElement("input")
+          field.setAttribute "type", "hidden"
+          field.setAttribute "name", "files[#{filename}][content]"
+          field.setAttribute "value", file.content
           
-          form.append(field)
+          form.appendChild(field)
         
-        #$document.append(form)
+        document.body.appendChild(form)
         
         form.submit()
         
-        $timeout -> form.remove()
+        document.body.removeChild(form)
       
       $scope.$watch "mode", (mode, old_mode) ->
         switch mode
