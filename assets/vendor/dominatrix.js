@@ -99,7 +99,7 @@ exports.makeHtmlGenerator = function makeHtmlGenerator(indentUnit, eol) {
   eol = eol || "";
 
   return function generateHtmlRecursive(node, rawText, curIndent) {
-    var ret = "", parent, current, i;
+    var ret = "", parent, current, i, children;
     curIndent = curIndent || "";
     if (node) {
       if (node.nodeType &&
@@ -111,7 +111,15 @@ exports.makeHtmlGenerator = function makeHtmlGenerator(indentUnit, eol) {
       
       switch (node.nodeType) {
         case node.ELEMENT_NODE:
+          if (node.tagName === "TEMPLATE") {
+            children = node.content.childNodes;
+            childNodesRawText = true;
+          } else {
+            children = node.childNodes;
+          }
+          
           current = exports.stringifyElement(node);
+          
           if (childNodesRawText) {
             ret += curIndent + current.start;
           } else {
@@ -120,14 +128,14 @@ exports.makeHtmlGenerator = function makeHtmlGenerator(indentUnit, eol) {
           
           if (node.nodeName === "HTML") ret += eol;
 
-          if (node.childNodes.length > 0) {
-            if (node.childNodes[0].nodeType !== node.TEXT_NODE) {
+          if (children.length > 0) {
+            if (children[0].nodeType !== node.TEXT_NODE) {
               ret += eol;
             }
-            for (i=0; i<node.childNodes.length; i++) {
-              ret += generateHtmlRecursive(node.childNodes[i], childNodesRawText, curIndent + indentUnit) || (i === 0 && node.childNodes.length > 1 ? eol : "");
+            for (i=0; i<children.length; i++) {
+              ret += generateHtmlRecursive(children[i], childNodesRawText, curIndent + indentUnit) || (i === 0 && children.length > 1 ? eol : "");
             }
-            if (node.childNodes[node.childNodes.length - 1].nodeType !== node.TEXT_NODE || ret.charAt(ret.length - 1) === eol) {
+            if (children[children.length - 1].nodeType !== node.TEXT_NODE || ret.charAt(ret.length - 1) === eol) {
               ret += curIndent;
             }
             ret += current.end + eol;
