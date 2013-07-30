@@ -77,7 +77,7 @@ module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings
       $scope.expand = -> $scope.mode = "windowed"
       $scope.contract = -> $scope.mode = if pane.active then "embedded" else "disabled"
       
-      $scope.refresh = -> $timeout ->
+      $scope.refresh = ->
         return if $scope.mode is "disabled"
         
         form = document.createElement("form")
@@ -105,21 +105,26 @@ module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings
           when "embedded"
             childWindow?.close()
             childWindow = null
-          
-            $timeout -> $scope.refresh() # Refresh on next tick to make sure DOM udpated first
           when "windowed"
             childWindow = window.open "about:blank", "plunkerPreviewTarget", "resizable=yes,scrollbars=yes,status=yes,toolbar=yes"
-            $timeout -> $scope.refresh() # Refresh on next tick to make sure DOM udpated first
+          else
+            return # Return to prevent refresh
+        
+        # Refresh on next tick to make sure DOM udpated first
+        setTimeout -> $scope.$apply -> $scope.refresh()
             
       
       $scope.$watch "pane.active", (active) ->
         if !active and $scope.mode is "embedded" then $scope.mode = "disabled"
-        if active and $scope.mode is "disabled" then $timeout ->
+        if active and $scope.mode is "disabled" then setTimeout -> $scope.$apply ->
           $scope.mode = "embedded"
         
       $scope.$watch "session.updated_at", ->
         $scope.refresh() if settings.previewer.auto_refresh and (pane.active or $scope.mode is "windowed")
+    
+      @startInterval($scope)
       
+    startInterval: ($scope) ->
       setInterval ->
         if $scope.mode is "windowed" and childWindow?.closed
           $scope.$apply ->
