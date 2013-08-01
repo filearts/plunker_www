@@ -59,8 +59,10 @@ module.run [ "$q", "$timeout", "panes", "url", "updater", "session", "catalogue"
           $scope.markup = updater.parse($scope.clean = session.getActiveBuffer().content)
           $scope.markup.findAllDependencies()
           $scope.dirty = false
-          
-        $timeout(recheck, 2000)
+      
+      setInterval ->
+        $scope.$apply(recheck)
+      , 2000
       
       recheck()
           
