@@ -46,6 +46,7 @@ app.set "views", "#{__dirname}/views"
 app.set "view engine", "jade"
 app.set "view options", layout: false
 
+app.use require("./middleware/redirect").middleware(nconf.get("redirect"))
 app.use express.logger()
 app.use require("./middleware/vary").middleware()
 app.use lactate.static "#{__dirname}/build", lactateOptions
