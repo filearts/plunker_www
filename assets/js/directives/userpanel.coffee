@@ -47,6 +47,7 @@ module.directive "plunkerUserpanel", [ ->
         <i class="icon-github" />
         <span class="text shrink">Sign in with Github</span>
       </button>
+      <iframe class="gittip" src="https://www.gittip.com/ggoodman/widget.html" width="48pt" height="22pt"></iframe>
     </div>
   """
   controller: ["$scope", "visitor", ($scope, visitor) ->
