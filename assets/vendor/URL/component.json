@@ -1,0 +1,7 @@
+{
+	"name": "URL.js",
+	"version": "1.2.2",
+	"main": "dist/URL.js",
+	"dependencies": {
+	}
+}

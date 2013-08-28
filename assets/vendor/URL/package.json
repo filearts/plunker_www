@@ -1,0 +1,44 @@
+{
+  "name": "URL.js",
+  "description": "Manipluate URI parts in browser based Javascript",
+  "version": "1.2.2",
+  "homepage": "https://github.com/stevoland/URL.js",
+  "contributors": [
+    {
+      "name": "Steven Levithan",
+      "url": "http://stevenlevithan.com"
+    },
+    {
+      "name": "Niall Smart",
+      "email": "stevoland@gmail.com",
+      "url": "http://niallsmart.com"
+    }
+  ],
+  "maintainers": [
+    {
+      "name": "stevo (Stephen Collings)",
+      "email": "stevoland@gmail.com",
+      "url": "http://stevoland.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stevoland/URL.js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stevoland/URL.js/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/stevoland/URL.js/blob/master/LICENSE-MIT"
+    }
+  ],
+  "devDependencies": {
+    "grunt": "~0.3.15"
+  },
+  "jam": {
+    "main": "dist/URL.js"
+  },
+  "main": "dist/URL.js"
+}
