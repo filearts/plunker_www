@@ -74,6 +74,7 @@ module.directive "plunkerPackageBlock", [ () ->
     'package': "="
     click: "&"
     insert: "&"
+    updater: "="
   template: """
     <div class="plunker-package-block">
       <div class="package-header">
@@ -83,7 +84,7 @@ module.directive "plunkerPackageBlock", [ () ->
           </ul>
           <a ng-click="click(package)" ng-bind="package.name"></a>
           
-          <button class="btn btn-mini" ng-click="insert(package)" tooltip="Add the selected package and its dependencies to your active plunk">
+          <button class="btn btn-mini" ng-class="{disabled: !updater}" ng-disabled="!updater" ng-click="insert(package)" tooltip="Add the selected package and its dependencies to your active plunk">
             <i class="icon-magic"></i>
           </button>
 
@@ -281,7 +282,7 @@ module.directive "plunkerCatalogue", [ () ->
               Popular packages
             </h3>
           </div>
-          <plunker-package-block insert="insertPackage(package)" click="openVersion(package, version)" package="package" ng-repeat="package in popular"></plunker-package-block>
+          <plunker-package-block insert="insertPackage(package)" updater="updater" click="openVersion(package, version)" package="package" ng-repeat="package in popular"></plunker-package-block>
           <plunker-pager nolink="true" collection="popular" nav="popular.refresh(url)"></plunker-pager>
         </div>
         <div ng-switch-when="search">
@@ -291,7 +292,7 @@ module.directive "plunkerCatalogue", [ () ->
               Search results: <span ng-bind="query"></span>
             </h3>
           </div>
-          <plunker-package-block insert="insertPackage(package)" click="openVersion(package, version)" package="package" ng-repeat="package in results"></plunker-package-block>
+          <plunker-package-block insert="insertPackage(package)" updater="updater" click="openVersion(package, version)" package="package" ng-repeat="package in results"></plunker-package-block>
           <p ng-hide="!results || results.length">No results found for {{query}}.</p>
           <p ng-hide="results && !results.loading">Searching for {{query}}.</p>
         </div>

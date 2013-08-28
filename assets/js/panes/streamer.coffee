@@ -289,21 +289,21 @@ module.run [ "$rootScope", "$q", "$location", "panes", "session", "participants"
           p: ["files", json.buffId, "content", json.offset]
           sd: json.text
       
-      @cleanup.push do ->
-        checkup = -> stream.checkup(client)
-        
-        ival = setInterval checkup, 1000
-        ->
-          console.log "[INFO] Disabling stream sync check"
-          clearInterval(ival)
+      #@cleanup.push do ->
+      #  checkup = -> stream.checkup(client)
+      #  
+      #  ival = setInterval checkup, 1000
+      #  ->
+      #    console.log "[INFO] Disabling stream sync check"
+      #    clearInterval(ival)
     
-    checkup: (client) ->
-      local = @getLocalState()
-      remote = @doc.snapshot
-      
-      unless angular.equals(local, remote)
-        console.log "[ERR] Session out of sync"
-        client.playback "reset", remote
+    #checkup: (client) ->
+    #  local = @getLocalState()
+    #  remote = @doc.snapshot
+    #  
+    #  unless angular.equals(local, remote)
+    #    console.log "[ERR] Session out of sync"
+    #    client.playback "reset", remote
 
     stop: ->
       while @cleanup.length
