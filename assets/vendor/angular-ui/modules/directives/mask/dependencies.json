@@ -1,6 +1,0 @@
-{
-    "core": [ "jquery" ],
-    "external": {
-        "mask": []
-    }
-}
