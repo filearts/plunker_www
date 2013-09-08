@@ -1,4 +1,5 @@
 #= require ./../../vendor/angular
+#= require ./../../vendor/angularytics
 
 #= require ./../controllers/explore
 #= require ./../controllers/members
@@ -26,6 +27,8 @@ module = angular.module "plunker.landing", [
   "plunker.menu"
   "plunker.userpanel"
   "plunker.plunks"
+  
+  "angularytics"
 ]
 
 
@@ -57,5 +60,13 @@ module.run ["$rootElement", ($rootElement) ->
     if (href = elm.prop("href")) and href.match(/\/edit\//)
       event.stopPropagation()
       window.location = href
+]
+
+module.config ["AngularyticsProvider", (AngularyticsProvider) ->
+  AngularyticsProvider.setEventHandlers ["Console", "GoogleUniversal"]
+]
+
+module.run ["Angularytics", (Angularytics) ->
+  Angularytics.init()
 ]
 

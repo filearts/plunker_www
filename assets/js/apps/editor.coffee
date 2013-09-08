@@ -1,5 +1,6 @@
 #= require ./../../vendor/angular.js
 #= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
+#= require ./../../vendor/angularytics
 
 #= require ./../services/importer
 #= require ./../services/session
@@ -20,7 +21,10 @@ module = angular.module "plunker.editorPage", [
   "plunker.session"
   "plunker.notifier"
   "plunker.panes"
+  
   "ui.bootstrap"
+  
+  "angularytics"
 ]
 
 
@@ -112,4 +116,12 @@ module.config ["$tooltipProvider", ($tooltipProvider) ->
 
 module.run ["$rootScope", ($rootScope) ->
   $rootScope[k] = v for k, v of window._plunker
+]
+
+module.config ["AngularyticsProvider", (AngularyticsProvider) ->
+  AngularyticsProvider.setEventHandlers ["Console", "GoogleUniversal"]
+]
+
+module.run ["Angularytics", (Angularytics) ->
+  Angularytics.init()
 ]

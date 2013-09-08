@@ -12,7 +12,7 @@
   "engines": {
     "node": "0.8.x"
   },
-  "version": "0.6.42",
+  "version": "0.6.48",
   "private": true,
   "description": "The code powering the public facing component of http://plnkr.co",
   "main": "server.js",
@@ -29,7 +29,8 @@
     "lactate": "0.13.x",
     "xmlbuilder": "0.4.x",
     "JSONStream": "0.4.x",
-    "event-stream": "3.0.x"
+    "event-stream": "3.0.x",
+    "express-state": "~1.0.0"
   },
   "devDependencies": {
     "rimraf": "*"

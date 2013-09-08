@@ -5,22 +5,21 @@ module.exports.middleware = (options = {}) ->
   
   apiUrl = nconf.get("url:api")
   
-  console.log "API Url", apiUrl
-  
   (req, res, next) ->
     fetchSession = (sessid) ->
       return createSession() unless sessid
       
-      request "#{apiUrl}/sessions/#{sessid}", (err, response, body) ->
+      request { method: "GET", url: "#{apiUrl}/sessions/#{sessid}", json: true },  (err, response, body) ->
         if err or response.statusCode >= 400 then createSession()
-        else finalize(parse(body))
+        else finalize(body)
       
     createSession = ->
-      request.post "#{apiUrl}/sessions", (err, response, body) ->
+      
+      request { method: "POST", url: "#{apiUrl}/sessions", body: {}, json: true }, (err, response, body) ->
         if err or response.statusCode >= 400
           console.error "Error creating session: #{JSON.stringify(err or body)}"
           finalize({})
-        else finalize(parse(body))
+        else finalize(body)
     
     parse = (body) ->
       try
@@ -31,10 +30,8 @@ module.exports.middleware = (options = {}) ->
       return session
       
     finalize = (session) ->
-      if session
-        res.expose ||= {}
-        res.expose.session = session
-        next()
+      res.expose session, "_plunker.session"
+      next()
     
     if sessid = req.cookies.plnk_session then fetchSession(sessid)
     else createSession()
