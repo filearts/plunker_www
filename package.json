@@ -1,0 +1,33 @@
+{
+  "name": "plunker-www",
+  "version": "0.7.0",
+  "description": "The front-end code for http://plnkr.co",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/filearts/plunker_www.git"
+  },
+  "author": "Geoff Goodman",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/filearts/plunker_www/issues"
+  },
+  "devDependencies": {
+    "coffeeify": "~0.5.1",
+    "grunt": "~0.4.1",
+    "grunt-browserify": "~1.2.4"
+  },
+  "dependencies": {
+    "express-state": "~1.0.0",
+    "coffee-script": "~1.6.3",
+    "request": "~2.27.0",
+    "express": "~3.3.8",
+    "hbs": "~2.3.1",
+    "lactate": "~0.13.12",
+    "nconf": "~0.6.7",
+    "authom": "~0.4.17"
+  }
+}
