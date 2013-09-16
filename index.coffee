@@ -34,6 +34,10 @@ server.use express.cookieParser()
 server.use lactate.static "#{__dirname}/public",
   "max age": "one week"
   "cache": false
+  
+#collab = require "./collab"
+#collab.extend server
+
 server.use server.router
 
   
@@ -46,12 +50,16 @@ server.get "/auth/:service", authom.app
 
 sessionMiddleware = require("./middleware/session.coffee").middleware()
 
-server.get "/*", sessionMiddleware, (req, res) ->
-  res.render "index"
 
+
+
+
+server.get "/*", (req, res) ->
+  res.render "index", timestamp: Date.now()
 
 expstate.extend server
 
+server.expose nconf.get("url"), "_plunker.url"
 
 
 module.exports = server

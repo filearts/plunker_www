@@ -1,0 +1,38 @@
+.border-layout, .border-layout-pane, .border-layout-pane-scroller, .border-layout-pane-handle, .border-layout-pane-overlay {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.border-layout, .border-layout-pane-scroller, .border-layout-pane-overlay {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.border-layout-pane-scroller {
+  overflow: auto;
+}
+
+.border-layout-pane-scroller.closed {
+  display: none;
+}
+
+.border-layout-pane-overlay {
+  display: none;
+  z-index: 9999;
+}
+
+.border-layout.active .border-layout-pane-overlay {
+  display: block;
+  background-color: transparent;
+}
+
+.border-layout-pane-handle.vertical {
+  cursor: ns-resize;
+}
+
+.border-layout-pane-handle.horizontal {
+  cursor: ew-resize;
+}

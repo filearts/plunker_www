@@ -1,0 +1,59 @@
+@import "./../directives/borderLayout.less";
+@import "./../directives/previewer.less";
+
+
+.code-editor {
+  position: absolute !important;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.border-layout-pane-handle {
+  background-color: #666;
+}
+
+.sidebar {
+  padding-right: 4px;
+  font-size: 90%;
+  
+  .list-group-item {
+    cursor: pointer;
+    position: relative;
+    border-radius: 0;
+    padding: 5px 32px 5px 8px;
+    
+    .remover {
+      display: none;
+      position: absolute;
+      right: 4px;
+      top: 4px;
+      font-size: 8px;
+      line-height: 16px;
+      z-index: 1;
+      width: 20px;
+    }
+    
+    &:hover {
+      background-color: #eeeeee;
+      border-color: #eeeeee;
+      
+      .remover {
+        display: block;
+      }
+    }
+    
+    &.active {
+      color: #ffffff;
+      background-color: #428bca;
+      border-color: #428bca;
+    }
+    
+    &.add-new {
+      font-style: italic;
+      color: #888;
+      font-weight: lighter;
+    }
+  }
+}

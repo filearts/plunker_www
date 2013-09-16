@@ -21,4 +21,7 @@ config.json
 config.production.json
 config.development.json
 
-build
+data
+
+mongod
+redis.conf

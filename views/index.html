@@ -1,22 +1,49 @@
 <!DOCTYPE html>
-<html ng-app="plunker">
+<html ng-app="plunker.app.editor">
 
   <head>
     <meta name="viewport" content="initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,width=device-width,user-scalable=0">
     <title>Plunker</title>
-    <script src="//code.angularjs.org/1.2.0rc1/angular.js"></script>
-    <script src="//code.angularjs.org/1.2.0rc1/angular-cookies.js"></script>
-    <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.6.0.js"></script>
-    <script src="//cdn.jsdelivr.net/lodash/1.3.1/lodash.js"></script>
-    <script src="//cdn.jsdelivr.net/restangular/1.0.9/restangular.js"></script>
-    <link rel="stylesheet" href="http://getbootstrap.com/dist/css/bootstrap.css" />
-    <link rel="stylesheet" href="http://gregoryloucas.github.io/Fontstrap/assets/font-awesome/css/font-awesome.min.css" />
-    <link rel="stylesheet" href="/landing.css" />
+    <script src="//cdn.jsdelivr.net/angularjs/1.2.0rc2/angular.js"></script>
+    <script src="//cdn.jsdelivr.net/angularjs/1.2.0rc2/angular-cookies.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.6.0/ui-bootstrap-tpls.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/2.0.0/lodash.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/restangular/0.5.1/restangular.min.js"></script>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0/css/bootstrap.css" />
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/3.2.1/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="/css/apps/editor.css?rel={{timestamp}}" />
     <script>{{{state}}}</script>
-    <script src="/main.js"></script>
+    <script src="/vendor/ace-builds/src-noconflict/ace.js"></script>
+    <script src="/js/apps/editor.js?rel={{timestamp}}"></script>
   </head>
 
-  <body>
+  <body ng-controller="Editor">
+    <border-layout class="outer">
+      <pane class="sidebar" anchor="west" size="200px" min="200px" max="300px" handle="4px">
+        <ul class="list-group">
+          <li class="list-group-item" ng-class="{active: $index==session.getCursorFileIndex()}" ng-repeat="file in session.getSnapshot().files track by file.filename" ng-dblclick="renameFile(file.filename)" ng-click="moveTo(file.filename)">
+            <button class="btn btn-xs btn-danger remover" ng-click="removeFile(file.filename)">X</button>
+            <i class="icon-file-alt"></i>
+            <span ng-bind="file.filename"></span>
+          </li>
+          <li class="list-group-item add-new" ng-click="addFile()">
+            <i class="icon-file"></i>
+            Add file...
+          </li>
+        </ul>
+      </pane>
+      
+      <pane anchor="center">
+        <border-layout>
+          <pane class="plunker-previewer" anchor="east" size="50% - 4px" handle="4px">
+            <previewer></previewer>
+          </pane>
+          
+          <pane class="plunker-editor" anchor="center">
+            <code-editor active="session.active"></div>
+          </pane>
+        </border-layout>
+      </pane>
   </body>
 
 </html>
