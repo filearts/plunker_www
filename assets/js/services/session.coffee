@@ -427,7 +427,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       @buffers[buffId] =
         id: buffId
         filename: filename
-        content: content
+        content: content or options.snippet
         participants: {}
         
       @buffers[buffId].snippet = options.snippet if options.snippet

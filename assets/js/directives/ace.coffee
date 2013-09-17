@@ -1,6 +1,6 @@
 #= require ./../../vendor/ace/src/ace
-#= require ./../../vendor/snippetManager
-#= require ./../../vendor/autocomplete
+#= require ./../../vendor/ace/src/ext-language_tools
+#= require ./../../vendor/ace/src/ext-searchbox
 
 #= require ./../services/session
 #= require ./../services/modes
@@ -30,9 +30,7 @@ UndoManager = require("ace/undomanager").UndoManager
 Range = require("ace/range").Range
 
 require("ace/placeholder").PlaceHolder
-snippetManager = require("ace/snippets").snippetManager
-
-Autocomplete = require("ace/autocomplete").Autocomplete
+snippetManager = ace.require("ace/snippets").snippetManager    
 
 
 # Convert an ACE Range object row/col to an offset range
@@ -161,7 +159,6 @@ module.directive "plunkerEditSession", ["$timeout", "modes", "settings", "annota
     session.on "change", (delta) ->
       unless session.getValue() == model.$viewValue or $scope.$root.$$phase then $scope.$apply ->
         model.$setViewValue(session.getValue())
-        controller.markDirty()
       
     # Create an entry for the file's annotations
     annotations[buffer.id] = []
@@ -178,11 +175,13 @@ module.directive "plunkerEditSession", ["$timeout", "modes", "settings", "annota
     
     doc.on "change", (e) ->
       unless $scope.$root.$$phase
+        nl = doc.getNewLineCharacter()
+        
         switch e.data.action
           when "insertText" then client.record "insert", { buffId: buffer.id, offset: rangeToOffset(doc, e.data.range), text: e.data.text }
           when "removeText" then client.record "remove", { buffId: buffer.id, offset: rangeToOffset(doc, e.data.range), text: e.data.text }
-          when "insertLines" then client.record "insert", { buffId: buffer.id, offset: rangeToOffset(doc, e.data.range), text: e.data.lines.join(e.data.nl) + e.data.nl }
-          when "removeLines" then client.record "remove", { buffId: buffer.id, offset: rangeToOffset(doc, e.data.range), text: e.data.lines.join(e.data.nl) + e.data.nl }
+          when "insertLines" then client.record "insert", { buffId: buffer.id, offset: rangeToOffset(doc, e.data.range), text: e.data.lines.join(nl) + nl }
+          when "removeLines" then client.record "remove", { buffId: buffer.id, offset: rangeToOffset(doc, e.data.range), text: e.data.lines.join(nl) + nl }
 
     cleanup.push client.handleEvent "insert", (type, event) ->
       if event.buffId is buffer.id
@@ -198,11 +197,6 @@ module.directive "plunkerEditSession", ["$timeout", "modes", "settings", "annota
     $scope.$watch "buffer.filename", (filename) ->
       mode = modes.findByFilename(filename)
       session.setMode("ace/mode/#{mode.name}")
-      
-      if mode.snips then $.get "/snippets/#{mode.name}.snippets", (res) ->
-        mode.snippets = snippetManager.parseSnippetFile(res)
-      
-        snippetManager.register(mode.snippets, mode.name)
       
       controller.markDirty()
     
@@ -222,11 +216,17 @@ module.directive "plunkerEditSession", ["$timeout", "modes", "settings", "annota
     , true
     
     session.activate = ->
-      if buffer.snippet
+      if buffer.snippet && snippetManager
         $timeout ->
+          session.setValue("")
           snippetManager.insertSnippet(controller.editor, buffer.snippet)
           controller.editor.focus()
           delete buffer.snippet
+
+      # Only start dirty checks once activated the first time
+      session.on "change", (delta) ->
+        unless session.getValue() == model.$viewValue or $scope.$root.$$phase then $scope.$apply ->
+          controller.markDirty()
     
 
     # Handle clean-up
@@ -268,18 +268,12 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
     @markDirty = -> session.updated_at = Date.now()
     
     @setupAutocomplete = ->
-      @editor.completer = new Autocomplete
-      
-      Autocomplete.addTo(@editor)
-      
-      tern.setSession(session)
-      
-      complete = 
-        getCompletions: (editSession, pos, prefix, cb) ->
-          tern.requestCompletions(session.getActiveBuffer().filename, pos, cb)
-          
-      @editor.completer.completers.push(complete)
-    
+      ace.config.loadModule "ace/ext/language_tools", =>
+        @editor.setOptions
+          enableBasicAutocompletion: true
+          enableSnippets: true
+
+  
     @bindKeys = ->
       @editor.commands.addCommand
         name: "Save"
@@ -313,10 +307,6 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
         exec: -> $scope.$apply ->
           session.switchBuffer(-1)
           
-      @editor.commands.bindKey "Tab", (editor) ->
-        unless snippetManager.expandWithTab(editor)
-          editor.execCommand("indent")
-              
     @
   ]
   link: ($scope, $el, attrs, controller) ->
@@ -327,7 +317,7 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
 
     controller.editor = new Editor(new Renderer($aceEl, "ace/theme/#{settings.editor.theme || 'textmate'}"))
     controller.bindKeys()
-    #controller.setupAutocomplete()
+    controller.setupAutocomplete()
     
     MultiSelect(controller.editor)
     

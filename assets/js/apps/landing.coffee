@@ -1,5 +1,5 @@
 #= require ./../../vendor/angular
-#= require ./../../vendor/angularytics
+#= require ./../../vendor/angularytics/dist/angularytics
 
 #= require ./../controllers/explore
 #= require ./../controllers/members
