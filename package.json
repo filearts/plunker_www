@@ -1,7 +1,7 @@
 {
   "name": "plunker-beta",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.7.0-1",
   "description": "The front-end code for http://plnkr.co",
   "subdomain": "plunker-beta",
   "domains": [
@@ -33,7 +33,8 @@
     "caching-coffeeify": "~0.2.0",
     "grunt-lib-contrib": "~0.6.1",
     "less": "~1.4.2",
-    "grunt-replace": "~0.4.4"
+    "grunt-replace": "~0.4.4",
+    "grunt-watchify": "~0.1.0"
   },
   "dependencies": {
     "express-state": "~1.0.0",

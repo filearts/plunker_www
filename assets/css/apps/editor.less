@@ -10,11 +10,41 @@
   bottom: 0;
 }
 
-.border-layout-pane-handle {
-  background-color: #666;
+.plunker-toolbar {
+  background-color: #dfdfdf;
+  
+  .plunker-brand {
+    background: url('http://plnkr.co/img/plunker.png') no-repeat;
+    background-size: 40px 40px;
+    background-position: 20px center;
+    padding-left: 60px !important;
+    margin-left: -20px;
+    font-size: 20px;
+    font-weight: 200;
+    color: #777777;
+    text-shadow: 0 1px 0 #ffffff;
+    height: 40px;
+    line-height: 40px;
+    
+    .version {
+      font-size: 50%;
+      color: #ccc;
+    }
+  }
 }
 
-.sidebar {
+.plunker-sidebar, .plunker-editor, .plunker-previewer {
+  .border-layout-pane-scroller {
+    border: 1px solid #a3a3a3;
+  }
+}
+
+.border-layout-pane-handle.horizontal {
+  background-color: #dfdfdf;
+  box-sizing: border-box;
+}
+
+.plunker-sidebar {
   padding-right: 4px;
   font-size: 90%;
   

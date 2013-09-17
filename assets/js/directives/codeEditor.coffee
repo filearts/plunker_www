@@ -139,6 +139,6 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
     
     # Resize the ace component whenever we get a reflow event from border-layout
     $scope.$on "border-layout-reflow", ->
-      editor.resize()
+      $timeout -> editor.resize()
 
 ]

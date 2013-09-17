@@ -30,17 +30,17 @@
   background-color: transparent;
 }
 .border-layout-pane-handle.vertical {
-  cursor: ns-resize;
+  cursor: row-resize;
 }
 .border-layout-pane-handle.horizontal {
-  cursor: ew-resize;
+  cursor: col-resize;
 }
 .plunker-previewer .plunker-preview-cointainer {
   overflow: hidden;
   position: absolute;
   top: 0;
   left: 0;
-  bottom: o;
+  bottom: 0;
   right: 0;
   width: 100%;
   height: 100%;
@@ -73,20 +73,46 @@
   right: 0;
   bottom: 0;
 }
-.border-layout-pane-handle {
-  background-color: #666;
+.plunker-toolbar {
+  background-color: #dfdfdf;
 }
-.sidebar {
+.plunker-toolbar .plunker-brand {
+  background: url('http://plnkr.co/img/plunker.png') no-repeat;
+  background-size: 40px 40px;
+  background-position: 20px center;
+  padding-left: 60px !important;
+  margin-left: -20px;
+  font-size: 20px;
+  font-weight: 200;
+  color: #777777;
+  text-shadow: 0 1px 0 #ffffff;
+  height: 40px;
+  line-height: 40px;
+}
+.plunker-toolbar .plunker-brand .version {
+  font-size: 50%;
+  color: #ccc;
+}
+.plunker-sidebar .border-layout-pane-scroller,
+.plunker-editor .border-layout-pane-scroller,
+.plunker-previewer .border-layout-pane-scroller {
+  border: 1px solid #a3a3a3;
+}
+.border-layout-pane-handle.horizontal {
+  background-color: #dfdfdf;
+  box-sizing: border-box;
+}
+.plunker-sidebar {
   padding-right: 4px;
   font-size: 90%;
 }
-.sidebar .list-group-item {
+.plunker-sidebar .list-group-item {
   cursor: pointer;
   position: relative;
   border-radius: 0;
   padding: 5px 32px 5px 8px;
 }
-.sidebar .list-group-item .remover {
+.plunker-sidebar .list-group-item .remover {
   display: none;
   position: absolute;
   right: 4px;
@@ -96,19 +122,19 @@
   z-index: 1;
   width: 20px;
 }
-.sidebar .list-group-item:hover {
+.plunker-sidebar .list-group-item:hover {
   background-color: #eeeeee;
   border-color: #eeeeee;
 }
-.sidebar .list-group-item:hover .remover {
+.plunker-sidebar .list-group-item:hover .remover {
   display: block;
 }
-.sidebar .list-group-item.active {
+.plunker-sidebar .list-group-item.active {
   color: #ffffff;
   background-color: #428bca;
   border-color: #428bca;
 }
-.sidebar .list-group-item.add-new {
+.plunker-sidebar .list-group-item.add-new {
   font-style: italic;
   color: #888;
   font-weight: lighter;
