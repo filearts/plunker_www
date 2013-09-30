@@ -159,7 +159,7 @@ module.service "session", class Session
         oi: idx
     
     cursorSetIndex: (idx) ->
-      throw new Error("Unable set the active file. File does not exist: #{filename}") unless @hasFileIndex(idx)
+      throw new Error("Unable set the active file. File does not exist: #{idx}") unless @hasFileIndex(idx)
       
       @_applyOp
         p: ["cursor", "fileIndex"]
@@ -269,11 +269,11 @@ module.service "session", class Session
       ]
   
   createClient: (clientName) ->
-    throw new Error("Unable to create client. Client already created: #{clientName}.") if @$clients[clientName]
+    #throw new Error("Unable to create client. Client already created: #{clientName}.") if @$clients[clientName]
     
     session = @
     
-    @$clients[clientName] = new SessionClient(clientName, session)
+    @$clients[clientName] ||= new SessionClient(clientName, session)
   
   applyOps: (sourceClientName, ops) ->
     postSnapshot = ottypes.json0.apply @snapshot, ops

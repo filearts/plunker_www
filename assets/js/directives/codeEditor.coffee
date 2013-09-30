@@ -68,11 +68,13 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
           
       handleChangeEvent = (e) ->
         unless $rootScope.$$phase then $scope.$apply ->
+          nl = doc.getNewLineCharacter()
+          
           switch e.data.action
             when "insertText" then client.textInsert file.filename, doc.positionToIndex(e.data.range.start), e.data.text
-            when "insertLines" then client.textInsert file.filename, doc.positionToIndex(e.data.range.start), e.data.lines.join(e.data.nl) + e.data.nl
+            when "insertLines" then client.textInsert file.filename, doc.positionToIndex(e.data.range.start), e.data.lines.join(nl) + nl
             when "removeText" then client.textRemove file.filename, doc.positionToIndex(e.data.range.start), e.data.text
-            when "removeLines" then client.textRemove file.filename, doc.positionToIndex(e.data.range.start), e.data.lines.join(e.data.nl) + e.data.nl
+            when "removeLines" then client.textRemove file.filename, doc.positionToIndex(e.data.range.start), e.data.lines.join(nl) + nl
       
       handleChangeAnnotationEvent = (e) ->
         unless $rootScope.$$phase then $scope.$apply ->
@@ -80,6 +82,8 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
             throw new Error("Buffers and session are out of sync for: #{file.filename}")
           
           annotations.update(file.filename, aceSession.getAnnotations())
+          
+          $rootScope.$broadcast "updateAnnotatinos", file, aceSession.getAnnotations()
 
       buffers[index] = aceSession
       
@@ -93,13 +97,15 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
         aceSession.off "changeAnnotation", handleChangeAnnotationEvent
 
     removeAceSession = (index) ->
+      unless buffers[index] then debugger
       buffers[index].destroy()
       buffers.splice index, 1
       
-      annotations.remove(file.filename)
+      if file = client.getFileByIndex(index)
+        annotations.remove(file.filename)
       
     reset = (snapshot) ->
-      removeAceSession(idx) for aceSession, idx in buffers
+      removeAceSession(idx) for idx in [buffers.length - 1..0] by -1
       addAceSession(idx, file) for file, idx in snapshot.files
     
     changeSessionMode = (index, filename) ->
@@ -122,7 +128,6 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
     
     client.on "fileRename", (e, snapshot) ->
       changeSessionMode(e.index, e.filename)
-      console.log "onFileRename", e
       annotations.rename(e.filename, e.old_filename)
     
     client.on "textInsert", (e, snapshot) ->
@@ -138,7 +143,10 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
     moveCursor(client.getCursorTextOffset())
     
     # Resize the ace component whenever we get a reflow event from border-layout
-    $scope.$on "border-layout-reflow", ->
-      $timeout -> editor.resize()
+    $scope.$on "border-layout-reflow", -> editor.resize()
+
+    $timeout ->
+      editor.resize()
+    , 100
 
 ]

@@ -25,6 +25,9 @@ module.exports = (grunt) ->
         files:
           '<%=build.dest%>/css/apps/landing.css': ['<%=build.src%>/css/apps/landing.less']
           '<%=build.dest%>/css/apps/editor.css': ['<%=build.src%>/css/apps/editor.less']
+        options:
+          strictImports: true
+          syncImports: true
       build:
         #options:
         #  compress: true
@@ -34,7 +37,7 @@ module.exports = (grunt) ->
           
     watch:
       scripts:
-        files: ['<%=build.src%>/js/**/*.coffee', "<%=build.src%>/css/**/*.less"]
+        files: ['<%=build.src%>/**/*.coffee', '<%=build.src%>/**/*.js', "<%=build.src%>/**/*.less", "<%=build.src%>/**/*.css"]
         tasks: ['compile']
       options:
         nospawn: true
@@ -47,11 +50,23 @@ module.exports = (grunt) ->
         options:
           debug: true
           transform: ['caching-coffeeify']
+          noParse: ['<%=build.src%>/vendor/angular/angular.js','<%=build.src%>/vendor/angular/angular-cookies.js','<%=build.src%>/vendor/angular-ui/ui-bootstrap.js']
+      build:
+        files:
+          '<%=build.dest%>/js/apps/landing.js': ['<%=build.src%>/js/apps/landing.coffee']
+          '<%=build.dest%>/js/apps/editor.js': ['<%=build.src%>/js/apps/editor.coffee']
+        options:
+          debug: false
+          transform: ['caching-coffeeify']
+          noParse: ['<%=build.src%>/vendor/angular/angular.js','<%=build.src%>/vendor/angular/angular-cookies.js','<%=build.src%>/vendor/angular-ui/ui-bootstrap.js']
 
     uglify:
       build:
-        files:
-          '<%=build.release%>/<%= pkg.name %>.js': ['<%=build.dest%>/main.js']
+        expand: true
+        cwd: '<%=build.dest%>/js/'
+        src: ['**/*.js']
+        dest: '<%=build.dest%>/js/'
+        ext: ".min.js"
 
     express:
       options: 
@@ -68,6 +83,7 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-contrib-less'
   grunt.loadNpmTasks 'grunt-contrib-watch'
   grunt.loadNpmTasks 'grunt-contrib-uglify'
+  grunt.loadNpmTasks 'grunt-contrib-concat'
   grunt.loadNpmTasks 'grunt-browserify'
 
   # tasks

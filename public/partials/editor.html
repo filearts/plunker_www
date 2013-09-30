@@ -1,0 +1,57 @@
+<div class="plunker-editor-layout" ng-controller="LayoutController">
+  <border-layout class="outer" plunker-disabler="editor">
+    <pane class="plunker-toolbar" anchor="north" order="9" size="41px">
+      <a class="plunker-brand" href="/">Plunker <sub class="version">1.7.0</sub></a>
+      <plunker-toolbar></plunker-toolbar>
+    </pane>
+    
+    <pane class="plunker-templates" anchor="{{layout.current.templates.anchor}}" order="{{layout.current.templates.order}}" open="{{showTemplatePane}}" size="{{layout.current.templates.size}}" min="300px" max="300px">
+      <div class="header clearfix">
+        <button class="btn btn-xs btn-danger pull-right" ng-click="pane.toggle()">Close</button>
+        <h4>Popular templates</h4>
+      </div>
+      <div class="list-group">
+        <a class="list-group-item" ui-sref="editor.gist({gistId: 1986619})">
+          <span class="badge">2.1k</span>
+          <h5>Basic jQuery template</h5>
+        </a>
+        <a class="list-group-item" ui-sref="editor.gist({gistId: 3510140})">
+          <h5>Angular 1.0.x starter</h5>
+        </a>
+        <a class="list-group-item" ui-sref="editor.gist({gistId: 3662702})">
+          <h5>Angular 1.1.x starter</h5>
+        </a>
+      </div>
+    </pane>
+    
+    <pane class="plunker-paneselector" anchor="east" size="22px" min="22px" max="22px" order="1">
+      <ul class="unstyled">
+        <li>
+          <i class="icon-cogs"></i>
+        </li>
+      </ul>
+    </pane>
+    
+    <pane class="plunker-sidebar" anchor="west" size="200px" min="200px" max="300px" order="1" handle="4px">
+      <ul class="list-group" ng-controller="SidebarController">
+        <li class="list-group-item" ng-class="{active: $index==session.getCursorFileIndex()}" ng-repeat="file in session.getSnapshot().files track by file.filename" ng-dblclick="renameFile(file.filename)" ng-click="moveTo(file.filename)">
+          <button class="btn btn-xs btn-danger remover" ng-click="removeFile(file.filename)">X</button>
+          <i class="icon-file-alt"></i>
+          <span ng-bind="file.filename"></span>
+        </li>
+        <li class="list-group-item add-new" ng-click="addFile()">
+          <i class="icon-file"></i>
+          Add file...
+        </li>
+      </ul>
+    </pane>
+    
+    <pane class="plunker-previewer" anchor="{{layout.current.preview.anchor}}" size="{{layout.current.preview.size}}" order="{{layout.current.preview.order}}" open="{{showPreviewPane}}" handle="4px">
+      <previewer></previewer>
+    </pane>
+    
+    <pane class="plunker-editor" anchor="center">
+      <code-editor active="session.active"></div>
+    </pane>
+  </border-layout>
+</div>

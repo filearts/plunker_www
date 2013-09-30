@@ -24,7 +24,7 @@ module.directive "previewer", [ "$timeout", "session", "url", "settings", "annot
   template: """
     <div>
       <div class="plunker-preview-container" ng-class="{message: message}">
-        <iframe name="plunkerPreviewTarget" src="about:blank" width="100%" height="400px" frameborder="0"></iframe>
+        <iframe name="plunkerPreviewTarget" src="about:blank" width="100%" height="100%" frameborder="0"></iframe>
       </div>
       <div class="plunker-preview-message alert alert-danger" ng-show="message">
         <button type="button" class="close" ng-click="message=''" aria-hidden="true">&times;</button>
@@ -38,7 +38,6 @@ module.directive "previewer", [ "$timeout", "session", "url", "settings", "annot
     client = session.createClient("previewer")
     
     refresh = (snapshot) -> $scope.$apply ->
-      console.log "Refresh", snapshot, annotations.hasError(), annotations.annotations
       return if $scope.mode is "disabled"
       
       if filename = annotations.hasError()
@@ -66,6 +65,8 @@ module.directive "previewer", [ "$timeout", "session", "url", "settings", "annot
       form.submit()
       
       document.body.removeChild(form)
+    
+    
     
     $scope.$watch ( -> settings.previewer.delay), (delay) ->
       refresh = debounce refresh, delay

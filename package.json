@@ -1,7 +1,7 @@
 {
   "name": "plunker-beta",
   "private": true,
-  "version": "0.7.0-1",
+  "version": "0.7.0-5",
   "description": "The front-end code for http://plnkr.co",
   "subdomain": "plunker-beta",
   "domains": [
@@ -34,7 +34,11 @@
     "grunt-lib-contrib": "~0.6.1",
     "less": "~1.4.2",
     "grunt-replace": "~0.4.4",
-    "grunt-watchify": "~0.1.0"
+    "grunt-watchify": "~0.1.0",
+    "grunt-contrib-concat": "~0.3.0",
+    "level-sublevel": "~5.1.1",
+    "level-query": "~0.2.0",
+    "level-js": "~1.0.8"
   },
   "dependencies": {
     "express-state": "~1.0.0",
@@ -48,6 +52,7 @@
     "genid": "~0.1.0",
     "lodash": "~2.0.0",
     "lodash.throttle": "~2.0.0",
-    "lodash.debounce": "~2.0.0"
+    "lodash.debounce": "~2.0.0",
+    "levelup": "~0.16.0"
   }
 }

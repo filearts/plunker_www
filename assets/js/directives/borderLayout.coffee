@@ -22,6 +22,7 @@ class Region
     
   calculateSize: (orientation, target = 0) ->
     total = @getSize(orientation)
+    available = @getAvailableSize(orientation)
     
     if angular.isNumber(target)
       if target >= 1 then return Math.round(target)
@@ -33,10 +34,11 @@ class Region
     target = target.replace /\s+/mg, ""
     
     # Allow for complex sizes, e.g.: 50% - 4px
-    if (terms = target.split("-", 2)).length is 2 then return @calculateSize(orientation, terms[0]) - @calculateSize(orientation, terms[1])
-    if (terms = target.split("+", 2)).length is 2 then return @calculateSize(orientation, terms[0]) + @calculateSize(orientation, terms[1])
+    if (terms = target.split("-")).length > 1 then return @calculateSize(orientation, terms.shift()) - @calculateSize(orientation, terms.join("+"))
+    if (terms = target.split("+")).length > 1 then return @calculateSize(orientation, terms.shift()) + @calculateSize(orientation, terms.join("+"))
       
     if matches = target.match /^(\d+)px$/ then return parseInt(matches[1], 10)
+    if matches = target.match /^(\d+(?:\.\d+)?)&$/ then return Math.round(available * parseFloat(matches[1]) / 100)
     if matches = target.match /^(\d+(?:\.\d+)?)%$/ then return Math.round(total * parseFloat(matches[1]) / 100)
     
     throw new Error("Unsupported size: #{target}")
@@ -80,7 +82,7 @@ module.directive "pane", [ ->
   transclude: true
   scope: true
   template: """
-    <div class="border-layout-pane" ng-class="{closed: !open}" ng-style="stylePane">
+    <div class="border-layout-pane">
       <div class="border-layout-pane-overlay" ng-style="styleContent"></div>
       <div class="border-layout-pane-handle" layout-handle ng-style="styleHandle"></div>
       <div class="border-layout-pane-scroller" ng-style="styleContent" ng-transclude></div>
@@ -89,18 +91,38 @@ module.directive "pane", [ ->
   controller: ["$scope", "$element", "$attrs", ($scope, $element, $attrs) ->
     pane = @
     
+    [$overlay, $handle, $scroller] = $element.children()
+    
     $attrs.$observe "anchor", (anchor) ->
+      prev = pane.anchor
+      
       pane.anchor = anchor
       pane.orientation = pane.getOrientation(anchor)
       
-    $attrs.$observe "open", (open = true, wasOpen) -> $scope.open = !!open
+      if prev
+        pane.layout.reflow()
+      
+    $attrs.$observe "size", (size, prev) ->
+      pane.target = size
+      
+      pane.layout.reflow()
+      
+    $attrs.$observe "open", (open = true, wasOpen) ->
+      open = false if open == "false"
+      if open then $element.removeClass("closed")
+      else $element.addClass("closed")
+      
+      pane.toggle(open)
+    
+    $attrs.$observe "order", (order = 0, prev) ->
+      pane.order = parseInt(order or 0, 10)
+      
+      pane.layout.reflow()
     
     @children = []
     @openSize = 0
     
     @attachChild = (child) -> @children.push(child)
-    
-    @getAnchor = -> $attrs.anchor
     
     @getOrientation = (anchor = $attrs.anchor) ->
       switch anchor
@@ -153,28 +175,31 @@ module.directive "pane", [ ->
       $element.removeClass("active")
       @layout.onHandleUp()
     
-    @toggle = (closed = !$scope.closed) ->
-      $scope.closed = !!closed
+    @toggle = (open = !pane.open) ->
+      pane.open = open
       
-      if closed then @openSize = @size
+      if !open then @openSize = @size
       else @size = @openSize
+      
+      if open then $element.removeClass("closed")
+      else $element.addClass("closed")
       
       @layout.reflow()
     
-    @reflow = (region, target = $attrs.size) ->
-      anchor = $attrs.anchor
+    @reflow = (region, target = pane.target) ->
+      anchor = pane.anchor
       
       if anchor is "center"
-        $scope.stylePane =
+        $element.css
           top: "#{region.top}px"
           right: "#{region.right}px"
           bottom: "#{region.bottom}px"
           left: "#{region.left}px"
-      else
+      else if anchor in ["north", "east", "south", "west"]
         orientation = @getOrientation(anchor)
         handleSize = region.calculateSize(orientation, $attrs.handle || 0)
 
-        if $scope.closed
+        if !pane.open
           size = handleSize
         else
           size = region.calculateSize(orientation, target)
@@ -189,9 +214,15 @@ module.directive "pane", [ ->
         
         @size = size
         
-        $scope.stylePane = region.consume(anchor, size)
-        $scope.styleContent = @getContentStyle(anchor, handleSize)
-        $scope.styleHandle = @getHandleStyle(anchor, region, handleSize)
+        styleContainer = region.consume(anchor, size)
+        styleContent = @getContentStyle(anchor, handleSize)
+        styleHandle = @getHandleStyle(anchor, region, handleSize)
+        
+        $element.attr("style", "").css(styleContainer)
+        
+        angular.element($overlay).attr("style", "").css(styleContent)
+        angular.element($scroller).attr("style", "").css(styleContent)
+        angular.element($handle).attr("style", "").css(styleHandle)
         
       if @children.length
         inner = region.getInnerRegion()
@@ -208,6 +239,8 @@ module.directive "pane", [ ->
   link: ($scope, $el, $attrs, [pane, parent]) ->
     pane.layout = parent
     parent.attachChild(pane)
+    
+    $scope.$$nextSibling.pane = pane
     
     $scope.$watch "constrained", (constrained) ->
       if constrained then $el.addClass("border-layout-constrained")
@@ -226,6 +259,8 @@ module.directive "layoutHandle", [ "$window", ($window) ->
     clickTime = 300
     
     $scope.$watch ( -> pane.getOrientation() ), (orientation) ->
+      $element.removeClass("vertical")
+      $element.removeClass("horizontal")
       switch orientation
         when "vertical" then $element.addClass("vertical")
         when "horizontal" then $element.addClass("horizontal")
@@ -233,7 +268,7 @@ module.directive "layoutHandle", [ "$window", ($window) ->
     el.addEventListener "mousedown", (e) ->
       return unless e.button is 0
       
-      anchor = pane.getAnchor()
+      anchor = pane.anchor
       
       if anchor in ["north", "south"] then coord = "screenY"
       else if anchor in ["west", "east"] then coord = "screenX"
@@ -340,6 +375,8 @@ module.directive "borderLayout", [ "$window", "$timeout", ($window, $timeout)->
       height = $element[0].offsetHeight
       
       region ||= new Region(width, height)
+      
+      @children.sort (a, b) -> b.order - a.order
       
       region = child.reflow(region) for child in @children
         
