@@ -1,6 +1,7 @@
 require("coffee-script");
 
 //process.env.NODE_ENV = "production";
+process.env.PWD = process.cwd();
 
 var nconf = require("nconf")
   , http = require("http")

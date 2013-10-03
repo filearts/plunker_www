@@ -25,13 +25,13 @@ server.enable "trust proxy"
 server.engine "html", require("hbs").__express
 
 server.set "view engine", "html"
-server.set "views", "#{__dirname}/views"
+server.set "views", "#{process.env.PWD}/views"
 
 
 # Express middleware
 
 server.use express.cookieParser()
-server.use lactate.static "#{__dirname}/public",
+server.use lactate.static "#{process.env.PWD}/public",
   "max age": "one week"
   "cache": false
   
