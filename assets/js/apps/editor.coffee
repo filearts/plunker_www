@@ -9,6 +9,8 @@ require "../services/notifier.coffee"
 require "../services/disabler.coffee"
 require "../services/basePlunk.coffee"
 require "../services/layout.coffee"
+require "../services/updater.coffee"
+require "../services/collab.coffee"
 
 require "../directives/borderLayout.coffee"
 require "../directives/codeEditor.coffee"
@@ -27,6 +29,8 @@ module = angular.module "plunker.app.editor", [
   "plunker.service.disabler"
   "plunker.service.basePlunk"
   "plunker.service.layout"
+  "plunker.service.updater"
+  "plunker.service.collab"
   
   "plunker.directive.codeEditor"
   "plunker.directive.previewer"
@@ -45,29 +49,51 @@ module.config ["$stateProvider", "$urlRouterProvider", ($stateProvider, $urlRout
   
   $stateProvider.state "editor",
     url: "/edit"
+    abstract: true
     template: """
       <div ui-view="body"></div>
     """
-    controller: ["$state", "$scope", ($state, $scope) ->
-      $scope.showTemplatePane = true
-      $scope.showPreviewPane = false
-      $state.go "editor.blank" if $state.is("editor")
-    ]
-    
+
   $stateProvider.state "editor.blank",
     url: "/"
     views:
       "body": 
+        controller: ["$state", "$scope", "layout", ($state, $scope, layout) ->
+          $state.go "editor.new"
+        ]
+    
+  $stateProvider.state "editor.new",
+    url: "/new"
+    views:
+      "body": 
         templateUrl: "/partials/editor.html"
-        controller: ["$scope", "session", "basePlunk", "notifier", ($scope, session, basePlunk, notifier) ->
+        controller: ["$scope", "session", "basePlunk", "notifier", "layout", "updater", "disabler", ($scope, session, basePlunk, notifier, layout, updater, disabler) ->
+          layout.current.templates.closed = false
+          
           client = session.createClient("edit.blank")
           
-          client.reset basePlunk
-          client.cursorSetIndex (0 <= idx = client.getFileIndex("index.html")) and idx or 0
-          
-          notifier.success "Plunk reset"
+          disabler.enqueue "editor", updater.update(basePlunk).then (json) ->
+            client.reset json
+            client.cursorSetIndex (0 <= idx = client.getFileIndex("index.html")) and idx or 0
+            
+            notifier.success "Plunk reset"
         ]
 
+
+  $stateProvider.state "editor.stream",
+    url: "/stream:{streamId:[a-z0-9]+}"
+    views:
+      "body": 
+        templateUrl: "/partials/editor.html"
+        controller: ["$stateParams", "$q", "$http", "$scope", "$state", "$timeout", "collab", "notifier", "disabler", "layout", "updater", ($stateParams, $q, $http, $scope, $state, $timeout, collab, notifier, disabler, layout, updater) ->
+          layout.current.templates.closed = true
+          
+          disabler.enqueue "editor", collab.connect($stateParams.streamId).then (json) ->
+            notifier.success "Connected to stream"
+          , ->
+            notifier.error "Failed to connect to stream"
+          
+        ]
 
         
   $stateProvider.state "editor.gist",
@@ -75,7 +101,8 @@ module.config ["$stateProvider", "$urlRouterProvider", ($stateProvider, $urlRout
     views:
       "body": 
         templateUrl: "/partials/editor.html"
-        controller: ["$stateParams", "$q", "$http", "$scope", "$state", "$timeout", "session", "notifier", "disabler", ($stateParams, $q, $http, $scope, $state, $timeout, session, notifier, disabler) ->
+        controller: ["$stateParams", "$q", "$http", "$scope", "$state", "$timeout", "session", "notifier", "disabler", "layout", "updater", ($stateParams, $q, $http, $scope, $state, $timeout, session, notifier, disabler, layout, updater) ->
+          layout.current.templates.closed = true
           
           client = session.createClient("edit.gist")
           
@@ -103,17 +130,17 @@ module.config ["$stateProvider", "$urlRouterProvider", ($stateProvider, $urlRout
                   filename: filename
                   content: file.content 
             
-            json
+            updater.update(json)
           , (error) ->
             console.log "[ERR] Pulling gist", error
             
             $q.reject("Unable to load gist")
             
           parser.then (json) ->
-            $scope.showTemplatePane = false
+            layout.current.templates.closed = true
             client.reset json
             client.cursorSetIndex (0 <= idx = client.getFileIndex("index.html")) and idx or 0
-            notifier.success "Imported plunk"
+            notifier.success "Imported gist #{$stateParams.gistId}"
           , (errorText) ->
             $state.go "editor.blank"
             notifier.error errorText

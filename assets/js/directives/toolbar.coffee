@@ -1,14 +1,16 @@
 require "../../vendor/angular-ui/ui-bootstrap"
 
 require "../services/notifier.coffee"
+require "../services/layout.coffee"
 
 module = angular.module "plunker.directive.toolbar", [
   "ui.bootstrap"
   
   "plunker.service.notifier"
+  "plunker.service.layout"
 ]
 
-module.directive "plunkerToolbar", [ "$state", "session", "notifier", ($state, session, notifier) ->
+module.directive "plunkerToolbar", [ "$state", "session", "notifier", "layout", ($state, session, notifier, layout) ->
   restrict: "E"
   replace: true
   scope: true
@@ -19,11 +21,11 @@ module.directive "plunkerToolbar", [ "$state", "session", "notifier", ($state, s
           Save
         </button>
         
-        <button class="btn btn-sm btn-success" ui-sref="editor">
+        <button class="btn btn-sm btn-success" ui-sref="editor.blank">
           New
         </button>
         
-        <button class="btn btn-sm btn-info" ng-class="{active: showPreviewPane}" ng-click="togglePreviewPane()">
+        <button class="btn btn-sm btn-info" ng-class="{active: !layout.current.preview.closed}" ng-click="layout.current.preview.closed = !!!layout.current.preview.closed">
           Preview
         </button>
       </div>

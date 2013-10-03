@@ -93,38 +93,26 @@ module.directive "pane", [ ->
     
     [$overlay, $handle, $scroller] = $element.children()
     
-    $attrs.$observe "anchor", (anchor) ->
-      prev = pane.anchor
-      
-      pane.anchor = anchor
-      pane.orientation = pane.getOrientation(anchor)
-      
-      if prev
+    $scope.$watch $attrs.options, (options, oldOptions) ->
+      if options
+        pane.anchor = options.anchor or "center"
+        pane.orientation = pane.getOrientation(pane.anchor)
+        pane.target = options.size
+        pane.max = options.max || Number.MAX_VALUE
+        pane.min = options.min || 0
+        pane.open = !options.closed
+        pane.order = parseInt(options.order or 0, 10)
+        pane.handleSize = parseInt(options.handle or 0, 10)
+        
         pane.layout.reflow()
+    , true
       
-    $attrs.$observe "size", (size, prev) ->
-      pane.target = size
-      
-      pane.layout.reflow()
-      
-    $attrs.$observe "open", (open = true, wasOpen) ->
-      open = false if open == "false"
-      if open then $element.removeClass("closed")
-      else $element.addClass("closed")
-      
-      pane.toggle(open)
-    
-    $attrs.$observe "order", (order = 0, prev) ->
-      pane.order = parseInt(order or 0, 10)
-      
-      pane.layout.reflow()
-    
     @children = []
     @openSize = 0
     
     @attachChild = (child) -> @children.push(child)
     
-    @getOrientation = (anchor = $attrs.anchor) ->
+    @getOrientation = (anchor = pane.anchor) ->
       switch anchor
         when "north", "south" then "vertical"
         when "east", "west" then "horizontal"
@@ -189,6 +177,9 @@ module.directive "pane", [ ->
     @reflow = (region, target = pane.target) ->
       anchor = pane.anchor
       
+      if open then $element.removeClass("closed")
+      else $element.addClass("closed")
+      
       if anchor is "center"
         $element.css
           top: "#{region.top}px"
@@ -197,18 +188,15 @@ module.directive "pane", [ ->
           left: "#{region.left}px"
       else if anchor in ["north", "east", "south", "west"]
         orientation = @getOrientation(anchor)
-        handleSize = region.calculateSize(orientation, $attrs.handle || 0)
+        handleSize = region.calculateSize(orientation, pane.handleSize || 0)
 
         if !pane.open
           size = handleSize
         else
           size = region.calculateSize(orientation, target)
-          max = $attrs.max || Number.MAX_VALUE
-          min = $attrs.min || 0
           
-          
-          size = Math.min(size, region.calculateSize(orientation, max))
-          size = Math.max(size, region.calculateSize(orientation, min))
+          size = Math.min(size, region.calculateSize(orientation, pane.max))
+          size = Math.max(size, region.calculateSize(orientation, pane.min))
           size = Math.min(size, region.getAvailableSize(orientation))
           size = Math.max(size, handleSize + 2) # Why does 1.5 work!?
         
@@ -227,11 +215,11 @@ module.directive "pane", [ ->
       if @children.length
         inner = region.getInnerRegion()
         inner = child.reflow(inner) for child in @children
-      
+
       return region
     
     @resize = (target) ->
-      $attrs.$set "size", target || 0
+      pane.target = target || 0
       
       @layout.reflow()
       
@@ -371,6 +359,10 @@ module.directive "borderLayout", [ "$window", "$timeout", ($window, $timeout)->
       $scope.$broadcast "border-layout-reflow"
     
     @reflow = (region) ->
+      return if layout.reflowing
+      
+      layout.reflowing = true
+      
       width = $element[0].offsetWidth
       height = $element[0].offsetHeight
       
@@ -379,17 +371,21 @@ module.directive "borderLayout", [ "$window", "$timeout", ($window, $timeout)->
       @children.sort (a, b) -> b.order - a.order
       
       region = child.reflow(region) for child in @children
-        
+
+      $scope.$broadcast "border-layout-reflow", Date.now()
+      
+      layout.reflowing = false
+      
   ]
   link: ($scope, $el, $attrs, [layout, parent]) ->
     parent.attachChild(layout) if parent
     
-    $scope.$on "reflow", ->
+    $scope.$on "border-layout-reflow", ->
       layout.reflow() unless parent
     
     $window.addEventListener "resize", (e) ->
       e.stopPropagation()
-      $scope.$apply -> $scope.$broadcast "border-layout-reflow"
+      $scope.$apply -> layout.reflow()
     
     $timeout -> layout.reflow() unless parent
 ]

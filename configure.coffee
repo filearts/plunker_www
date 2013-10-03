@@ -7,6 +7,7 @@ module.exports = nconf.use("memory")
   .env()
   .file({file: "config.#{env}.json"})
   .defaults({
+    IP: "0.0.0.0"
     PORT: 8080
   })
   

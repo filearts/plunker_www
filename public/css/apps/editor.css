@@ -5849,7 +5849,7 @@ td.visible-print {
 .border-layout-pane-handle.horizontal {
   cursor: col-resize;
 }
-.plunker-previewer .plunker-preview-cointainer {
+.plunker-previewer .plunker-preview-container {
   overflow: hidden;
   position: absolute;
   top: 0;
@@ -5859,10 +5859,10 @@ td.visible-print {
   width: 100%;
   height: 100%;
 }
-.plunker-previewer .plunker-preview-cointainer.message {
+.plunker-previewer .plunker-preview-container.message {
   bottom: 30px;
 }
-.plunker-previewer .plunker-preview-cointainer iframe {
+.plunker-previewer .plunker-preview-container iframe {
   position: absolute;
   top: 0;
   left: 0;

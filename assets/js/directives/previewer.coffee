@@ -8,15 +8,17 @@ require "../services/types.coffee"
 require "../services/url.coffee"
 require "../services/settings.coffee"
 require "../services/annotations.coffee"
+require "../services/layout.coffee"
 
 module = angular.module "plunker.directive.previewer", [
   "plunker.service.session"
   "plunker.service.url"
   "plunker.service.settings"
   "plunker.service.annotations"
+  "plunker.service.layout"
 ]
 
-module.directive "previewer", [ "$timeout", "session", "url", "settings", "annotations", ($timeout, session, url, settings, annotations) ->
+module.directive "previewer", [ "$timeout", "session", "url", "settings", "annotations", "layout", ($timeout, session, url, settings, annotations, layout) ->
   restrict: "E"
   replace: true
   scope:
@@ -24,7 +26,7 @@ module.directive "previewer", [ "$timeout", "session", "url", "settings", "annot
   template: """
     <div>
       <div class="plunker-preview-container" ng-class="{message: message}">
-        <iframe name="plunkerPreviewTarget" src="about:blank" width="100%" height="100%" frameborder="0"></iframe>
+        <iframe id="plunkerPreviewTarget" name="plunkerPreviewTarget" src="about:blank" width="100%" height="100%" frameborder="0"></iframe>
       </div>
       <div class="plunker-preview-message alert alert-danger" ng-show="message">
         <button type="button" class="close" ng-click="message=''" aria-hidden="true">&times;</button>
@@ -35,10 +37,13 @@ module.directive "previewer", [ "$timeout", "session", "url", "settings", "annot
   link: ($scope, $el, attrs) ->
     $scope.previewUrl ||= "#{url.run}/#{genid()}/"
     
-    client = session.createClient("previewer")
+    iframeEl = document.getElementById("plunkerPreviewTarget")
     
-    refresh = (snapshot) -> $scope.$apply ->
-      return if $scope.mode is "disabled"
+    client = session.createClient("previewer")
+    firstOpen = true
+    
+    refresh = (snapshot) ->
+      return if layout.current.preview.closed
       
       if filename = annotations.hasError()
         $scope.message = "Preview has not been updated due to syntax errors in #{filename}"
@@ -66,19 +71,37 @@ module.directive "previewer", [ "$timeout", "session", "url", "settings", "annot
       
       document.body.removeChild(form)
     
+    applyRefresh = -> $scope.$apply -> refresh(client.getSnapshot())
+    debouncedApplyRefresh = debounce applyRefresh, settings.previewer.delay
     
-    
-    $scope.$watch ( -> settings.previewer.delay), (delay) ->
-      refresh = debounce refresh, delay
+    $scope.$watch ( -> settings.previewer.delay), (delay, oldDelay) ->
+      if delay != oldDelay
+        debouncedApplyRefresh = debounce debouncedApplyRefresh, delay
+
+    $scope.$watch ( -> layout.current.preview.closed), (closed, wasClosed) ->
+      if closed
+        iframeEl.contentWindow.location = "about:blank"
+      else if firstOpen or wasClosed
+        refresh(client.getSnapshot())
       
-    client.on "reset", (e, snapshot) -> refresh(snapshot)
-
-    client.on "fileCreate", (e, snapshot) -> refresh(snapshot)
-    client.on "fileRename", (e, snapshot) -> refresh(snapshot)
-    client.on "fileRemove", (e, snapshot) -> refresh(snapshot)
-
-    client.on "textInsert", (e, snapshot) -> refresh(snapshot)
-    client.on "textRemove", (e, snapshot) -> refresh(snapshot)
+      firstOpen = false
     
-    $timeout -> refresh(client.getSnapshot())
+    client.on "reset", debouncedApplyRefresh
+
+    client.on "fileCreate", debouncedApplyRefresh
+    client.on "fileRename", debouncedApplyRefresh
+    client.on "fileRemove", debouncedApplyRefresh
+
+    client.on "textInsert", debouncedApplyRefresh
+    client.on "textRemove", debouncedApplyRefresh
+    
+    $scope.$on "$destroy", ->
+      client.off "reset", debouncedApplyRefresh
+  
+      client.off "fileCreate", debouncedApplyRefresh
+      client.off "fileRename", debouncedApplyRefresh
+      client.off "fileRemove", debouncedApplyRefresh
+  
+      client.off "textInsert", debouncedApplyRefresh
+      client.off "textRemove", debouncedApplyRefresh
 ]

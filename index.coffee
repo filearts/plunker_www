@@ -35,8 +35,8 @@ server.use lactate.static "#{__dirname}/public",
   "max age": "one week"
   "cache": false
   
-#collab = require "./collab"
-#collab.extend server
+collab = require "./collab"
+collab.extend server
 
 server.use server.router
 

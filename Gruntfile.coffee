@@ -37,8 +37,11 @@ module.exports = (grunt) ->
           
     watch:
       scripts:
-        files: ['<%=build.src%>/**/*.coffee', '<%=build.src%>/**/*.js', "<%=build.src%>/**/*.less", "<%=build.src%>/**/*.css"]
-        tasks: ['compile']
+        files: ['<%=build.src%>/**/*.coffee', '<%=build.src%>/**/*.js']
+        tasks: ['browserify:compile']
+      styles:
+        files: ["<%=build.src%>/**/*.less", "<%=build.src%>/**/*.css"]
+        tasks: ['less:compile']
       options:
         nospawn: true
 

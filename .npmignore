@@ -19,26 +19,8 @@ npm-debug.log
 
 config.json
 
-assets/vendor/*.js
+assets/vendor
 
-assets/vendor/ace/demo
-assets/vendor/ace/kitchen-sink
-assets/vendor/ace/src
-assets/vendor/ace/src-min-noconflict
-assets/vendor/ace/src-noconflict
-assets/vendor/ace/textarea
-assets/vendor/ace/*.*
-
-assets/vendor/Font-Awesome-More/css
-assets/vendor/Font-Awesome-More/docs
-assets/vendor/Font-Awesome-More/less
-assets/vendor/Font-Awesome-More/sass
-assets/vendor/Font-Awesome-More/*.*
-
-assets/vendor/bootstrap
-assets/vendor/jquery-layout
-assets/vendor/jquery-timeago
-assets/vendor/jquery.cookie
-assets/vendor/json2
-assets/vendor/jszip
-assets/vendor/noty
+data
+mongod
+redis.conf

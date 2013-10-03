@@ -1,4 +1,5 @@
-require "../../vendor/ottypes/webclient/json0.uncompressed.js"
+require "share/webclient/share.uncompressed.js"
+
 
 module = angular.module "plunker.service.session", [
 ]
@@ -10,13 +11,14 @@ module.service "session", class Session
       @listeners = {}
       
     on: (eventName, listener) -> (@listeners[eventName] ||= []).push(listener)
-    off: (eventName, listener) -> @listeners.splice(idx, 1) unless 0 > (idx = @listeners.indexOf(listener))
+    off: (eventName, listener) -> @listeners[eventName].splice(idx, 1) unless !@listeners[eventName] or 0 > (idx = @listeners[eventName].indexOf(listener))
     
     _applyOp: (op) -> @_applyOps [op]
     _applyOps: (ops) -> @session.applyOps @name, ops
     
     _handleOp: (sourceClientName, op, snapshot) ->
       if op.p.length is 0
+        console.log "Reset"
         @_emit "reset",
           snapshot: op.oi
           old_snapshot: op.od
@@ -81,6 +83,8 @@ module.service "session", class Session
                 text: op.sd
                 offset: op.p[3]
                 
+      @_emit "remoteOp", {op, snapshot}
+
     _emit: (eventName, e) ->
       snapshot = @getSnapshot()
       e.eventName = eventName

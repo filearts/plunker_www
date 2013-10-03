@@ -107,6 +107,8 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
     reset = (snapshot) ->
       removeAceSession(idx) for idx in [buffers.length - 1..0] by -1
       addAceSession(idx, file) for file, idx in snapshot.files
+      
+      activateBuffer(snapshot.cursor.fileIndex)
     
     changeSessionMode = (index, filename) ->
       buffer.setMode(guessMode(filename)) if buffer = buffers[index]
@@ -132,7 +134,7 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
     
     client.on "textInsert", (e, snapshot) ->
       throw new Error("Received textInsert event for a file not being tracked") unless aceSession = buffers[e.index]
-      aceSession.doc.insert aceSession.doc.indexToPosition(e.offset), text
+      aceSession.doc.insert aceSession.doc.indexToPosition(e.offset), e.text
       
     client.on "textRemove", (e, snapshot) ->
       throw new Error("Received textInsert event for a file not being tracked") unless aceSession = buffers[e.index]
