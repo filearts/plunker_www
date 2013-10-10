@@ -53,7 +53,16 @@ module.exports = (grunt) ->
         options:
           debug: true
           transform: ['caching-coffeeify']
-          noParse: ['<%=build.src%>/vendor/angular/angular.js','<%=build.src%>/vendor/angular/angular-cookies.js','<%=build.src%>/vendor/angular-ui/ui-bootstrap.js']
+          noParse: [
+            '<%=build.src%>/vendor/angular/angular.js'
+            '<%=build.src%>/vendor/angular/angular-cookies.js'
+            '<%=build.src%>/vendor/angular-growl/angular-growl.js'
+            '<%=build.src%>/vendor/angular-ui/ui-bootstrap.js'
+            '<%=build.src%>/vendor/angular-ui/ui-router.js'
+            '<%=build.src%>/vendor/dominatrix/dominatrix.js'
+            '<%=build.src%>/vendor/share/bcsocket-uncompressed.js'
+            '<%=build.src%>/vendor/share/share.uncompressed.js'
+          ]
       build:
         files:
           '<%=build.dest%>/js/apps/landing.js': ['<%=build.src%>/js/apps/landing.coffee']

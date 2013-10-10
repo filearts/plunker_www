@@ -10,6 +10,69 @@ module = angular.module "plunker.directive.codeEditor", [
   "plunker.service.annotations"
 ]
 
+###
+module.factory "editor", [ "types", (types) ->
+  class ProjectFile
+    constructor: (@filename, @content = "") ->
+
+      @aceSession = new EditSession(@content or "")
+      @aceSession.setUndoManager(new UndoManager())
+      @aceSession.setUseWorker(true)
+      @aceSession.setTabSize(settings.editor.tab_size)
+      @aceSession.setUseWrapMode(!!settings.editor.wrap.enabled)
+      @aceSession.setWrapLimitRange(settings.editor.wrap.range.min, settings.editor.wrap.range.max)
+      
+      @setMode()
+
+      doc = aceSession.getDocument()
+      
+    setMode: (modeName) ->
+      modeName ||= "ace/mode/" + types.getByFilename(filename).name
+      
+      @aceSession.setMode(modeName)
+  
+  class Project
+    constructor: (@name) ->
+      @files = []
+      
+    reset: (state = {files:[]}) ->
+      file.destroy() for file in @files
+      
+      @files.push new ProjectFile(file.filename, file.content) for file in files
+      
+      @cursorMove(state.cursor.fileIndex, stateu.cursor.fileOffset) if state.cursor?
+    
+    cursorMove: (fileIndex, textOffset, textEndOffset) ->
+      
+    attachToSession: ->
+      project = @
+      client = session.createClient("project-#{@name}")
+  
+      client.on "reset", (e, snapshot) -> project.reset(snapshot)
+      
+      client.on "cursorSetFile", (e, snapshot) -> project.cursorMove(snapshot.cursor.fileIndex, snapshot.cursor.textOffset)
+      
+      client.on "cursorSetOffset", (e, snapshot) -> project.cursorMove(snapshot.cursor.fileIndex, snapshot.cursor.textOffset)
+        
+      client.on "fileCreate", (e, snapshot) -> project.files[e.index] = new ProjectFile(e.filename, e.content)
+      
+      client.on "fileRemove", (e, snapshot) ->
+        [removed] = project.files.splice(e.index, 1)
+        removed.destroy()
+        file.
+      
+      client.on "fileRename", (e, snapshot) -> project.files[e.index].rename(e.filename)
+      
+      client.on "textInsert", (e, snapshot) -> 
+        
+      client.on "textRemove", (e, snapshot) ->
+
+  projects = {}
+  
+  project: (projectName) -> project[projectName] ||= new Project(projectName)
+]
+###
+
 module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "settings", "annotations", ($rootScope, $timeout, session, types, settings, annotations) ->
   AceEditor = ace.require("ace/editor").Editor
   Renderer = ace.require("ace/virtual_renderer").VirtualRenderer
@@ -62,11 +125,15 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
       aceSession.setUseWrapMode(!!settings.editor.wrap.enabled)
       aceSession.setWrapLimitRange(settings.editor.wrap.range.min, settings.editor.wrap.range.max)
       aceSession.setMode(guessMode(file.filename))
+      aceSession.index$ = index
 
       
       doc = aceSession.getDocument()
           
       handleChangeEvent = (e) ->
+        unless file = client.getFileByIndex(aceSession.index$)
+          throw new Error("Buffers and session are out of sync")
+        
         unless $rootScope.$$phase then $scope.$apply ->
           nl = doc.getNewLineCharacter()
           
@@ -76,11 +143,14 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
             when "removeText" then client.textRemove file.filename, doc.positionToIndex(e.data.range.start), e.data.text
             when "removeLines" then client.textRemove file.filename, doc.positionToIndex(e.data.range.start), e.data.lines.join(nl) + nl
       
+        if file.content != aceSession.getValue()
+          console.error "[ERR] Local session out of sync", e
+      
       handleChangeAnnotationEvent = (e) ->
+        unless file = client.getFileByIndex(aceSession.index$)
+          throw new Error("Buffers and session are out of sync")
+        
         unless $rootScope.$$phase then $scope.$apply ->
-          if (idx = client.getFileIndex(file.filename)) < 0
-            throw new Error("Buffers and session are out of sync for: #{file.filename}")
-          
           annotations.update(file.filename, aceSession.getAnnotations())
           
           $rootScope.$broadcast "updateAnnotatinos", file, aceSession.getAnnotations()
@@ -98,6 +168,10 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
 
     removeAceSession = (index) ->
       unless buffers[index] then debugger
+      
+      # Re-number existing buffers
+      buffer.index$-- for buffer, idx in buffers when idx > index
+      
       buffers[index].destroy()
       buffers.splice index, 1
       

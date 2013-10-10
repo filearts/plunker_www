@@ -18,12 +18,18 @@ var _types = (typeof brequire !== 'undefined') ?
 
 _types['http://sharejs.org/types/textv1'].api = {
   provides: {text: true},
-  
+
   // Returns the number of characters in the string
   getLength: function() { return this.getSnapshot().length; },
 
+
   // Returns the text content of the document
-  getText: function() { return this.getSnapshot(); },
+  get: function() { return this.getSnapshot(); },
+
+  getText: function() {
+    console.warn("`getText()` is deprecated; use `get()` instead.");
+    return this.get();
+  },
 
   // Insert the specified text at the given position in the document
   insert: function(pos, text, callback) {
@@ -60,992 +66,7 @@ _types['http://sharejs.org/types/textv1'].api = {
     }
   }
 };
-// This is a prelude which comes before the JS blob of each JS type for the web.
-(function(){
-  var module = {exports:{}};
-  var exports = module.exports;
-
-// These methods let you build a transform function from a transformComponent
-// function for OT types like JSON0 in which operations are lists of components
-// and transforming them reqreuires N^2 work. I find it kind of nasty that I need
-// this, but I'm not really sure what a better solution is. Maybe I should do
-// this automatically to types that don't have a compose function defined.
-
-// Add transform and transformX functions for an OT type which has
-// transformComponent defined.  transformComponent(destination array,
-// component, other component, side)
-exports._bootstrapTransform = function(type, transformComponent, checkValidOp, append) {
-  var transformComponentX = function(left, right, destLeft, destRight) {
-    transformComponent(destLeft, left, right, 'left');
-    transformComponent(destRight, right, left, 'right');
-  };
-
-  var transformX = type.transformX = function(leftOp, rightOp) {
-    checkValidOp(leftOp);
-    checkValidOp(rightOp);
-    var newRightOp = [];
-
-    for (var i = 0; i < rightOp.length; i++) {
-      var rightComponent = rightOp[i];
-
-      // Generate newLeftOp by composing leftOp by rightComponent
-      var newLeftOp = [];
-      var k = 0;
-      while (k < leftOp.length) {
-        var nextC = [];
-        transformComponentX(leftOp[k], rightComponent, newLeftOp, nextC);
-        k++;
-
-        if (nextC.length === 1) {
-          rightComponent = nextC[0];
-        } else if (nextC.length === 0) {
-          for (var j = k; j < leftOp.length; j++) {
-            append(newLeftOp, leftOp[j]);
-          }
-          rightComponent = null;
-          break;
-        } else {
-          // Recurse.
-          var pair = transformX(leftOp.slice(k), nextC);
-          for (var l = 0; l < pair[0].length; l++) {
-            append(newLeftOp, pair[0][l]);
-          }
-          for (var r = 0; r < pair[1].length; r++) {
-            append(newRightOp, pair[1][r]);
-          }
-          rightComponent = null;
-          break;
-        }
-      }
-
-      if (rightComponent != null) {
-        append(newRightOp, rightComponent);
-      }
-      leftOp = newLeftOp;
-    }
-    return [leftOp, newRightOp];
-  };
-
-  // Transforms op with specified type ('left' or 'right') by otherOp.
-  type.transform = type['transform'] = function(op, otherOp, type) {
-    if (!(type === 'left' || type === 'right'))
-      throw new Error("type must be 'left' or 'right'");
-
-    if (otherOp.length === 0) return op;
-
-    if (op.length === 1 && otherOp.length === 1)
-      return transformComponent([], op[0], otherOp[0], type);
-
-    if (type === 'left')
-      return transformX(op, otherOp)[0];
-    else
-      return transformX(otherOp, op)[1];
-  };
-};
-// DEPRECATED!
-//
-// This type works, but is not exported, and will be removed in a future version of this library.
-
-
-// A simple text implementation
-//
-// Operations are lists of components.
-// Each component either inserts or deletes at a specified position in the document.
-//
-// Components are either:
-//  {i:'str', p:100}: Insert 'str' at position 100 in the document
-//  {d:'str', p:100}: Delete 'str' at position 100 in the document
-//
-// Components in an operation are executed sequentially, so the position of components
-// assumes previous components have already executed.
-//
-// Eg: This op:
-//   [{i:'abc', p:0}]
-// is equivalent to this op:
-//   [{i:'a', p:0}, {i:'b', p:1}, {i:'c', p:2}]
-
-// NOTE: The global scope here is shared with other sharejs files when built with closure.
-// Be careful what ends up in your namespace.
-
-var text = module.exports = {
-  name: 'text0',
-  uri: 'http://sharejs.org/types/textv0',
-  create: function(initial) {
-    if ((initial != null) && typeof initial !== 'string') {
-      throw new Error('Initial data must be a string');
-    }
-    return initial || '';
-  }
-};
-
-/** Insert s2 into s1 at pos. */
-var strInject = function(s1, pos, s2) {
-  return s1.slice(0, pos) + s2 + s1.slice(pos);
-};
-
-/** Check that an operation component is valid. Throws if its invalid. */
-var checkValidComponent = function(c) {
-  if (typeof c.p !== 'number')
-    throw new Error('component missing position field');
-
-  if ((typeof c.i === 'string') === (typeof c.d === 'string'))
-    throw new Error('component needs an i or d field');
-
-  if (c.p < 0)
-    throw new Error('position cannot be negative');
-};
-
-/** Check that an operation is valid */
-var checkValidOp = function(op) {
-  for (var i = 0; i < op.length; i++) {
-    checkValidComponent(op[i]);
-  }
-};
-
-/** Apply op to snapshot */
-text.apply = function(snapshot, op) {
-  var deleted;
-
-  checkValidOp(op);
-  for (var i = 0; i < op.length; i++) {
-    var component = op[i];
-    if (component.i != null) {
-      snapshot = strInject(snapshot, component.p, component.i);
-    } else {
-      deleted = snapshot.slice(component.p, component.p + component.d.length);
-      if (component.d !== deleted)
-        throw new Error("Delete component '" + component.d + "' does not match deleted text '" + deleted + "'");
-
-      snapshot = snapshot.slice(0, component.p) + snapshot.slice(component.p + component.d.length);
-    }
-  }
-  return snapshot;
-};
-
-/**
- * Append a component to the end of newOp. Exported for use by the random op
- * generator and the JSON0 type.
- */
-var append = text._append = function(newOp, c) {
-  if (c.i === '' || c.d === '') return;
-
-  if (newOp.length === 0) {
-    newOp.push(c);
-  } else {
-    var last = newOp[newOp.length - 1];
-
-    if (last.i != null && c.i != null && last.p <= c.p && c.p <= last.p + last.i.length) {
-      // Compose the insert into the previous insert
-      newOp[newOp.length - 1] = {i:strInject(last.i, c.p - last.p, c.i), p:last.p};
-
-    } else if (last.d != null && c.d != null && c.p <= last.p && last.p <= c.p + c.d.length) {
-      // Compose the deletes together
-      newOp[newOp.length - 1] = {d:strInject(c.d, last.p - c.p, last.d), p:c.p};
-
-    } else {
-      newOp.push(c);
-    }
-  }
-};
-
-/** Compose op1 and op2 together */
-text.compose = function(op1, op2) {
-  checkValidOp(op1);
-  checkValidOp(op2);
-  var newOp = op1.slice();
-  for (var i = 0; i < op2.length; i++) {
-    append(newOp, op2[i]);
-  }
-  return newOp;
-};
-
-/** Clean up an op */
-text.normalize = function(op) {
-  var newOp = [];
-
-  // Normalize should allow ops which are a single (unwrapped) component:
-  // {i:'asdf', p:23}.
-  // There's no good way to test if something is an array:
-  // http://perfectionkills.com/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/
-  // so this is probably the least bad solution.
-  if (op.i != null || op.p != null) op = [op];
-
-  for (var i = 0; i < op.length; i++) {
-    var c = op[i];
-    if (c.p == null) c.p = 0;
-
-    append(newOp, c);
-  }
-
-  return newOp;
-};
-
-// This helper method transforms a position by an op component.
-//
-// If c is an insert, insertAfter specifies whether the transform
-// is pushed after the insert (true) or before it (false).
-//
-// insertAfter is optional for deletes.
-var transformPosition = function(pos, c, insertAfter) {
-  // This will get collapsed into a giant ternary by uglify.
-  if (c.i != null) {
-    if (c.p < pos || (c.p === pos && insertAfter)) {
-      return pos + c.i.length;
-    } else {
-      return pos;
-    }
-  } else {
-    // I think this could also be written as: Math.min(c.p, Math.min(c.p -
-    // otherC.p, otherC.d.length)) but I think its harder to read that way, and
-    // it compiles using ternary operators anyway so its no slower written like
-    // this.
-    if (pos <= c.p) {
-      return pos;
-    } else if (pos <= c.p + c.d.length) {
-      return c.p;
-    } else {
-      return pos - c.d.length;
-    }
-  }
-};
-
-// Helper method to transform a cursor position as a result of an op.
-//
-// Like transformPosition above, if c is an insert, insertAfter specifies
-// whether the cursor position is pushed after an insert (true) or before it
-// (false).
-text.transformCursor = function(position, op, side) {
-  var insertAfter = side === 'right';
-  for (var i = 0; i < op.length; i++) {
-    position = transformPosition(position, op[i], insertAfter);
-  }
-
-  return position;
-};
-
-// Transform an op component by another op component. Asymmetric.
-// The result will be appended to destination.
-//
-// exported for use in JSON type
-var transformComponent = text._tc = function(dest, c, otherC, side) {
-  //var cIntersect, intersectEnd, intersectStart, newC, otherIntersect, s;
-
-  checkValidComponent(c);
-  checkValidComponent(otherC);
-
-  if (c.i != null) {
-    // Insert.
-    append(dest, {i:c.i, p:transformPosition(c.p, otherC, side === 'right')});
-  } else {
-    // Delete
-    if (otherC.i != null) {
-      // Delete vs insert
-      var s = c.d;
-      if (c.p < otherC.p) {
-        append(dest, {d:s.slice(0, otherC.p - c.p), p:c.p});
-        s = s.slice(otherC.p - c.p);
-      }
-      if (s !== '')
-        append(dest, {d: s, p: c.p + otherC.i.length});
-
-    } else {
-      // Delete vs delete
-      if (c.p >= otherC.p + otherC.d.length)
-        append(dest, {d: c.d, p: c.p - otherC.d.length});
-      else if (c.p + c.d.length <= otherC.p)
-        append(dest, c);
-      else {
-        // They overlap somewhere.
-        var newC = {d: '', p: c.p};
-
-        if (c.p < otherC.p)
-          newC.d = c.d.slice(0, otherC.p - c.p);
-
-        if (c.p + c.d.length > otherC.p + otherC.d.length)
-          newC.d += c.d.slice(otherC.p + otherC.d.length - c.p);
-
-        // This is entirely optional - I'm just checking the deleted text in
-        // the two ops matches
-        var intersectStart = Math.max(c.p, otherC.p);
-        var intersectEnd = Math.min(c.p + c.d.length, otherC.p + otherC.d.length);
-        var cIntersect = c.d.slice(intersectStart - c.p, intersectEnd - c.p);
-        var otherIntersect = otherC.d.slice(intersectStart - otherC.p, intersectEnd - otherC.p);
-        if (cIntersect !== otherIntersect)
-          throw new Error('Delete ops delete different text in the same region of the document');
-
-        if (newC.d !== '') {
-          newC.p = transformPosition(newC.p, otherC);
-          append(dest, newC);
-        }
-      }
-    }
-  }
-
-  return dest;
-};
-
-var invertComponent = function(c) {
-  return (c.i != null) ? {d:c.i, p:c.p} : {i:c.d, p:c.p};
-};
-
-// No need to use append for invert, because the components won't be able to
-// cancel one another.
-text.invert = function(op) {
-  // Shallow copy & reverse that sucka.
-  op = op.slice().reverse();
-  for (var i = 0; i < op.length; i++) {
-    op[i] = invertComponent(op[i]);
-  }
-  return op;
-};
-
-exports._bootstrapTransform(text, transformComponent, checkValidOp, append);
-
-/*
- This is the implementation of the JSON OT type.
-
- Spec is here: https://github.com/josephg/ShareJS/wiki/JSON-Operations
-
- Note: This is being made obsolete. It will soon be replaced by the JSON2 type.
-*/
-
-/**
- * UTILITY FUNCTIONS
- */
-
-/**
- * Checks if the passed object is an Array instance. Can't use Array.isArray
- * yet because its not supported on IE8.
- *
- * @param obj
- * @returns {boolean}
- */
-var isArray = function(obj) {
-  return Object.prototype.toString.call(obj) == '[object Array]';
-};
-
-/**
- * Clones the passed object using JSON serialization (which is slow).
- *
- * hax, copied from test/types/json. Apparently this is still the fastest way
- * to deep clone an object, assuming we have browser support for JSON.  @see
- * http://jsperf.com/cloning-an-object/12
- */
-var clone = function(o) {
-  return JSON.parse(JSON.stringify(o));
-};
-
-/**
- * Reference to the Text OT type. This is used for the JSON String operations.
- * @type {*}
- */
-if (typeof text === 'undefined')
-  var text = window.ottypes.text;
-
-/**
- * JSON OT Type
- * @type {*}
- */
-var json = { 
-  name: 'json0',
-  uri: 'http://sharejs.org/types/JSONv0'
-};
-
-json.create = function(data) {
-  // Null instead of undefined if you don't pass an argument.
-  return data === undefined ? null : data;
-};
-
-json.invertComponent = function(c) {
-  var c_ = {p: c.p};
-
-  if (c.si !== void 0) c_.sd = c.si;
-  if (c.sd !== void 0) c_.si = c.sd;
-  if (c.oi !== void 0) c_.od = c.oi;
-  if (c.od !== void 0) c_.oi = c.od;
-  if (c.li !== void 0) c_.ld = c.li;
-  if (c.ld !== void 0) c_.li = c.ld;
-  if (c.na !== void 0) c_.na = -c.na;
-
-  if (c.lm !== void 0) {
-    c_.lm = c.p[c.p.length-1];
-    c_.p = c.p.slice(0,c.p.length-1).concat([c.lm]);
-  }
-
-  return c_;
-};
-
-json.invert = function(op) {
-  var op_ = op.slice().reverse();
-  var iop = [];
-  for (var i = 0; i < op_.length; i++) {
-    iop.push(json.invertComponent(op_[i]));
-  }
-  return iop;
-};
-
-json.checkValidOp = function(op) {
-  for (var i = 0; i < op.length; i++) {
-  if (!isArray(op[i].p))
-    throw new Error('Missing path');
-  }
-};
-
-json.checkList = function(elem) {
-  if (!isArray(elem))
-    throw new Error('Referenced element not a list');
-};
-
-json.checkObj = function(elem) {
-  if (elem.constructor !== Object) {
-    throw new Error("Referenced element not an object (it was " + JSON.stringify(elem) + ")");
-  }
-};
-
-json.apply = function(snapshot, op) {
-  json.checkValidOp(op);
-
-  op = clone(op);
-
-  var container = {
-    data: snapshot
-  };
-
-  for (var i = 0; i < op.length; i++) {
-    var c = op[i];
-
-    var parent = null;
-    var parentKey = null;
-    var elem = container;
-    var key = 'data';
-
-    for (var j = 0; j < c.p.length; j++) {
-      var p = c.p[j];
-
-      parent = elem;
-      parentKey = key;
-      elem = elem[key];
-      key = p;
-
-      if (parent == null)
-        throw new Error('Path invalid');
-    }
-
-    // Number add
-    if (c.na !== void 0) {
-      if (typeof elem[key] != 'number')
-        throw new Error('Referenced element not a number');
-
-      elem[key] += c.na;
-    }
-
-    // String insert
-    else if (c.si !== void 0) {
-      if (typeof elem != 'string')
-        throw new Error('Referenced element not a string (it was '+JSON.stringify(elem)+')');
-
-      parent[parentKey] = elem.slice(0,key) + c.si + elem.slice(key);
-    }
-
-    // String delete
-    else if (c.sd !== void 0) {
-      if (typeof elem != 'string')
-        throw new Error('Referenced element not a string');
-
-      if (elem.slice(key,key + c.sd.length) !== c.sd)
-        throw new Error('Deleted string does not match');
-
-      parent[parentKey] = elem.slice(0,key) + elem.slice(key + c.sd.length);
-    }
-
-    // List replace
-    else if (c.li !== void 0 && c.ld !== void 0) {
-      json.checkList(elem);
-      // Should check the list element matches c.ld
-      elem[key] = c.li;
-    }
-
-    // List insert
-    else if (c.li !== void 0) {
-      json.checkList(elem);
-      elem.splice(key,0, c.li);
-    }
-
-    // List delete
-    else if (c.ld !== void 0) {
-      json.checkList(elem);
-      // Should check the list element matches c.ld here too.
-      elem.splice(key,1);
-    }
-
-    // List move
-    else if (c.lm !== void 0) {
-      json.checkList(elem);
-      if (c.lm != key) {
-        var e = elem[key];
-        // Remove it...
-        elem.splice(key,1);
-        // And insert it back.
-        elem.splice(c.lm,0,e);
-      }
-    }
-
-    // Object insert / replace
-    else if (c.oi !== void 0) {
-      json.checkObj(elem);
-
-      // Should check that elem[key] == c.od
-      elem[key] = c.oi;
-    }
-
-    // Object delete
-    else if (c.od !== void 0) {
-      json.checkObj(elem);
-
-      // Should check that elem[key] == c.od
-      delete elem[key];
-    }
-
-    else {
-      throw new Error('invalid / missing instruction in op');
-    }
-  }
-
-  return container.data;
-};
-
-// Helper for incrementally applying an operation to a snapshot. Calls yield
-// after each op component has been applied.
-json.incrementalApply = function(snapshot, op, _yield) {
-  for (var i = 0; i < op.length; i++) {
-    var smallOp = [op[i]];
-    snapshot = json.apply(snapshot, smallOp);
-    // I'd just call this yield, but thats a reserved keyword. Bah!
-    _yield(smallOp, snapshot);
-  }
-  
-  return snapshot;
-};
-
-// Checks if two paths, p1 and p2 match.
-var pathMatches = json.pathMatches = function(p1, p2, ignoreLast) {
-  if (p1.length != p2.length)
-    return false;
-
-  for (var i = 0; i < p1.length; i++) {
-    if (p1[i] !== p2[i] && (!ignoreLast || i !== p1.length - 1))
-      return false;
-  }
-
-  return true;
-};
-
-var _convertToTextComponent = function(component) {
-  var newC = {p: component.p[component.p.length - 1]};
-  if (component.si != null) {
-    newC.i = component.si;
-  } else {
-    newC.d = component.sd;
-  }
-  return newC;
-};
-
-json.append = function(dest,c) {
-  c = clone(c);
-
-  var last;
-
-  if (dest.length != 0 && pathMatches(c.p, (last = dest[dest.length - 1]).p)) {
-    if (last.na != null && c.na != null) {
-      dest[dest.length - 1] = {p: last.p, na: last.na + c.na};
-    } else if (last.li !== undefined && c.li === undefined && c.ld === last.li) {
-      // insert immediately followed by delete becomes a noop.
-      if (last.ld !== undefined) {
-        // leave the delete part of the replace
-        delete last.li;
-      } else {
-        dest.pop();
-      }
-    } else if (last.od !== undefined && last.oi === undefined && c.oi !== undefined && c.od === undefined) {
-      last.oi = c.oi;
-    } else if (last.oi !== undefined && c.od !== undefined) {
-      // The last path component inserted something that the new component deletes (or replaces).
-      // Just merge them.
-      if (c.oi !== undefined) {
-        last.oi = c.oi;
-      } else if (last.od !== undefined) {
-        delete last.oi;
-      } else {
-        // An insert directly followed by a delete turns into a no-op and can be removed.
-        dest.pop();
-      }
-    } else if (c.lm !== undefined && c.p[c.p.length - 1] === c.lm) {
-      // don't do anything
-    } else {
-      dest.push(c);
-    }
-  } else if (dest.length != 0 && pathMatches(c.p, last.p, true)) {
-    if ((c.si != null || c.sd != null) && (last.si != null || last.sd != null)) {
-      // Try to compose the string ops together using text's equivalent methods
-      var textOp = [_convertToTextComponent(last)];
-      text._append(textOp, _convertToTextComponent(c));
-      
-      // Then convert back.
-      if (textOp.length !== 1) {
-        dest.push(c);
-      } else {
-        var textC = textOp[0];
-        last.p[last.p.length - 1] = textC.p;
-        if (textC.i != null)
-          last.si = textC.i;
-        else
-          last.sd = textC.d;
-      }
-    } else {
-      dest.push(c);
-    }
-  } else {
-    dest.push(c);
-  }
-};
-
-json.compose = function(op1,op2) {
-  json.checkValidOp(op1);
-  json.checkValidOp(op2);
-
-  var newOp = clone(op1);
-
-  for (var i = 0; i < op2.length; i++) {
-    json.append(newOp,op2[i]);
-  }
-
-  return newOp;
-};
-
-json.normalize = function(op) {
-  var newOp = [];
-
-  op = isArray(op) ? op : [op];
-
-  for (var i = 0; i < op.length; i++) {
-    var c = op[i];
-    if (c.p == null) c.p = [];
-
-    json.append(newOp,c);
-  }
-
-  return newOp;
-};
-
-// Returns true if an op at otherPath may affect an op at path
-json.canOpAffectOp = function(otherPath,path) {
-  if (otherPath.length === 0) return true;
-  if (path.length === 0) return false;
-
-  path = path.slice(0,path.length - 1);
-  otherPath = otherPath.slice(0,otherPath.length - 1);
-
-  for (var i = 0; i < otherPath.length; i++) {
-    var p = otherPath[i];
-    if (i >= path.length || p != path[i]) return false;
-  }
-
-  // Same
-  return true;
-};
-
-// transform c so it applies to a document with otherC applied.
-json.transformComponent = function(dest, c, otherC, type) {
-  c = clone(c);
-
-  if (c.na !== void 0)
-    c.p.push(0);
-
-  if (otherC.na !== void 0)
-    otherC.p.push(0);
-
-  var common;
-  if (json.canOpAffectOp(otherC.p, c.p))
-    common = otherC.p.length - 1;
-
-  var common2;
-  if (json.canOpAffectOp(c.p,otherC.p))
-    common2 = c.p.length - 1;
-
-  var cplength = c.p.length;
-  var otherCplength = otherC.p.length;
-
-  if (c.na !== void 0) // hax
-    c.p.pop();
-
-  if (otherC.na !== void 0)
-    otherC.p.pop();
-
-  if (otherC.na) {
-    if (common2 != null && otherCplength >= cplength && otherC.p[common2] == c.p[common2]) {
-      if (c.ld !== void 0) {
-        var oc = clone(otherC);
-        oc.p = oc.p.slice(cplength);
-        c.ld = json.apply(clone(c.ld),[oc]);
-      } else if (c.od !== void 0) {
-        var oc = clone(otherC);
-        oc.p = oc.p.slice(cplength);
-        c.od = json.apply(clone(c.od),[oc]);
-      }
-    }
-    json.append(dest,c);
-    return dest;
-  }
-
-  // if c is deleting something, and that thing is changed by otherC, we need to
-  // update c to reflect that change for invertibility.
-  // TODO this is probably not needed since we don't have invertibility
-  if (common2 != null && otherCplength > cplength && c.p[common2] == otherC.p[common2]) {
-    if (c.ld !== void 0) {
-      var oc = clone(otherC);
-      oc.p = oc.p.slice(cplength);
-      c.ld = json.apply(clone(c.ld),[oc]);
-    } else if (c.od !== void 0) {
-      var oc = clone(otherC);
-      oc.p = oc.p.slice(cplength);
-      c.od = json.apply(clone(c.od),[oc]);
-    }
-  }
-
-  if (common != null) {
-    var commonOperand = cplength == otherCplength;
-
-    // transform based on otherC
-    if (otherC.na !== void 0) {
-      // this case is handled above due to icky path hax
-    } else if (otherC.si !== void 0 || otherC.sd !== void 0) {
-      // String op vs string op - pass through to text type
-      if (c.si !== void 0 || c.sd !== void 0) {
-        if (!commonOperand) throw new Error('must be a string?');
-
-        // Convert an op component to a text op component so we can use the
-        // text type's transform function
-        var tc1 = _convertToTextComponent(c);
-        var tc2 = _convertToTextComponent(otherC);
-
-        var res = [];
-
-        // actually transform
-        text._tc(res, tc1, tc2, type);
-        
-        // .... then convert the result back into a JSON op again.
-        for (var i = 0; i < res.length; i++) {
-          // Text component
-          var tc = res[i];
-          // JSON component
-          var jc = {p: c.p.slice(0, common)};
-          jc.p.push(tc.p);
-
-          if (tc.i != null) jc.si = tc.i;
-          if (tc.d != null) jc.sd = tc.d;
-          json.append(dest, jc);
-        }
-        return dest;
-      }
-    } else if (otherC.li !== void 0 && otherC.ld !== void 0) {
-      if (otherC.p[common] === c.p[common]) {
-        // noop
-
-        if (!commonOperand) {
-          return dest;
-        } else if (c.ld !== void 0) {
-          // we're trying to delete the same element, -> noop
-          if (c.li !== void 0 && type === 'left') {
-            // we're both replacing one element with another. only one can survive
-            c.ld = clone(otherC.li);
-          } else {
-            return dest;
-          }
-        }
-      }
-    } else if (otherC.li !== void 0) {
-      if (c.li !== void 0 && c.ld === undefined && commonOperand && c.p[common] === otherC.p[common]) {
-        // in li vs. li, left wins.
-        if (type === 'right')
-          c.p[common]++;
-      } else if (otherC.p[common] <= c.p[common]) {
-        c.p[common]++;
-      }
-
-      if (c.lm !== void 0) {
-        if (commonOperand) {
-          // otherC edits the same list we edit
-          if (otherC.p[common] <= c.lm)
-            c.lm++;
-          // changing c.from is handled above.
-        }
-      }
-    } else if (otherC.ld !== void 0) {
-      if (c.lm !== void 0) {
-        if (commonOperand) {
-          if (otherC.p[common] === c.p[common]) {
-            // they deleted the thing we're trying to move
-            return dest;
-          }
-          // otherC edits the same list we edit
-          var p = otherC.p[common];
-          var from = c.p[common];
-          var to = c.lm;
-          if (p < to || (p === to && from < to))
-            c.lm--;
-
-        }
-      }
-
-      if (otherC.p[common] < c.p[common]) {
-        c.p[common]--;
-      } else if (otherC.p[common] === c.p[common]) {
-        if (otherCplength < cplength) {
-          // we're below the deleted element, so -> noop
-          return dest;
-        } else if (c.ld !== void 0) {
-          if (c.li !== void 0) {
-            // we're replacing, they're deleting. we become an insert.
-            delete c.ld;
-          } else {
-            // we're trying to delete the same element, -> noop
-            return dest;
-          }
-        }
-      }
-
-    } else if (otherC.lm !== void 0) {
-      if (c.lm !== void 0 && cplength === otherCplength) {
-        // lm vs lm, here we go!
-        var from = c.p[common];
-        var to = c.lm;
-        var otherFrom = otherC.p[common];
-        var otherTo = otherC.lm;
-        if (otherFrom !== otherTo) {
-          // if otherFrom == otherTo, we don't need to change our op.
-
-          // where did my thing go?
-          if (from === otherFrom) {
-            // they moved it! tie break.
-            if (type === 'left') {
-              c.p[common] = otherTo;
-              if (from === to) // ugh
-                c.lm = otherTo;
-            } else {
-              return dest;
-            }
-          } else {
-            // they moved around it
-            if (from > otherFrom) c.p[common]--;
-            if (from > otherTo) c.p[common]++;
-            else if (from === otherTo) {
-              if (otherFrom > otherTo) {
-                c.p[common]++;
-                if (from === to) // ugh, again
-                  c.lm++;
-              }
-            }
-
-            // step 2: where am i going to put it?
-            if (to > otherFrom) {
-              c.lm--;
-            } else if (to === otherFrom) {
-              if (to > from)
-                c.lm--;
-            }
-            if (to > otherTo) {
-              c.lm++;
-            } else if (to === otherTo) {
-              // if we're both moving in the same direction, tie break
-              if ((otherTo > otherFrom && to > from) ||
-                  (otherTo < otherFrom && to < from)) {
-                if (type === 'right') c.lm++;
-              } else {
-                if (to > from) c.lm++;
-                else if (to === otherFrom) c.lm--;
-              }
-            }
-          }
-        }
-      } else if (c.li !== void 0 && c.ld === undefined && commonOperand) {
-        // li
-        var from = otherC.p[common];
-        var to = otherC.lm;
-        p = c.p[common];
-        if (p > from) c.p[common]--;
-        if (p > to) c.p[common]++;
-      } else {
-        // ld, ld+li, si, sd, na, oi, od, oi+od, any li on an element beneath
-        // the lm
-        //
-        // i.e. things care about where their item is after the move.
-        var from = otherC.p[common];
-        var to = otherC.lm;
-        p = c.p[common];
-        if (p === from) {
-          c.p[common] = to;
-        } else {
-          if (p > from) c.p[common]--;
-          if (p > to) c.p[common]++;
-          else if (p === to && from > to) c.p[common]++;
-        }
-      }
-    }
-    else if (otherC.oi !== void 0 && otherC.od !== void 0) {
-      if (c.p[common] === otherC.p[common]) {
-        if (c.oi !== void 0 && commonOperand) {
-          // we inserted where someone else replaced
-          if (type === 'right') {
-            // left wins
-            return dest;
-          } else {
-            // we win, make our op replace what they inserted
-            c.od = otherC.oi;
-          }
-        } else {
-          // -> noop if the other component is deleting the same object (or any parent)
-          return dest;
-        }
-      }
-    } else if (otherC.oi !== void 0) {
-      if (c.oi !== void 0 && c.p[common] === otherC.p[common]) {
-        // left wins if we try to insert at the same place
-        if (type === 'left') {
-          json.append(dest,{p: c.p, od:otherC.oi});
-        } else {
-          return dest;
-        }
-      }
-    } else if (otherC.od !== void 0) {
-      if (c.p[common] == otherC.p[common]) {
-        if (!commonOperand)
-          return dest;
-        if (c.oi !== void 0) {
-          delete c.od;
-        } else {
-          return dest;
-        }
-      }
-    }
-  }
-
-  json.append(dest,c);
-  return dest;
-};
-
-exports._bootstrapTransform(json, json.transformComponent, json.checkValidOp, json.append);
-
-
-module.exports = json;
-// This is included after the JS for each type when we build for the web.
-
-  var _types = window.ottypes = window.ottypes || {};
-  var _t = module.exports;
-  _types[_t.name] = _t;
-
-  if (_t.uri) _types[_t.uri] = _t;
-})();
-// JSON document API for the 'json0' type.
+(function(){var e={exports:{}},i=e.exports;i._bootstrapTransform=function(e,i,n,r){var t,l;return t=function(e,n,r,t){return i(r,e,n,"left"),i(t,n,e,"right")},e.transformX=e.transformX=l=function(e,i){var o,p,d,f,s,a,u,c,h,v,g,m,y,w,O,b,k,E,x;for(n(e),n(i),s=[],v=0,w=i.length;w>v;v++){for(h=i[v],f=[],o=0;e.length>o;){if(a=[],t(e[o],h,f,a),o++,1!==a.length){if(0===a.length){for(E=e.slice(o),g=0,O=E.length;O>g;g++)p=E[g],r(f,p);h=null;break}for(x=l(e.slice(o),a),d=x[0],c=x[1],m=0,b=d.length;b>m;m++)p=d[m],r(f,p);for(y=0,k=c.length;k>y;y++)u=c[y],r(s,u);h=null;break}h=a[0]}null!=h&&r(s,h),e=f}return[e,s]},e.transform=e.transform=function(e,n,r){if("left"!==r&&"right"!==r)throw Error("type must be 'left' or 'right'");return 0===n.length?e:1===e.length&&1===n.length?i([],e[0],n[0],r):"left"===r?l(e,n)[0]:l(n,e)[1]}};var n,r,t,l,o,p,d,f;p={name:"text-old",uri:"http://sharejs.org/types/textv0",create:function(){return""}},o=function(e,i,n){return e.slice(0,i)+n+e.slice(i)},r=function(e){var i,n;if("number"!=typeof e.p)throw Error("component missing position field");if(n=typeof e.i,i=typeof e.d,!("string"===n^"string"===i))throw Error("component needs an i or d field");if(!(e.p>=0))throw Error("position cannot be negative")},t=function(e){var i,n,t;for(n=0,t=e.length;t>n;n++)i=e[n],r(i);return!0},p.apply=function(e,i){var n,r,l,p;for(t(i),l=0,p=i.length;p>l;l++)if(n=i[l],null!=n.i)e=o(e,n.p,n.i);else{if(r=e.slice(n.p,n.p+n.d.length),n.d!==r)throw Error("Delete component '"+n.d+"' does not match deleted text '"+r+"'");e=e.slice(0,n.p)+e.slice(n.p+n.d.length)}return e},p._append=n=function(e,i){var n,r,t;if(""!==i.i&&""!==i.d)return 0===e.length?e.push(i):(n=e[e.length-1],null!=n.i&&null!=i.i&&n.p<=(r=i.p)&&n.p+n.i.length>=r?e[e.length-1]={i:o(n.i,i.p-n.p,i.i),p:n.p}:null!=n.d&&null!=i.d&&i.p<=(t=n.p)&&i.p+i.d.length>=t?e[e.length-1]={d:o(i.d,n.p-i.p,n.d),p:i.p}:e.push(i))},p.compose=function(e,i){var r,l,o,p;for(t(e),t(i),l=e.slice(),o=0,p=i.length;p>o;o++)r=i[o],n(l,r);return l},p.compress=function(e){return p.compose([],e)},p.normalize=function(e){var i,r,t,l,o;for(r=[],(null!=e.i||null!=e.p)&&(e=[e]),t=0,l=e.length;l>t;t++)i=e[t],null==(o=i.p)&&(i.p=0),n(r,i);return r},f=function(e,i,n){return null!=i.i?e>i.p||i.p===e&&n?e+i.i.length:e:i.p>=e?e:i.p+i.d.length>=e?i.p:e-i.d.length},p.transformCursor=function(e,i,n){var r,t,l,o;for(t="right"===n,l=0,o=i.length;o>l;l++)r=i[l],e=f(e,r,t);return e},p._tc=d=function(e,i,r,l){var o,p,d,s,a,u;if(t([i]),t([r]),null!=i.i)n(e,{i:i.i,p:f(i.p,r,"right"===l)});else if(null!=r.i)u=i.d,i.p<r.p&&(n(e,{d:u.slice(0,r.p-i.p),p:i.p}),u=u.slice(r.p-i.p)),""!==u&&n(e,{d:u,p:i.p+r.i.length});else if(i.p>=r.p+r.d.length)n(e,{d:i.d,p:i.p-r.d.length});else if(i.p+i.d.length<=r.p)n(e,i);else{if(s={d:"",p:i.p},i.p<r.p&&(s.d=i.d.slice(0,r.p-i.p)),i.p+i.d.length>r.p+r.d.length&&(s.d+=i.d.slice(r.p+r.d.length-i.p)),d=Math.max(i.p,r.p),p=Math.min(i.p+i.d.length,r.p+r.d.length),o=i.d.slice(d-i.p,p-i.p),a=r.d.slice(d-r.p,p-r.p),o!==a)throw Error("Delete ops delete different text in the same region of the document");""!==s.d&&(s.p=f(s.p,r),n(e,s))}return e},l=function(e){return null!=e.i?{d:e.i,p:e.p}:{i:e.d,p:e.p}},p.invert=function(e){var i,n,r,t,o;for(t=e.slice().reverse(),o=[],n=0,r=t.length;r>n;n++)i=t[n],o.push(l(i));return o},"undefined"==typeof brequire?i._bootstrapTransform(p,p.transformComponent,p.checkValidOp,p.append):brequire("./helpers")._bootstrapTransform(p,p.transformComponent,p.checkValidOp,p.append),e.exports=p;var s=function(e){return"[object Array]"==Object.prototype.toString.call(e)},a=function(e){return JSON.parse(JSON.stringify(e))},p="undefined"!=typeof brequire?brequire("./text-old"):window.ottypes.text,u={name:"json0",uri:"http://sharejs.org/types/JSONv0"};u.create=function(e){return void 0===e?null:e},u.invertComponent=function(e){var i={p:e.p};return void 0!==e.si&&(i.sd=e.si),void 0!==e.sd&&(i.si=e.sd),void 0!==e.oi&&(i.od=e.oi),void 0!==e.od&&(i.oi=e.od),void 0!==e.li&&(i.ld=e.li),void 0!==e.ld&&(i.li=e.ld),void 0!==e.na&&(i.na=-e.na),void 0!==e.lm&&(i.lm=e.p[e.p.length-1],i.p=e.p.slice(0,e.p.length-1).concat([e.lm])),i},u.invert=function(e){for(var i=e.slice().reverse(),n=[],r=0;i.length>r;r++)n.push(u.invertComponent(i[r]));return n},u.checkValidOp=function(e){for(var i=0;e.length>i;i++)if(!s(e[i].p))throw Error("Missing path")},u.checkList=function(e){if(!s(e))throw Error("Referenced element not a list")},u.checkObj=function(e){if(e.constructor!==Object)throw Error("Referenced element not an object (it was "+JSON.stringify(e)+")")},u.apply=function(e,i){u.checkValidOp(i),i=a(i);for(var n={data:e},r=0;i.length>r;r++){for(var t=i[r],l=null,o=null,p=n,d="data",f=0;t.p.length>f;f++){var s=t.p[f];if(l=p,o=d,p=p[d],d=s,null==l)throw Error("Path invalid")}if(void 0!==t.na){if("number"!=typeof p[d])throw Error("Referenced element not a number");p[d]+=t.na}else if(void 0!==t.si){if("string"!=typeof p)throw Error("Referenced element not a string (it was "+JSON.stringify(p)+")");l[o]=p.slice(0,d)+t.si+p.slice(d)}else if(void 0!==t.sd){if("string"!=typeof p)throw Error("Referenced element not a string");if(p.slice(d,d+t.sd.length)!==t.sd)throw Error("Deleted string does not match");l[o]=p.slice(0,d)+p.slice(d+t.sd.length)}else if(void 0!==t.li&&void 0!==t.ld)u.checkList(p),p[d]=t.li;else if(void 0!==t.li)u.checkList(p),p.splice(d,0,t.li);else if(void 0!==t.ld)u.checkList(p),p.splice(d,1);else if(void 0!==t.lm){if(u.checkList(p),t.lm!=d){var c=p[d];p.splice(d,1),p.splice(t.lm,0,c)}}else if(void 0!==t.oi)u.checkObj(p),p[d]=t.oi;else{if(void 0===t.od)throw Error("invalid / missing instruction in op");u.checkObj(p),delete p[d]}}return n.data},u.incrementalApply=function(e,i,n){for(var r=0;i.length>r;r++){var t=[i[r]];e=u.apply(e,t),n(t,e)}return e};var c=u.pathMatches=function(e,i,n){if(e.length!=i.length)return!1;for(var r=0;e.length>r;r++)if(e[r]!==i[r]&&(!n||r!==e.length-1))return!1;return!0},h=function(e){var i={p:e.p[e.p.length-1]};return null!=e.si?i.i=e.si:i.d=e.sd,i};u.append=function(e,i){i=a(i);var n;if(0!=e.length&&c(i.p,(n=e[e.length-1]).p))null!=n.na&&null!=i.na?e[e.length-1]={p:n.p,na:n.na+i.na}:void 0!==n.li&&void 0===i.li&&i.ld===n.li?void 0!==n.ld?delete n.li:e.pop():void 0!==n.od&&void 0===n.oi&&void 0!==i.oi&&void 0===i.od?n.oi=i.oi:void 0!==n.oi&&void 0!==i.od?void 0!==i.oi?n.oi=i.oi:void 0!==n.od?delete n.oi:e.pop():void 0!==i.lm&&i.p[i.p.length-1]===i.lm||e.push(i);else if(0!=e.length&&c(i.p,n.p,!0))if(null==i.si&&null==i.sd||null==n.si&&null==n.sd)e.push(i);else{var r=[h(n)];if(p._append(r,h(i)),1!==r.length)e.push(i);else{var t=r[0];n.p[n.p.length-1]=t.p,null!=t.i?n.si=t.i:n.sd=t.d}}else e.push(i)},u.compose=function(e,i){u.checkValidOp(e),u.checkValidOp(i);for(var n=a(e),r=0;i.length>r;r++)u.append(n,i[r]);return n},u.normalize=function(e){var i=[];e=s(e)?e:[e];for(var n=0;e.length>n;n++){var r=e[n];null==r.p&&(r.p=[]),u.append(i,r)}return i},u.canOpAffectOp=function(e,i){if(0===e.length)return!0;if(0===i.length)return!1;i=i.slice(0,i.length-1),e=e.slice(0,e.length-1);for(var n=0;e.length>n;n++){var r=e[n];if(n>=i.length||r!=i[n])return!1}return!0},u.transformComponent=function(e,i,n,r){i=a(i),void 0!==i.na&&i.p.push(0),void 0!==n.na&&n.p.push(0);var t;u.canOpAffectOp(n.p,i.p)&&(t=n.p.length-1);var l;u.canOpAffectOp(i.p,n.p)&&(l=i.p.length-1);var o=i.p.length,d=n.p.length;if(void 0!==i.na&&i.p.pop(),void 0!==n.na&&n.p.pop(),n.na){if(null!=l&&d>=o&&n.p[l]==i.p[l])if(void 0!==i.ld){var f=a(n);f.p=f.p.slice(o),i.ld=u.apply(a(i.ld),[f])}else if(void 0!==i.od){var f=a(n);f.p=f.p.slice(o),i.od=u.apply(a(i.od),[f])}return u.append(e,i),e}if(null!=l&&d>o&&i.p[l]==n.p[l])if(void 0!==i.ld){var f=a(n);f.p=f.p.slice(o),i.ld=u.apply(a(i.ld),[f])}else if(void 0!==i.od){var f=a(n);f.p=f.p.slice(o),i.od=u.apply(a(i.od),[f])}if(null!=t){var s=o==d;if(void 0!==n.na);else if(void 0!==n.si||void 0!==n.sd){if(void 0!==i.si||void 0!==i.sd){if(!s)throw Error("must be a string?");var c=h(i),v=h(n),g=[];p._tc(g,c,v,r);for(var m=0;g.length>m;m++){var y=g[m],w={p:i.p.slice(0,t)};w.p.push(y.p),null!=y.i&&(w.si=y.i),null!=y.d&&(w.sd=y.d),u.append(e,w)}return e}}else if(void 0!==n.li&&void 0!==n.ld){if(n.p[t]===i.p[t]){if(!s)return e;if(void 0!==i.ld){if(void 0===i.li||"left"!==r)return e;i.ld=a(n.li)}}}else if(void 0!==n.li)void 0!==i.li&&void 0===i.ld&&s&&i.p[t]===n.p[t]?"right"===r&&i.p[t]++:n.p[t]<=i.p[t]&&i.p[t]++,void 0!==i.lm&&s&&n.p[t]<=i.lm&&i.lm++;else if(void 0!==n.ld){if(void 0!==i.lm&&s){if(n.p[t]===i.p[t])return e;var O=n.p[t],b=i.p[t],k=i.lm;(k>O||O===k&&k>b)&&i.lm--}if(n.p[t]<i.p[t])i.p[t]--;else if(n.p[t]===i.p[t]){if(o>d)return e;if(void 0!==i.ld){if(void 0===i.li)return e;delete i.ld}}}else if(void 0!==n.lm)if(void 0!==i.lm&&o===d){var b=i.p[t],k=i.lm,E=n.p[t],x=n.lm;if(E!==x)if(b===E){if("left"!==r)return e;i.p[t]=x,b===k&&(i.lm=x)}else b>E&&i.p[t]--,b>x?i.p[t]++:b===x&&E>x&&(i.p[t]++,b===k&&i.lm++),k>E?i.lm--:k===E&&k>b&&i.lm--,k>x?i.lm++:k===x&&(x>E&&k>b||E>x&&b>k?"right"===r&&i.lm++:k>b?i.lm++:k===E&&i.lm--)}else if(void 0!==i.li&&void 0===i.ld&&s){var b=n.p[t],k=n.lm;O=i.p[t],O>b&&i.p[t]--,O>k&&i.p[t]++}else{var b=n.p[t],k=n.lm;O=i.p[t],O===b?i.p[t]=k:(O>b&&i.p[t]--,O>k?i.p[t]++:O===k&&b>k&&i.p[t]++)}else if(void 0!==n.oi&&void 0!==n.od){if(i.p[t]===n.p[t]){if(void 0===i.oi||!s)return e;if("right"===r)return e;i.od=n.oi}}else if(void 0!==n.oi){if(void 0!==i.oi&&i.p[t]===n.p[t]){if("left"!==r)return e;u.append(e,{p:i.p,od:n.oi})}}else if(void 0!==n.od&&i.p[t]==n.p[t]){if(!s)return e;if(void 0===i.oi)return e;delete i.od}}return u.append(e,i),e},"undefined"!=typeof brequire?brequire("./helpers")._bootstrapTransform(u,u.transformComponent,u.checkValidOp,u.append):i._bootstrapTransform(u,u.transformComponent,u.checkValidOp,u.append),e.exports=u;var v=window.ottypes=window.ottypes||{},g=e.exports;v[g.name]=g,g.uri&&(v[g.uri]=g)})();// JSON document API for the 'json0' type.
 
 (function() {
   var __slice = [].slice;
@@ -1068,10 +89,10 @@ module.exports = json;
 
     for (var i = 0; i < path.length; i++) {
       elem = elem[key];
+      key = path[i];
       if (typeof elem === 'undefined') {
         throw new Error('bad path');
       }
-      key = path[i];
     }
 
     return {
@@ -1098,11 +119,35 @@ module.exports = json;
   }
 
   // does nothing, used as a default callback
-  function nullFunction(){}
+  function nullFunction() {}
+
+  // given a path represented as an array or a number, normalize to an array
+  // whole numbers are converted to integers.
+  function normalizePath(path) {
+    if (path instanceof Array) {
+      return path;
+    }
+    if (typeof(path) == "number") {
+      return [path];
+    }
+    // if (typeof(path) == "string") {
+    //   path = path.split(".");
+    //   var out = [];
+    //   for (var i=0; i<path.length; i++) {
+    //     var part = path[i];
+    //     if (String(parseInt(part, 10)) == part) {
+    //       out.push(parseInt(part, 10));
+    //     } else {
+    //       out.push(part);
+    //     }
+    //   }
+    //   return out;
+    // }
+  }
 
   // helper for creating functions with the method signature func([path],arg1,arg2,...,[cb])
   // populates an array of arguments with a default path and callback
-  function normalizeArgs(obj,args,func){
+  function normalizeArgs(obj, args, func, brequiredArgsCount){
     args = Array.prototype.slice.call(args);
     var path_prefix = obj.path || [];
 
@@ -1110,14 +155,14 @@ module.exports = json;
       args.push(nullFunction);
     }
 
-    if (args.length < func.length) {
+    if (args.length < (brequiredArgsCount || func.length)) {
       args.unshift(path_prefix);
     } else {
-      args[0] = path_prefix.concat(args[0]);
+      args[0] = path_prefix.concat(normalizePath(args[0]));
     }
 
     return func.apply(obj,args);
-  };
+  }
 
 
   // SubDoc
@@ -1129,6 +174,7 @@ module.exports = json;
   };
 
   SubDoc.prototype._updatePath = function(op){
+    console.log("UPDATEPATH", op);
     for (var i = 0; i < op.length; i++) {
       var c = op[i];
       if(c.lm !== undefined && containsPath(this.path,c.p)){
@@ -1145,43 +191,47 @@ module.exports = json;
   };
 
   SubDoc.prototype.get = function(path) {
-    return normalizeArgs(this,arguments,function(path){
+    return normalizeArgs(this, arguments, function(path){
       return this.context.get(path);
     });
   };
 
-  SubDoc.prototype.set = function(path,value,cb) {
-    return normalizeArgs(this,arguments,function(path,value,cb){
+  SubDoc.prototype.set = function(path, value, cb) {
+    return normalizeArgs(this, arguments, function(path, value, cb){
       return this.context.set(path, value, cb);
     });
   };
 
-  SubDoc.prototype.insert = function(path, pos, value, cb) {
-    return normalizeArgs(this,arguments,function(path, pos, value, cb){
-      return this.context.insert(path, pos, value, cb);
+  SubDoc.prototype.insert = function(path, value, cb) {
+    return normalizeArgs(this, arguments, function(path, value, cb){
+      return this.context.insert(path, value, cb);
     });
   };
 
-  SubDoc.prototype.remove = function(path, cb) {
-    return normalizeArgs(this,arguments,function(path, cb) {
-      return this.context.remove(path, cb);
-    });
+  SubDoc.prototype.remove = function(path, len, cb) {
+    return normalizeArgs(this, arguments, function(path, len, cb) {
+      return this.context.remove(path, len, cb);
+    }, 2);
   };
 
   SubDoc.prototype.push = function(path, value, cb) {
-    return normalizeArgs(this,arguments,function(path, value, cb) {
-      return this.context.insert(path, this.get().length, value, cb);
+    return normalizeArgs(this, arguments, function(path, value, cb) {
+        var _ref = traverse(this.context.getSnapshot(), path);
+        var len = _ref.elem[_ref.key].length;
+        path.push(len);
+      return this.context.insert(path, value, cb);
     });
   };
 
   SubDoc.prototype.move = function(path, from, to, cb) {
-    return normalizeArgs(this,arguments,function(path, from, to, cb) {
+    return normalizeArgs(this, arguments, function(path, from, to, cb) {
+      console.log("sd MOVE");
       return this.context.move(path, from, to, cb);
     });
   };
 
   SubDoc.prototype.add = function(path, amount, cb) {
-    return normalizeArgs(this,arguments,function(path, amount, cb) {
+    return normalizeArgs(this, arguments, function(path, amount, cb) {
       return this.context.add(path, amount, cb);
     });
   };
@@ -1195,19 +245,21 @@ module.exports = json;
   };
 
   SubDoc.prototype.getLength = function(path) {
-    return normalizeArgs(this,arguments,function(path) {
+    return normalizeArgs(this, arguments, function(path) {
       return this.context.getLength(path);
     });
   };
 
+  // DEPRECATED
   SubDoc.prototype.getText = function(path) {
-    return normalizeArgs(this,arguments,function(path) {
+    return normalizeArgs(this, arguments, function(path) {
       return this.context.getText(path);
     });
   };
-  
+
+  // DEPRECATED
   SubDoc.prototype.deleteText = function(path, pos, length, cb) {
-    return normalizeArgs(this,arguments,function(path, pos, length, cb) {
+    return normalizeArgs(this, arguments, function(path, pos, length, cb) {
       return this.context.deleteText(path, length, pos, cb);
     });
   };
@@ -1309,13 +361,14 @@ module.exports = json;
 
     get: function(path) {
       if (!path) return this.getSnapshot();  
-      
-      var _ref = traverse(this.getSnapshot(), path);
-      return _ref.elem[_ref.key];
+      return normalizeArgs(this,arguments,function(path){
+        var _ref = traverse(this.getSnapshot(), path);
+        return _ref.elem[_ref.key];
+      });
     },
 
     set: function(path, value, cb) {
-      return normalizeArgs(this,arguments,function(path, value, cb) {
+      return normalizeArgs(this, arguments, function(path, value, cb) {
         var _ref = traverse(this.getSnapshot(), path);
         var elem = _ref.elem;
         var key = _ref.key;
@@ -1341,33 +394,65 @@ module.exports = json;
       });
     },
 
-    remove: function(path, cb) {
-      return normalizeArgs(this,arguments,function(path, cb) {
-        var _ref = traverse(this.getSnapshot(), path);
-        var elem = _ref.elem;
-        var key = _ref.key;
-        var op = {
-          p: path
-        };
-
-        if (typeof elem[key] === 'undefined') {
-          throw new Error('no element at that path');
+    remove: function(path, len, cb) {
+      return normalizeArgs(this, arguments, function(path, len, cb) {
+        if (!cb && len instanceof Function) {
+          cb = len;
+          len = null;
         }
+        // if there is no len argument, then we are removing a single item from either a list or a hash
+        var _ref, elem, op, key;
+        if (len === null || len === undefined) {
+          _ref = traverse(this.getSnapshot(), path);
+          elem = _ref.elem;
+          key = _ref.key;
+          op = {
+            p: path
+          };
 
-        if (elem.constructor === Array) {
-          op.ld = elem[key];
-        } else if (typeof elem === 'object') {
-          op.od = elem[key];
+          if (typeof elem[key] === 'undefined') {
+            throw new Error('no element at that path');
+          }
+
+          if (elem.constructor === Array) {
+            op.ld = elem[key];
+          } else if (typeof elem === 'object') {
+            op.od = elem[key];
+          } else {
+            throw new Error('bad path');
+          }
+          return this._submit([op], cb);
         } else {
-          throw new Error('bad path');
+          var pos;
+          pos = path.pop();
+          _ref = traverse(this.getSnapshot(), path);
+          elem = _ref.elem;
+          key = _ref.key;
+          if (typeof elem[key] === 'string') {
+            op = {
+              p: path.concat(pos),
+              sd: _ref.elem[_ref.key].slice(pos, pos + len)
+            };
+            return this._submit([op], cb);
+          } else if (elem[key].constructor === Array) {
+            var ops = [];
+            for (var i=pos; i<pos+len; i++) {
+              ops.push({
+                p: path.concat(pos),
+                ld: elem[key][i]
+              });
+            }
+            return this._submit(ops, cb);
+          } else {
+            throw new Error('element at path does not support range');
+          }
         }
-
-        return this._submit([op], cb);
-      });
+      }, 2);
     },
 
-    insert: function(path, pos, value, cb) {
-      return normalizeArgs(this,arguments,function(path, pos, value, cb) {
+    insert: function(path, value, cb) {
+      return normalizeArgs(this, arguments, function(path, value, cb) {
+        var pos = path.pop();
         var _ref = traverse(this.getSnapshot(), path);
         var elem = _ref.elem;
         var key = _ref.key;
@@ -1380,13 +465,12 @@ module.exports = json;
         } else if (typeof elem[key] === 'string') {
           op.si = value;
         }
-
         return this._submit([op], cb);
       });
     },
 
     move: function(path, from, to, cb) {
-      return normalizeArgs(this,arguments,function(path, from, to, cb) {
+      return normalizeArgs(this, arguments, function(path, from, to, cb) {
         var self = this;
         var op = [
           {
@@ -1397,19 +481,22 @@ module.exports = json;
 
         return this._submit(op, function(){
           self._updateSubdocPaths(op);
-          if(cb) cb.apply(cb,arguments);
+          if(cb) cb.apply(cb, arguments);
         });
       });
     },
 
     push: function(path, value, cb) {
-      return normalizeArgs(this,arguments,function(path, value, cb) {
-        return this.insert(path, this.get().length, value, cb);
+      return normalizeArgs(this, arguments, function(path, value, cb) {
+        var _ref = traverse(this.getSnapshot(), path);
+        var len = _ref.elem[_ref.key].length;
+        path.push(len);
+        return this.insert(path, value, cb);
       });
     },
 
     add: function(path, amount, cb) {
-      return normalizeArgs(this,arguments,function(path, value, cb) {
+      return normalizeArgs(this, arguments, function(path, value, cb) {
         var op = [
           {
             p: path,
@@ -1421,19 +508,21 @@ module.exports = json;
     },
 
     getLength: function(path) {
-        return normalizeArgs(this,arguments,function(path) {
+        return normalizeArgs(this, arguments, function(path) {
           return this.get(path).length;
         });
     },
 
     getText: function(path) {
-      return normalizeArgs(this,arguments,function(path) {
+      return normalizeArgs(this, arguments, function(path) {
+        console.warn("Deprecated. Use `get()` instead");
         return this.get(path);
       });
     },
 
     deleteText: function(path, length, pos, cb) {
-      return normalizeArgs(this,arguments,function(path, length, pos, cb) {
+      return normalizeArgs(this, arguments, function(path, length, pos, cb) {
+        console.warn("Deprecated. Use `remove(path, length, cb)` instead");
         var _ref = traverse(this.getSnapshot(), path);
         var op = [
           {
@@ -1447,7 +536,7 @@ module.exports = json;
     },
 
     addListener: function(path, event, cb) {
-      return normalizeArgs(this,arguments,function(path, value, cb) {
+      return normalizeArgs(this, arguments, function(path, value, cb) {
         var listener = {
           path: path,
           event: event,
@@ -1537,7 +626,7 @@ module.exports = json;
 // This file is included at the top of the compiled client JS.
 
 // All the modules will just add stuff to exports, and it'll all get exported.
-var exports = window.sharejs = {version: '0.7.0'};
+var exports = window.sharejs = {version: '0.7.0-alpha8'};
 
 // This is a simple rewrite of microevent.js. I've changed the
 // function names to be consistent with node.js EventEmitter.
@@ -1773,7 +862,9 @@ Doc.prototype.injestData = function(data) {
 
 
   this.version = data.v;
-  this.snapshot = data.snapshot;
+  // data.data is what the server will actually send. data.snapshot is the old
+  // field name - supported now for backwards compatibility.
+  this.snapshot = data.data || data.snapshot;
   this._setType(data.type);
 
   this.state = 'ready';
@@ -1809,6 +900,24 @@ Doc.prototype._send = function(message) {
   this.connection.send(message);
 };
 
+// This function exists so connection can call it directly for bulk subscribes.
+// It could just make a temporary object literal, thats pretty slow.
+Doc.prototype._handleSubscribe = function(err, data) {
+  if (err && err !== 'Already subscribed') {
+    if (console) console.error("Could not subscribe: " + err);
+    this.emit('error', err);
+    // There's probably a reason we couldn't subscribe. Don't retry.
+    this._setWantSubscribe(false, null, err)
+  } else {
+    if (data) this.injestData(data);
+    this.subscribed = true;
+    this.emit('subscribe');
+    this._finishSub(true);
+  }
+
+  this._clearAction('subscribe');
+};
+
 // This is called by the connection when it receives a message for the document.
 Doc.prototype._onMessage = function(msg) {
   if (!(msg.c === this.collection && msg.d === this.name)) {
@@ -1828,19 +937,7 @@ Doc.prototype._onMessage = function(msg) {
 
     case 'sub':
       // Subscribe reply.
-      if (msg.error && msg.error !== 'Already subscribed') {
-        if (console) console.error("Could not subscribe: " + msg.error);
-        this.emit('error', msg.error);
-        // There's probably a reason we couldn't subscribe. Don't retry.
-        this._setWantSubscribe(false, null, msg.error)
-      } else {
-        if (msg.data) this.injestData(msg.data);
-        this.subscribed = true;
-        this.emit('subscribe');
-        this._finishSub(true);
-      }
-
-      this._clearAction('subscribe');
+      this._handleSubscribe(msg.error, msg.data);
       break;
 
     case 'unsub':
@@ -1889,9 +986,20 @@ Doc.prototype._onMessage = function(msg) {
       }
 
       if (msg.v !== this.version) {
-        // I should add the name of the document to all errors - mostly this is
-        // to track down one particular bug.
-        this.emit('error', 'In document ' + this.name + ' expected version ' + this.version + ' but got ' + msg.v);
+        // This will happen naturally in the following (or similar) cases:
+        //
+        // Client is not subscribed to document.
+        // -> client submits an operation (v=10)
+        // -> client subscribes to a query which matches this document. Says we
+        //    have v=10 of the doc.
+        //
+        // <- server acknowledges the operation (v=11). Server acknowledges the
+        //    operation because the doc isn't subscribed
+        // <- server processes the query, which says the client only has v=10.
+        //    Server subscribes at v=10 not v=11, so we get another copy of the
+        //    v=10 operation.
+        //
+        // In this case, we can safely ignore the old (duplicate) operation.
         break;
       }
 
@@ -1978,7 +1086,8 @@ Doc.prototype.flush = function() {
     this._send(this.state === 'ready' ? {a:'fetch', v:this.version} : {a:'fetch'});
   } else if (!this.subscribed && this.wantSubscribe) {
     this.action = 'subscribe';
-    this._send(this.state === 'ready' ? {a:'sub', v:this.version} : {a:'sub'});
+    // Special send method needed for bulk subscribes on reconnect.
+    this.connection.sendSubscribe(this.collection, this.name, this.state === 'ready' ? this.version : null);
   } else if (!this.paused && this.pendingData.length && this.connection.state === 'connected') {
     // Try and send any pending ops. We can't send ops while in 
     this.inflightData = this.pendingData.shift();
@@ -2390,11 +1499,11 @@ Doc.prototype._tryRollback = function(opData) {
       console.warn('Rollback a create from state ' + this.state);
 
   } else if (opData.op && opData.type.invert) {
-    var undo = opData.type.invert(opData.op);
+    opData.op = opData.type.invert(opData.op);
 
     // Transform the undo operation by any pending ops.
     for (var i = 0; i < this.pendingData.length; i++) {
-      xf(this.pendingData[i], undo);
+      xf(this.pendingData[i], opData);
     }
 
     // ... and apply it locally, reverting the changes.
@@ -2403,8 +1512,8 @@ Doc.prototype._tryRollback = function(opData) {
     // I'm still not 100% sure about this functionality, because its really a
     // local op. Basically, the problem is that if the client's op is rejected
     // by the server, the editor window should update to reflect the undo.
-    this._otApply(undo, false);
-    this._afterOtApply(undo, false);
+    this._otApply(opData, false);
+    this._afterOtApply(opData, false);
   } else if (opData.op || opData.del) {
     // This is where an undo stack would come in handy.
     this._setType(null);
@@ -2455,7 +1564,7 @@ Doc.prototype._opAcknowledged = function(msg) {
 
     // This should never happen - something is out of order.
     if (msg.v !== this.version)
-      throw new Error('Invalid version from server. Please file an issue, this is a bug.');
+      throw new Error('Invalid version from server. This can happen when you submit ops in a submitOp callback.');
   }
   
   // The op was committed successfully. Increment the version number
@@ -2621,6 +1730,28 @@ var Connection = exports.Connection = function (socket) {
         if (query) query._onMessage(msg);
         break;
 
+      case 'bs':
+        // Bulk subscribe response. The responses for each document are contained within.
+        var result = msg.s;
+        for (var cName in result) {
+          for (var docName in result[cName]) {
+            var doc = connection.get(cName, docName);
+            if (!doc) {
+              if (console) console.error('Message for unknown doc. Ignoring.', msg);
+              break;
+            }
+
+            var msg = result[cName][docName];
+            if (typeof msg === 'object') {
+              doc._handleSubscribe(msg.error, msg.data);
+            } else {
+              // The msg will be true if we simply resubscribed.
+              doc._handleSubscribe(null, null);
+            }
+          }
+        }
+        break;
+
       default:
         // Document message. Pull out the referenced document and forward the
         // message.
@@ -2717,6 +1848,7 @@ Connection.prototype._setState = function(newState, data) {
   // documents to just register for this stuff using events, but that couples
   // connections and documents a bit much. Its not a big deal either way.
   this.opQueue = [];
+  this.subscribeData = {};
   for (var c in this.collections) {
     var collection = this.collections[c];
     for (var docName in collection) {
@@ -2724,12 +1856,26 @@ Connection.prototype._setState = function(newState, data) {
     }
   }
 
+
+  // Its important that operations are resent in the same order that they were
+  // originally sent. If we don't sort, an op with a high sequence number will
+  // convince the server not to accept any ops with earlier sequence numbers.
   this.opQueue.sort(function(a, b) { return a.seq - b.seq; });
   for (var i = 0; i < this.opQueue.length; i++) {
     this.send(this.opQueue[i]);
   }
+
+  // Only send bulk subscribe if not empty. Its weird using a for loop for
+  // this, but it works pretty well.
+  for (var __unused in this.subscribeData) { 
+    this.send({a:'bs', s:this.subscribeData});
+    break;
+  }
+
   this.opQueue = null;
+  this.subscribeData = null;
   
+  // No bulk subscribe for queries yet.
   for (var id in this.queries) {
     this.queries[id]._onConnectionStateChanged(newState, data);
   }
@@ -2749,10 +1895,27 @@ Connection.prototype.sendOp = function(data) {
   }
 };
 
+// This is called by the document class when the document wants to subscribe.
+// We could just send a subscribe message, but during reconnect that causes a
+// bajillion messages over browserchannel. During reconnect we'll aggregate,
+// similar to sendOp.
+Connection.prototype.sendSubscribe = function(collection, name, v) {
+  if (this.subscribeData) {
+    var data = this.subscribeData;
+    if (!data[collection]) data[collection] = {};
+
+    data[collection][name] = v || null;
+  } else {
+    var msg = {a:'sub', c:collection, d:name};
+    if (v != null) msg.v = v;
+    this.send(msg);
+  }
+};
+
 // Send a message to the connection.
 Connection.prototype.send = function(msg) {
   if (this.debug) console.log("SEND", JSON.stringify(msg));
-  this.messageBuffer.push({t:(new Date()).toTimeString(), send:JSON.stringify(msg)});
+  this.messageBuffer.push({t:Date.now(), send:JSON.stringify(msg)});
   while (this.messageBuffer.length > 100) {
     this.messageBuffer.shift();
   }
@@ -2807,7 +1970,7 @@ Connection.prototype.get = function(collection, name, data) {
   // returns with data for the document). We should hydrate the document
   // immediately if we can because the query callback will expect the document
   // to have data.
-  if (data && data.snapshot !== undefined && !doc.state) {
+  if (data && data.data !== undefined && !doc.state) {
     doc.injestData(data);
   }
 
@@ -2967,7 +2130,7 @@ window.sharejs.Doc.prototype.attachTextarea = function(elem, ctx) {
 
   if (!ctx.provides.text) throw new Error('Cannot attach to non-text document');
 
-  elem.value = ctx.getText();
+  elem.value = ctx.get();
 
   // The current value of the element's text is stored so we can quickly check
   // if its been changed in the event handlers. This is mostly for browsers on
@@ -3000,7 +2163,7 @@ window.sharejs.Doc.prototype.attachTextarea = function(elem, ctx) {
     }
   };
 
-  replaceText(ctx.getText());
+  replaceText(ctx.get());
 
 
   // *** remote -> local changes
@@ -3036,7 +2199,7 @@ window.sharejs.Doc.prototype.attachTextarea = function(elem, ctx) {
     setTimeout(function() {
       if (elem.value !== prevvalue) {
         prevvalue = elem.value;
-        applyChange(ctx, ctx.getText(), elem.value.replace(/\r\n/g, '\n'));
+        applyChange(ctx, ctx.get(), elem.value.replace(/\r\n/g, '\n'));
       }
     }, 0);
   };

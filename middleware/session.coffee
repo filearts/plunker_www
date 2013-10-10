@@ -11,23 +11,21 @@ module.exports.middleware = (options = {}) ->
     handleRequest = (err, innerRes, body) ->
       return next(err) if err
       
-      return createSession() unless body.id
+      exposeSession body if body
       
-      addCookie body
+      next()
       
     createSession = ->
       request.post "#{apiUrl}/sessions", json: true, handleRequest
       
-    addCookie = (data) ->
-      res.cookie "plnk_session", data.sessid,
+    exposeSession = (data) ->
+      res.cookie "plnkrsessid", data.id,
         domain: domain
-        expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14) # Two weeks
+        expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14)
       
-      res.expose data, "plnkr.session"
-      
-      next()
+      res.expose data, "_plunker.session"
   
-    if sessid = req.cookies.plnk_session
+    if sessid = req.cookies.plnkrsessid
       request.get "#{apiUrl}/sessions/#{sessid}", json: true, handleRequest
     else
       createSession()

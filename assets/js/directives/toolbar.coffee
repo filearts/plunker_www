@@ -2,15 +2,18 @@ require "../../vendor/angular-ui/ui-bootstrap"
 
 require "../services/notifier.coffee"
 require "../services/layout.coffee"
+require "../services/oauth.coffee"
+
 
 module = angular.module "plunker.directive.toolbar", [
   "ui.bootstrap"
   
   "plunker.service.notifier"
   "plunker.service.layout"
+  "plunker.service.oauth"
 ]
 
-module.directive "plunkerToolbar", [ "$state", "session", "notifier", "layout", ($state, session, notifier, layout) ->
+module.directive "plunkerToolbar", [ "$state", "session", "notifier", "layout", "oauth", ($state, session, notifier, layout, oauth) ->
   restrict: "E"
   replace: true
   scope: true
@@ -34,6 +37,11 @@ module.directive "plunkerToolbar", [ "$state", "session", "notifier", "layout", 
           <button class="btn btn-sm btn-default" ng-click="layout.setLayout($index)" ng-repeat="preset in layout.presets" ng-bind="$index" tooltip="{{preset.name}}" tooltip-append-to-body="true" tooltip-placement="bottom"></button>
         </div>
       </div>
+      <div class="pull-right">
+        <div class="btn-group btn-sm">
+          <button class="btn btn-sm btn-default" ng-click="login()" tooltip="Login using Github" tooltip-append-to-body="true" tooltip-placement="bottom">Login</button>
+        </div>
+      </div>
     </div>
   """
   
@@ -42,4 +50,6 @@ module.directive "plunkerToolbar", [ "$state", "session", "notifier", "layout", 
     
     $scope.save = ->
       notifier.warn "Save not implemented... yet"
+    
+    $scope.login = -> oauth.authenticate()
 ]

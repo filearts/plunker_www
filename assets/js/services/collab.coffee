@@ -16,22 +16,38 @@ module.factory "collab", [ "$rootScope", "$q", "session", ($rootScope, $q, sessi
   client = session.createClient("share")
 
   connect: (sessionId) ->
+    console.log "Share", share
+    
     dfd = $q.defer()
-    doc = share.getOrCreate("json_test", sessionId)
+    doc = share.get("json_test", sessionId)
     
     doc.subscribe()
     
-    doc.whenReady -> $rootScope.$apply -> 
-      unless doc.type
-        doc.create "json0", snapshot = client.getSnapshot(), ->
+    doc.whenReady (args...) ->
+      console.log "Document ready", arguments...
+      $rootScope.$apply -> 
+        unless doc.type
+          console.log "Document does not exist, creating", client.getSnapshot()
+          doc.create "json0", snapshot = client.getSnapshot(), ->
+            dfd.resolve snapshot
+        else unless doc.snapshot
+          op =
+            p: []
+            od: doc.snapshot
+            oi: client.getSnapshot()
+  
+          console.log "Document exists but is false, resetting", doc, op
+          
+          doc.submitOp op, -> dfd.resolve doc.snapshot
+        else
+          console.log "Got snapshot", doc, doc.getSnapshot()
+          
+          client.reset snapshot = doc.getSnapshot()
           dfd.resolve snapshot
-      else
-        client.reset snapshot = doc.getSnapshot()
-        dfd.resolve snapshot
-        
-      client.on "remoteOp", (e) ->
-        
-        doc.submitOp e.op
+          
+        client.on "remoteOp", (e) ->
+          
+          doc.submitOp e.op
         
     doc.on "op", (op) ->
       unless $rootScope.$$phase then $rootScope.$apply ->

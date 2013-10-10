@@ -1,4 +1,4 @@
-require "share/webclient/share.uncompressed.js"
+require "../../vendor/share/share.uncompressed.js"
 
 
 module = angular.module "plunker.service.session", [

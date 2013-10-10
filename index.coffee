@@ -14,9 +14,37 @@ github = authom.createServer
   secret: nconf.get("oauth:github:secret")
   scope: ["gist"]
 
+authom.on "error", (req, res, data) ->
+  res.expose data, "_plunker.auth_error"
+  res.send """
+    <script type="text/javascript">
+      debugger
+      #{res.locals.state}
+      if (window.opener && window.opener.postMessage) {
+        window.opener.postMessage(JSON.strigify({'event': "auth_error",'message': _plunker.auth_error}), "#{nconf.get("url:www")}");
+      }
+      window.close()
+    </script>
+  """
+
+authom.on "auth", (req, res, data) ->
+  res.expose data, "_plunker.auth_data"
+  res.send """
+    <script type="text/javascript">
+      debugger
+      #{res.locals.state}
+      if (window.opener && window.opener.postMessage) {
+        window.opener.postMessage(JSON.strigify({'event': "auth_data",'message': _plunker.auth_data}), "#{nconf.get("url:www")}");
+      }
+      window.close()
+    </script>
+  """
+
 
 
 server = express()
+
+expstate.extend server
 
 
 # Configure express
@@ -32,15 +60,15 @@ console.log "Serving views from", "#{process.env.PWD}/public"
 
 # Express middleware
 
-server.use express.cookieParser()
 server.use lactate.static "#{process.env.PWD}/public",
   "max age": "one week"
   "cache": false
-#server.use express.static "#{process.env.PWD}/public"
-  
-collab = require "./collab"
-collab.extend server
+server.use express.cookieParser()
 
+#collab = require "./collab"
+#collab.extend server
+
+server.use express.logger()
 server.use server.router
 
   
@@ -51,16 +79,13 @@ server.get "/auth/:service", (req, res, next) ->
 
 server.get "/auth/:service", authom.app
 
+
+
 sessionMiddleware = require("./middleware/session.coffee").middleware()
 
 
-
-
-
-server.get "/*", (req, res) ->
-  res.render "index", timestamp: Date.now()
-
-expstate.extend server
+server.get "/edit/*", sessionMiddleware, (req, res) -> res.render "index", timestamp: Date.now()
+server.get "/", sessionMiddleware, (req, res) -> res.render "index", timestamp: Date.now()
 
 server.expose nconf.get("url"), "_plunker.url"
 

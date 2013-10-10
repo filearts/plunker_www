@@ -26,7 +26,7 @@ serverDomain.run(function(){
     // Pass the request to express
     server(req, res);
     
-  }).listen(nconf.get("PORT"), function(){
+  }).listen(nconf.get("PORT"), nconf.get("IP"), function(){
     console.log("Server started in ", process.env.NODE_ENV, "on", nconf.get("IP") + ":" + nconf.get("PORT"));
   });
   
