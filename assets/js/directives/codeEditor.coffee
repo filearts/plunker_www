@@ -2,12 +2,15 @@ require "../services/session.coffee"
 require "../services/types.coffee"
 require "../services/settings.coffee"
 require "../services/annotations.coffee"
+require "../services/splitter.coffee"
+
 
 module = angular.module "plunker.directive.codeEditor", [
   "plunker.service.session"
   "plunker.service.types"
   "plunker.service.settings"
   "plunker.service.annotations"
+  "plunker.service.splitter"
 ]
 
 ###
@@ -73,7 +76,8 @@ module.factory "editor", [ "types", (types) ->
 ]
 ###
 
-module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "settings", "annotations", ($rootScope, $timeout, session, types, settings, annotations) ->
+module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "settings", "annotations", "splitter", ($rootScope, $timeout, session, types, settings, annotations, splitter) ->
+  Split = ace.require("ace/split").Split
   AceEditor = ace.require("ace/editor").Editor
   Renderer = ace.require("ace/virtual_renderer").VirtualRenderer
   EditSession = ace.require("ace/edit_session").EditSession
@@ -91,7 +95,10 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
     </div>
   """
   link: ($scope, $el, attrs) ->
-    editor = new AceEditor(new Renderer($el[0], "ace/theme/#{settings.editor.theme}"))
+  
+    split = window.split = new Split($el[0], "ace/theme/#{settings.editor.theme}", splitter.splits)
+    editor = split.getCurrentEditor()
+    
     client = session.createClient("code-editor")
     snippetManager = null
     buffers = []
@@ -102,39 +109,102 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
         enableSnippets: true
   
       snippetManager = ace.require("ace/snippets").snippetManager
+    
+    split.on "focus", (editor) ->
+      editor.setBehavioursEnabled(true)
+      editor.setOptions
+        enableBasicAutocompletion: true
+        enableSnippets: true
+
+      splitter.active = split.$editors.indexOf(editor)
       
+      unless $rootScope.$$phase then $scope.$apply ->
+        client.cursorSetIndex(splitter.indices[splitter.active])
+    
+    $scope.$watch ( -> splitter.splits ), (splits, previous) ->
+      split.setSplits(splits)
+      
+      return if splits is previous
+      
+      console.log "Splits", arguments...
+      
+      if splits > previous
+        for idx in [previous...splits]
+          console.log "setSession", [previous...splits], buffers[splitter.indices[idx]], idx
+          #split.setSession buffers[splitter.indices[idx]], idx
+      
+      client.cursorSetIndex splitter.indices[splitter.active]
+            
+    $scope.$watch ( -> splitter.active ), (active, previous) ->
+      return if active is previous
+      
+      ed.focus() if ed = split.getEditor(active) 
+            
     $scope.$watch ( -> settings.editor.theme ), (theme) ->
-      editor.setTheme("ace/theme/#{theme}") if theme
+      split.forEach (editor) ->
+        editor.setTheme("ace/theme/#{theme}") if theme
     
 
     guessMode = (filename) -> "ace/mode/" + types.getByFilename(filename).name
     
     activateBuffer = (index) ->
-      editor.setSession(buffers[index])
-      editor.focus()
+      # Check if the buffer is already open in a split
+      unless 0 > (found = splitter.indices.indexOf(index))
+        # The buffer is already open at the split `found`, focus it
+        debugger unless split.getEditor(found)
+        split.getEditor(found).focus()
+
+        # Force the splitter service to be in sync with the split object
+        splitter.splits = split.getSplits()
+        splitter.active = found
+
+      # The buffer isn't already open, check splits
+      else
+        # activate is the EditSession we want to open
+        activate = buffers[index]
+  
+        if splitter.splits > split.getSplits()
+          split.setSplits(splitter.splits)
+        
+        # Update the splitter indices
+        splitter.indices[splitter.active] = index
+        
+        split.setSession(activate, splitter.active)
+        split.getEditor(splitter.active).focus()
     
     moveCursor = (offset) ->
-      doc = editor.session.doc
+      editor = split.getCurrentEditor()
+      doc = editor.getSession().doc
       editor.moveCursorToPosition(doc.indexToPosition(offset))
     
     addAceSession = (index, file) ->
+      watchers = []
+    
       aceSession = new EditSession(file.content or "")
       aceSession.setUndoManager(new UndoManager())
       aceSession.setUseWorker(true)
-      aceSession.setTabSize(settings.editor.tab_size)
-      aceSession.setUseWrapMode(!!settings.editor.wrap.enabled)
-      aceSession.setWrapLimitRange(settings.editor.wrap.range.min, settings.editor.wrap.range.max)
       aceSession.setMode(guessMode(file.filename))
       aceSession.index$ = index
-
       
+      watchers.push $scope.$watch ( -> settings.editor.tab_size ), (tabSize) ->
+        aceSession.setTabSize(tabSize) if tabSize?
+
+      watchers.push $scope.$watch ( -> settings.editor.wrap.enabled ), (wrap) ->
+        aceSession.setUseWrapMode(wrap)
+
+      watchers.push $scope.$watch ( -> settings.editor.wrap.range ), (range) ->
+        aceSession.setWrapLimitRange(range.min, range.max) if range
+      , true
+
       doc = aceSession.getDocument()
           
       handleChangeEvent = (e) ->
-        unless file = client.getFileByIndex(aceSession.index$)
-          throw new Error("Buffers and session are out of sync")
+        # A change that is happening within a digest cycle is coming from an external source.
+        # Do not handle these changes again.
+        unless $rootScope.$$phase then $rootScope.$apply ->
+          unless file = client.getFileByIndex(aceSession.index$)
+            throw new Error("Buffers and session are out of sync")
         
-        unless $rootScope.$$phase then $scope.$apply ->
           nl = doc.getNewLineCharacter()
           
           switch e.data.action
@@ -142,9 +212,9 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
             when "insertLines" then client.textInsert file.filename, doc.positionToIndex(e.data.range.start), e.data.lines.join(nl) + nl
             when "removeText" then client.textRemove file.filename, doc.positionToIndex(e.data.range.start), e.data.text
             when "removeLines" then client.textRemove file.filename, doc.positionToIndex(e.data.range.start), e.data.lines.join(nl) + nl
-      
-        if file.content != aceSession.getValue()
-          console.error "[ERR] Local session out of sync", e
+        
+          if file.content != aceSession.getValue()
+            console.error "[ERR] Local session out of sync", e.data, file.content, aceSession.getValue()
       
       handleChangeAnnotationEvent = (e) ->
         unless file = client.getFileByIndex(aceSession.index$)
@@ -165,12 +235,34 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
       aceSession.destroy = ->
         aceSession.off "change", handleChangeEvent
         aceSession.off "changeAnnotation", handleChangeAnnotationEvent
+        
+        unwatch() for unwatch in watchers
 
     removeAceSession = (index) ->
-      unless buffers[index] then debugger
+      unless remove = buffers[index] then debugger
+      
+      # If the session being removed is open in a split, reorganize things
+      if split.getSplits() > 1
+        unless 0 > found = splitter.indices.indexOf(index)
+          idx = split.getSplits() - 1
+          last = split.getEditor(idx).getSession()
+
+          split.setSplits(split.getSplits() - 1)
+          
+          while idx > found
+            idx--
+            
+            next = split.getEditor(idx).getSession()
+            split.setSession(last, idx)
+            last = next
+
+          splitter.indices.splice found, 1
+          splitter.splits--
       
       # Re-number existing buffers
       buffer.index$-- for buffer, idx in buffers when idx > index
+      
+      splitter.indices[idx] = old - 1 for old, idx in splitter.indices when idx > index
       
       buffers[index].destroy()
       buffers.splice index, 1
@@ -181,6 +273,10 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
     reset = (snapshot) ->
       removeAceSession(idx) for idx in [buffers.length - 1..0] by -1
       addAceSession(idx, file) for file, idx in snapshot.files
+      
+      splitter.active = 0
+      splitter.splits = 1
+      splitter.indices = []
       
       activateBuffer(snapshot.cursor.fileIndex)
     
@@ -219,10 +315,13 @@ module.directive "codeEditor", [ "$rootScope", "$timeout", "session", "types", "
     moveCursor(client.getCursorTextOffset())
     
     # Resize the ace component whenever we get a reflow event from border-layout
-    $scope.$on "border-layout-reflow", -> editor.resize()
+    $scope.$on "border-layout-reflow", -> $timeout -> split.resize()
 
     $timeout ->
-      editor.resize()
+      split.resize()
     , 100
+    
+    $scope.$on "$destroy", ->
+      session.destroyClient("code-editor")
 
 ]

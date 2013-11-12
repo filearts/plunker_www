@@ -1,14 +1,20 @@
 @import (less) "./../../vendor/bootstrap/bootstrap.css";
-@import (less) "./../../vendor/fontstrap/fontstrap.css";
 @import (less) "./../../vendor/angular-growl/angular-growl.css";
+
+@import "./../../vendor/fontstrap/font-awesome.less";
 
 @import "./../directives/borderLayout.less";
 @import "./../directives/previewer.less";
 @import "./../directives/disabler.less";
 @import "./../directives/toolbar.less";
+@import "./../directives/taglist.less";
 
 
-.code-editor {
+.plunker-editor {
+  overflow: visible;
+}
+
+.ace_editor {
   position: absolute !important;
   left: 0;
   top: 0;
@@ -33,18 +39,45 @@
     border-width: 1px 0;
     border-radius: 0;
     background-color: transparent;
+    padding: 4px;
 
-    h5 {
+    h4 {
+      font-size: 13px;
+      font-weight: bold;
       margin: 0;
+    }
+    
+    .plunker-taglist {
+      margin: 8px 0 -4px 0;
     }
   }
 }
 
 .plunker-paneselector {
-  background-color: #efefef;
+  background-color: #dfdfdf;
+  overflow: visible;
+  color: #333;
+  
+  .border-layout-pane-scroller {
+    padding: 8px 0;
+  }
+  
+  li {
+    width: 40px;
+    height: 40px;
+    font-size: 30px;
+    text-align: center;
+    
+    .btn {
+      height: 36px;
+      width: 36px;
+      text-align: center;
+      padding: 0;
+    }
+  }
 }
 
-.plunker-sidebar, .plunker-editor, .plunker-previewer {
+.plunker-sidebar, .plunker-editor, .plunker-previewer, .plunker-multipane {
   .border-layout-pane-scroller {
     border: 1px solid #a3a3a3;
   }
@@ -60,6 +93,10 @@
   padding-right: 4px;
   font-size: 90%;
   
+  fieldset {
+    padding: 8px;
+  }
+  
   .list-group-item {
     cursor: pointer;
     position: relative;
@@ -68,16 +105,26 @@
     padding: 5px 32px 5px 8px;
     border-radius: 0;
     background-color: transparent;
+    height: 30px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    
+    .btn-link {
+      color: #333333;
+      text-decoration: none;
+      
+      &:hover {
+        color: #111111;
+      }
+    }
     
     .remover {
       display: none;
       position: absolute;
       right: 4px;
       top: 4px;
-      font-size: 8px;
-      line-height: 16px;
       z-index: 1;
-      width: 20px;
     }
     
     &:hover {
@@ -101,4 +148,28 @@
       font-weight: lighter;
     }
   }
+}
+
+.pane-config {
+  padding: 10px;
+}
+
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-corner,
+::-webkit-scrollbar-thumb {
+    background: rgba(150, 150, 150, 0.8);
+}
+
+::-webkit-scrollbar-corner,
+::-webkit-scrollbar-thumb:window-inactive {
+    background: rgba(150, 150, 150, 0.4);
 }

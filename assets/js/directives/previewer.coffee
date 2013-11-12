@@ -9,6 +9,8 @@ require "../services/url.coffee"
 require "../services/settings.coffee"
 require "../services/annotations.coffee"
 require "../services/layout.coffee"
+require "../services/disabler.coffee"
+
 
 module = angular.module "plunker.directive.previewer", [
   "plunker.service.session"
@@ -16,16 +18,17 @@ module = angular.module "plunker.directive.previewer", [
   "plunker.service.settings"
   "plunker.service.annotations"
   "plunker.service.layout"
+  "plunker.service.disabler"
 ]
 
-module.directive "previewer", [ "$timeout", "session", "url", "settings", "annotations", "layout", ($timeout, session, url, settings, annotations, layout) ->
+module.directive "previewer", [ "$timeout", "session", "url", "settings", "annotations", "layout", "disabler", ($timeout, session, url, settings, annotations, layout, disabler) ->
   restrict: "E"
   replace: true
   scope:
     session: "="
   template: """
     <div>
-      <div class="plunker-preview-container" ng-class="{message: message}">
+      <div class="plunker-preview-container" ng-class="{message: message}" plunker-disabler="previewer">
         <iframe id="plunkerPreviewTarget" name="plunkerPreviewTarget" src="about:blank" width="100%" height="100%" frameborder="0"></iframe>
       </div>
       <div class="plunker-preview-message alert alert-danger" ng-show="message">

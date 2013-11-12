@@ -11,7 +11,7 @@ module.directive "plunkerDisabler", ["disabler", (disabler) ->
       else mask.remove()
 ]
 
-module.service "disabler", [ "$q", ($q) ->
+module.factory "disabler", [ "$q", ($q) ->
   queues = {}
   
   @state = {}
@@ -21,4 +21,8 @@ module.service "disabler", [ "$q", ($q) ->
     disabler.state[name] = true
     $q.when(valueOrPromise).finally ->
       disabler.state[name] = false
+    
+    valueOrPromise
+  
+  return @
 ]

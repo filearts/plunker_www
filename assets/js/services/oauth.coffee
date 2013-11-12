@@ -5,7 +5,6 @@ module.factory "oauth", [ "$window", "$q", "$rootScope", "$timeout", ($window, $
   oauthDeferred = null
   
   postMessageHandler = (e) ->
-    console.log "Got message", e
     if oauthDeferred
       try
         oauthDeferred.resolve(JSON.parse(e.data))
@@ -53,5 +52,9 @@ module.factory "oauth", [ "$window", "$q", "$rootScope", "$timeout", ($window, $
     , 200
     
     oauthDeferred.promise.then (json) ->
-      console.log "Got OAuth data", json
+      if json.event and json.event is "auth_data" then json.message
+      else if json.event and json.event is "auth_error" then $q.reject(json.message)
+      else
+        console.log "[WARN] Got unknown message", json
+        $q.reject("Unknown login payload")
 ]

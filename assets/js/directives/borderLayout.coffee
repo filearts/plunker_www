@@ -46,17 +46,19 @@ class Region
   consume: (anchor, size = 0) ->
     switch anchor
       when "north"
-        style = { top: "#{@top}px", right: "#{@right}px", left: "#{@left}px", height: "#{size}px" }
+        style = { top: "#{@top}px", right: "#{@right}px", bottom: "auto", left: "#{@left}px", height: "#{size}px" }
         @top += size
       when "east"
-        style = { top: "#{@top}px", right: "#{@right}px", bottom: "#{@bottom}px", width: "#{size}px" }
+        style = { top: "#{@top}px", right: "#{@right}px", bottom: "#{@bottom}px", left: "auto", width: "#{size}px" }
         @right += size
       when "south"
-        style = { right: "#{@right}px", bottom: "#{@bottom}px", left: "#{@left}px", height: "#{size}px" }
+        style = { top: "auto", right: "#{@right}px", bottom: "#{@bottom}px", left: "#{@left}px", height: "#{size}px" }
         @bottom += size
       when "west"
-        style = { top: "#{@top}px", bottom: "#{@bottom}px", left: "#{@left}px", width: "#{size}px" }
+        style = { top: "#{@top}px", right: "auto", bottom: "#{@bottom}px", left: "#{@left}px", width: "#{size}px" }
         @left += size
+    
+    style.display = "none" if size is 0
       
     style
     
@@ -85,10 +87,10 @@ module.directive "pane", [ ->
     <div class="border-layout-pane">
       <div class="border-layout-pane-overlay" ng-style="styleContent"></div>
       <div class="border-layout-pane-handle" layout-handle ng-style="styleHandle"></div>
-      <div class="border-layout-pane-scroller" ng-style="styleContent" ng-transclude></div>
+      <div class="border-layout-pane-scroller" ng-style="styleContent"></div>
     </div>
   """
-  controller: ["$scope", "$element", "$attrs", ($scope, $element, $attrs) ->
+  controller: ["$scope", "$element", "$attrs", "$parse", ($scope, $element, $attrs, $parse) ->
     pane = @
     
     [$overlay, $handle, $scroller] = $element.children()
@@ -102,7 +104,8 @@ module.directive "pane", [ ->
         pane.min = options.min || 0
         pane.open = !options.closed
         pane.order = parseInt(options.order or 0, 10)
-        pane.handleSize = parseInt(options.handle or 0, 10)
+        pane.handleSizeOpen = parseInt(options.handleOpen or options.handle or 0, 10)
+        pane.handleSizeClosed = parseInt(options.handleClosed or options.handle or 0, 10)
         
         pane.layout.reflow()
     , true
@@ -166,6 +169,8 @@ module.directive "pane", [ ->
     @toggle = (open = !pane.open) ->
       pane.open = open
       
+      $scope.$eval($attrs.options).closed = true
+      
       if !open then @openSize = @size
       else @size = @openSize
       
@@ -188,11 +193,12 @@ module.directive "pane", [ ->
           left: "#{region.left}px"
       else if anchor in ["north", "east", "south", "west"]
         orientation = @getOrientation(anchor)
-        handleSize = region.calculateSize(orientation, pane.handleSize || 0)
 
         if !pane.open
+          handleSize = region.calculateSize(orientation, pane.handleSizeClosed || 0)
           size = handleSize
         else
+          handleSize = region.calculateSize(orientation, pane.handleSizeOpen || 0)
           size = region.calculateSize(orientation, target)
           
           size = Math.min(size, region.calculateSize(orientation, pane.max))
@@ -222,17 +228,23 @@ module.directive "pane", [ ->
       pane.target = target || 0
       
       @layout.reflow()
-      
+    
+    return @
   ]
-  link: ($scope, $el, $attrs, [pane, parent]) ->
-    pane.layout = parent
-    parent.attachChild(pane)
-    
-    $scope.$$nextSibling.pane = pane
-    
-    $scope.$watch "constrained", (constrained) ->
-      if constrained then $el.addClass("border-layout-constrained")
-      else $el.removeClass("border-layout-constrained")
+  compile: ($el, $attrs, $transclude) ->
+    ($scope, $el, $attrs, [pane, parent]) ->
+      $scope = $scope.$new()
+      $scope.pane = pane
+      
+      pane.layout = parent
+      parent.attachChild(pane)
+      
+      $scope.$watch "constrained", (constrained) ->
+        if constrained then $el.addClass("border-layout-constrained")
+        else $el.removeClass("border-layout-constrained")
+      
+      $transclude $scope, (clone) ->
+        $el.find("div").eq(2).append(clone)
 ]
 
 module.directive "layoutHandle", [ "$window", ($window) ->
@@ -332,7 +344,6 @@ module.directive "layoutHandle", [ "$window", ($window) ->
     
       $window.addEventListener "mousemove", handleMouseMoveThrottled, true
       $window.addEventListener "mouseup", handleMouseUp, true
-
 ]
 
 
@@ -342,7 +353,7 @@ module.directive "borderLayout", [ "$window", "$timeout", ($window, $timeout)->
   require: ["borderLayout", "^?pane"]
   transclude: true
   template: """
-    <div class="border-layout" ng-transclude>
+    <div class="border-layout">
     </div>
   """
   controller: ["$scope", "$element", "$attrs", ($scope, $element, $attrs) ->
@@ -376,16 +387,24 @@ module.directive "borderLayout", [ "$window", "$timeout", ($window, $timeout)->
       
       layout.reflowing = false
       
+    return @
+      
   ]
-  link: ($scope, $el, $attrs, [layout, parent]) ->
-    parent.attachChild(layout) if parent
-    
-    $scope.$on "border-layout-reflow", ->
-      layout.reflow() unless parent
-    
-    $window.addEventListener "resize", (e) ->
-      e.stopPropagation()
-      $scope.$apply -> layout.reflow()
-    
-    $timeout -> layout.reflow() unless parent
+  compile: ($element, $attrs, $transclude) ->
+    ($scope, $el, $attrs, [layout, parent]) ->
+      $scope = $scope.$new()
+      
+      parent.attachChild(layout) if parent
+      
+      $scope.$on "border-layout-reflow", ->
+        layout.reflow() unless parent
+      
+      $window.addEventListener "resize", (e) ->
+        e.stopPropagation()
+        $scope.$apply -> layout.reflow()
+      
+      $timeout -> layout.reflow() unless parent
+      
+      $transclude $scope, (clone) ->
+        $el.html("").append(clone)
 ]

@@ -18,7 +18,6 @@ module.service "session", class Session
     
     _handleOp: (sourceClientName, op, snapshot) ->
       if op.p.length is 0
-        console.log "Reset"
         @_emit "reset",
           snapshot: op.oi
           old_snapshot: op.od
@@ -131,7 +130,7 @@ module.service "session", class Session
     
     isValidFile: (file) -> return @isValidFilename(file.filename) && angular.isString(file.content)
     
-    isValidFilename: (filename) -> return /^[-_a-z0-9\.\[\]]+$/i.test(filename)
+    isValidFilename: (filename) -> return /^[-_a-z0-9\.][-_a-z0-9\.\/]+$/i.test(filename)
     
     
     
@@ -279,11 +278,14 @@ module.service "session", class Session
     
     @$clients[clientName] ||= new SessionClient(clientName, session)
   
+  destroyClient: (clientName) ->
+    delete @$clients[clientName] if @$clients[clientName]
+  
   applyOps: (sourceClientName, ops) ->
     postSnapshot = ottypes.json0.apply @snapshot, ops
     
-    console.log "[OT] op", op for op in ops
-    console.log "[OT] snapshot", angular.copy(@snapshot)
+    #console.log "[OT] op", op for op in ops
+    #console.log "[OT] snapshot", angular.copy(@snapshot)
     
     angular.copy postSnapshot, @snapshot unless @snapshot == postSnapshot
     

@@ -51,7 +51,7 @@ module.exports = (grunt) ->
           '<%=build.dest%>/js/apps/landing.js': ['<%=build.src%>/js/apps/landing.coffee']
           '<%=build.dest%>/js/apps/editor.js': ['<%=build.src%>/js/apps/editor.coffee']
         options:
-          debug: true
+          #debug: true
           transform: ['caching-coffeeify']
           noParse: [
             '<%=build.src%>/vendor/angular/angular.js'

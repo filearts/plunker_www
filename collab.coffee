@@ -13,7 +13,7 @@ redisClient = redis.createClient(nconf.get("db:redis:port"), nconf.get("db:redis
 redisObserverClient = redis.createClient(nconf.get("db:redis:port"), nconf.get("db:redis:host"), auth_pass: nconf.get("db:redis:pass"))
 
 backend = livedb.client
-  db: livedbMongo(nconf.get("db:mongodb"), safe:false)
+  db: livedbMongo(nconf.get("db:mongodb") + "?auto_reconnect", safe:false)
   redis: redisClient
   redisObserver: redisObserverClient
 share = sharejs.server.createClient {backend}

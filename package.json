@@ -1,7 +1,7 @@
 {
   "name": "plunker-beta",
   "private": true,
-  "version": "0.7.0-16",
+  "version": "0.7.0-17",
   "description": "The front-end code for http://plnkr.co",
   "subdomain": "plunker-beta",
   "domains": [
@@ -13,8 +13,8 @@
     "start": "node server.js"
   },
   "engines": {
-    "node": "~0.10.20",
-    "npm": "~1.3.11"
+    "node": "0.10.x",
+    "npm": "1.3.x"
   },
   "repository": {
     "type": "git",
@@ -54,7 +54,7 @@
     "lodash": "~2.0.0",
     "lodash.throttle": "~2.0.0",
     "lodash.debounce": "~2.0.0",
-    "share": "~0.7.0",
+    "share": "https://github.com/geigerzaehler/ShareJS/tarball/browserify",
     "redis": "~0.8.4",
     "livedb": "~0.2.1",
     "livedb-mongo": "~0.2.4",

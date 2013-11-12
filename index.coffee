@@ -21,7 +21,7 @@ authom.on "error", (req, res, data) ->
       debugger
       #{res.locals.state}
       if (window.opener && window.opener.postMessage) {
-        window.opener.postMessage(JSON.strigify({'event': "auth_error",'message': _plunker.auth_error}), "#{nconf.get("url:www")}");
+        window.opener.postMessage(JSON.stringify({'event': "auth_error",'message': _plunker.auth_error}), "#{nconf.get("url:www")}");
       }
       window.close()
     </script>
@@ -34,7 +34,7 @@ authom.on "auth", (req, res, data) ->
       debugger
       #{res.locals.state}
       if (window.opener && window.opener.postMessage) {
-        window.opener.postMessage(JSON.strigify({'event': "auth_data",'message': _plunker.auth_data}), "#{nconf.get("url:www")}");
+        window.opener.postMessage(JSON.stringify({'event': "auth_data",'message': _plunker.auth_data}), "#{nconf.get("url:www")}");
       }
       window.close()
     </script>
@@ -68,7 +68,7 @@ server.use express.cookieParser()
 #collab = require "./collab"
 #collab.extend server
 
-server.use express.logger()
+#server.use express.logger()
 server.use server.router
 
   
