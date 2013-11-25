@@ -17,18 +17,10 @@ module.exports.middleware = (options = {}) ->
       
       request { method: "POST", url: "#{apiUrl}/sessions", body: {}, json: true }, (err, response, body) ->
         if err or response.statusCode >= 400
-          console.error "Error creating session: #{JSON.stringify(err or body)}"
+          console.error "[ERR] Failed to create session: #{JSON.stringify(err or body)}"
           finalize({})
         else finalize(body)
     
-    parse = (body) ->
-      try
-        session = JSON.parse(body)
-      catch e
-        return next("Error parsing session JSON")
-      
-      return session
-      
     finalize = (session) ->
       res.expose session, "_plunker.session"
       next()

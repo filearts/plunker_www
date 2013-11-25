@@ -8,6 +8,7 @@ module.service "settings", [ () ->
       auto_refresh: true
     editor:
       tab_size: 2
+      font_size: 12
       soft_tabs: true
       theme: "textmate"
       wrap:
@@ -29,6 +30,15 @@ module.service "settings", [ () ->
       localStorage.setItem "plnkr_settings", JSON.stringify(settings)
     , 2000
   
-  angular.extend settings, saved
+  setSaved = (parent, saved) ->
+    for key, val of saved
+      if angular.isObject(val)
+        if angular.isObject(parent[key]) then setSaved(parent[key], val)
+        else parent[key] = saved
+      else
+        parent[key] = val
+    parent
+  
+  setSaved settings, saved
   
 ]

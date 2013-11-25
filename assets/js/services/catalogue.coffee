@@ -85,9 +85,9 @@ module.factory "catalogue", ["$http", "visitor", "url", ($http, visitor, url) ->
       options.params.sessid = visitor.session.id
       
       payload = {unstable: !!data.unstable}
-      payload.scripts = angular.copy(data.scripts) if data.scripts.length
-      payload.styles = angular.copy(data.styles) if data.styles.length
-      payload.dependencies = angular.copy(data.dependencies) if data.dependencies.length
+      payload.scripts = angular.copy(data.scripts) if data.scripts
+      payload.styles = angular.copy(data.styles) if data.styles
+      payload.dependencies = angular.copy(data.dependencies) if data.dependencies
         
       request = $http.post("#{apiUrl}/catalogue/packages/#{pkg.name}/versions/#{data.semver}", payload, options).then (response) ->
         pkg.update(response.data)

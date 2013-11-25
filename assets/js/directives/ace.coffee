@@ -144,6 +144,7 @@ module.directive "plunkerEditSession", ["$timeout", "modes", "settings", "annota
     session.setUseWrapMode(!!settings.editor.wrap.enabled)
     session.setWrapLimitRange(settings.editor.wrap.range.min, settings.editor.wrap.range.max)
     session.setUseWorker(true)
+    session.setNewLineMode("unix")
     
     
     doc = session.getDocument()
@@ -159,6 +160,7 @@ module.directive "plunkerEditSession", ["$timeout", "modes", "settings", "annota
     session.on "change", (delta) ->
       unless session.getValue() == model.$viewValue or $scope.$root.$$phase then $scope.$apply ->
         model.$setViewValue(session.getValue())
+        controller.markDirty()
       
     # Create an entry for the file's annotations
     annotations[buffer.id] = []
@@ -204,7 +206,7 @@ module.directive "plunkerEditSession", ["$timeout", "modes", "settings", "annota
     # Update the tab size and tab type upon changes to those settings
     $scope.$watch "settings.tab_size", (tab_size) ->
       session.setTabSize(tab_size)
-    
+      
     $scope.$watch "settings.soft_tabs", (soft_tabs) ->
       session.setUseSoftTabs(!!soft_tabs)
     
@@ -223,12 +225,6 @@ module.directive "plunkerEditSession", ["$timeout", "modes", "settings", "annota
           controller.editor.focus()
           delete buffer.snippet
 
-      # Only start dirty checks once activated the first time
-      session.on "change", (delta) ->
-        unless session.getValue() == model.$viewValue or $scope.$root.$$phase then $scope.$apply ->
-          controller.markDirty()
-    
-
     # Handle clean-up
     $scope.$on "$destroy", ->
       controller.removeSession(buffer.id)
@@ -240,7 +236,7 @@ module.directive "plunkerEditSession", ["$timeout", "modes", "settings", "annota
 
 
 
-module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "participants", ($timeout, session, settings, activity, participants) ->
+module.directive "plunkerAce", ["$timeout", "$q", "session", "settings", "activity", "participants", ($timeout, $q, session, settings, activity, participants) ->
   restrict: "E"
   replace: true
   require: "plunkerAce"
@@ -267,11 +263,26 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
     
     @markDirty = -> session.updated_at = Date.now()
     
+    @loadModule = (modulePath) ->
+      dfd = $q.defer()
+      ace.config.loadModule modulePath, (module) -> dfd.resolve(module)
+      dfd.promise
+    
+    @loadScript = (scriptUrl) ->
+      console.log "loadScript", scriptUrl
+      dfd = $q.defer()
+      require("ace/lib/net").loadScript scriptUrl, -> dfd.resolve(scriptUrl)
+      dfd.promise
+    
     @setupAutocomplete = ->
-      ace.config.loadModule "ace/ext/language_tools", =>
+      @loadModule("ace/ext/language_tools").then =>
         @editor.setOptions
           enableBasicAutocompletion: true
           enableSnippets: true
+      
+      $q.all([@loadModule("ace/ext/emmet"), @loadScript("http://nightwing.github.io/emmet-core/emmet.js")]).then ([module]) =>
+        module.setCore(window.emmet)
+        @editor.setOption "enableEmmet", true
 
   
     @bindKeys = ->
@@ -368,6 +379,8 @@ module.directive "plunkerAce", ["$timeout", "session", "settings", "activity", "
     $scope.$watch "session.readonly", (readonly) ->
       controller.editor.setReadOnly(!!readonly)
 
+    $scope.$watch "settings.font_size", (font_size) ->
+      controller.editor.setFontSize(font_size)
     
     $scope.$watch "settings.theme", (theme) ->
       controller.editor.setTheme("ace/theme/#{theme}")

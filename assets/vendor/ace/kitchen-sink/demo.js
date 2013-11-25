@@ -29,10 +29,14 @@
  * ***** END LICENSE BLOCK ***** */
 
 
-define('kitchen-sink/demo', ['require', 'exports', 'module' , 'ace/lib/fixoldbrowsers', 'ace/config', 'ace/lib/dom', 'ace/lib/net', 'ace/lib/lang', 'ace/lib/useragent', 'ace/lib/event', 'ace/theme/textmate', 'ace/edit_session', 'ace/undomanager', 'ace/keyboard/hash_handler', 'ace/virtual_renderer', 'ace/editor', 'ace/multi_select', 'ace/ext/whitespace', 'kitchen-sink/doclist', 'ace/ext/modelist', 'kitchen-sink/layout', 'kitchen-sink/token_tooltip', 'kitchen-sink/util', 'ace/ext/elastic_tabstops_lite', 'ace/incremental_search', 'ace/worker/worker_client', 'ace/split', 'ace/keyboard/vim', 'ace/ext/statusbar', 'ace/ext/emmet', 'ace/snippets', 'ace/ext/language_tools'], function(require, exports, module) {
+define('kitchen-sink/demo', ['require', 'exports', 'module' , 'ace/lib/fixoldbrowsers', 'ace/multi_select', 'ace/ext/spellcheck', 'ace/config', 'ace/lib/dom', 'ace/lib/net', 'ace/lib/lang', 'ace/lib/useragent', 'ace/lib/event', 'ace/theme/textmate', 'ace/edit_session', 'ace/undomanager', 'ace/keyboard/hash_handler', 'ace/virtual_renderer', 'ace/editor', 'ace/ext/whitespace', 'kitchen-sink/doclist', 'ace/ext/modelist', 'kitchen-sink/layout', 'kitchen-sink/token_tooltip', 'kitchen-sink/util', 'ace/ext/elastic_tabstops_lite', 'ace/incremental_search', 'ace/worker/worker_client', 'ace/split', 'ace/keyboard/vim', 'ace/ext/statusbar', 'ace/ext/emmet', 'ace/snippets', 'ace/ext/language_tools'], function(require, exports, module) {
 
 
 require("ace/lib/fixoldbrowsers");
+
+require("ace/multi_select")
+require("ace/ext/spellcheck");
+
 var config = require("ace/config");
 config.init();
 var env = {};
@@ -51,7 +55,6 @@ var HashHandler = require("ace/keyboard/hash_handler").HashHandler;
 
 var Renderer = require("ace/virtual_renderer").VirtualRenderer;
 var Editor = require("ace/editor").Editor;
-var MultiSelect = require("ace/multi_select").MultiSelect;
 
 var whitespace = require("ace/ext/whitespace");
 
@@ -84,9 +87,7 @@ split.on("focus", function(editor) {
 });
 env.split = split;
 window.env = env;
-window.ace = env.editor;
-env.editor.setAnimatedScroll(true);
-require("ace/multi_select").MultiSelect(env.editor);
+
 
 var consoleEl = dom.createElement("div");
 container.parentNode.appendChild(consoleEl);
@@ -545,6 +546,12 @@ event.addListener(container, "drop", function(e) {
 
 
 
+
+
+
+
+
+
 var StatusBar = require("ace/ext/statusbar").StatusBar;
 new StatusBar(env.editor, cmdLine.container);
 
@@ -593,6 +600,97 @@ env.editor.setOptions({
     enableBasicAutocompletion: true,
     enableSnippets: true
 })
+});
+void function() {
+function isStrict() {
+    try { return !arguments.callee.caller.caller.caller}
+    catch(e){ return true }
+}
+function warn() {
+    if (isStrict()) {
+        console.error("trying to access to global variable");
+    }
+}
+function def(o, key, get) {
+    Object.defineProperty(o, key, {
+        configurable: true, 
+        get: get,
+        set: function(val) {
+            delete o[key];
+            o[key] = val;
+        }
+    });
+}
+def(window, "ace", function(){ warn(); return env.editor });
+def(window, "editor", function(){ warn(); return env.editor });
+def(window, "session", function(){ warn(); return env.editor.session });
+def(window, "split", function(){ warn(); return env.split });
+
+}();define('ace/ext/spellcheck', ['require', 'exports', 'module' , 'ace/lib/event', 'ace/editor', 'ace/config'], function(require, exports, module) {
+
+var event = require("../lib/event");
+
+exports.contextMenuHandler = function(e){
+    var host = e.target;
+    var text = host.textInput.getElement();
+    if (!host.selection.isEmpty())
+        return;
+    var c = host.getCursorPosition();
+    var r = host.session.getWordRange(c.row, c.column);
+    var w = host.session.getTextRange(r);
+
+    host.session.tokenRe.lastIndex = 0;
+    if (!host.session.tokenRe.test(w))
+        return;
+    var PLACEHOLDER = "\x01\x01";
+    var value = w + " " + PLACEHOLDER;
+    text.value = value;
+    text.setSelectionRange(w.length, w.length + 1);
+    text.setSelectionRange(0, 0);
+    text.setSelectionRange(0, w.length);
+
+    var afterKeydown = false;
+    event.addListener(text, "keydown", function onKeydown() {
+        event.removeListener(text, "keydown", onKeydown);
+        afterKeydown = true;
+    });
+
+    host.textInput.setInputHandler(function(newVal) {
+        console.log(newVal , value, text.selectionStart, text.selectionEnd)
+        if (newVal == value)
+            return '';
+        if (newVal.lastIndexOf(value, 0) === 0)
+            return newVal.slice(value.length);
+        if (newVal.substr(text.selectionEnd) == value)
+            return newVal.slice(0, -value.length);
+        if (newVal.slice(-2) == PLACEHOLDER) {
+            var val = newVal.slice(0, -2);
+            if (val.slice(-1) == " ") {
+                if (afterKeydown)
+                    return val.substring(0, text.selectionEnd);
+                val = val.slice(0, -1);
+                host.session.replace(r, val);
+                return "";
+            }
+        }
+
+        return newVal;
+    });
+};
+var Editor = require("../editor").Editor;
+require("../config").defineOptions(Editor.prototype, "editor", {
+    spellcheck: {
+        set: function(val) {
+            var text = this.textInput.getElement();
+            text.spellcheck = !!val;
+            if (!val)
+                this.removeListener("nativecontextmenu", exports.contextMenuHandler);
+            else
+                this.on("nativecontextmenu", exports.contextMenuHandler);
+        },
+        value: true
+    }
+});
 
 });
 
@@ -616,11 +714,7 @@ background-color: #6B72E6;\
 background-color: #FFFFFF;\
 }\
 .ace-tm .ace_cursor {\
-border-left: 2px solid black;\
-}\
-.ace-tm .ace_overwrite-cursors .ace_cursor {\
-border-left: 0px;\
-border-bottom: 1px solid black;\
+color: black;\
 }\
 .ace-tm .ace_invisible {\
 color: rgb(191, 191, 191);\
@@ -944,94 +1038,19 @@ function makeHuge(txt) {
 }
 
 var docs = {
-    "docs/javascript.js": "JavaScript",
-    "docs/AsciiDoc.asciidoc": "AsciiDoc",
-    "docs/clojure.clj": "Clojure",
-    "docs/coffeescript.coffee": "CoffeeScript",
-    "docs/coldfusion.cfm": "ColdFusion",
-    "docs/cpp.cpp": "C/C++",
-    "docs/csharp.cs": "C#",
-    "docs/css.css": "CSS",
-    "docs/curly.curly": "Curly",
-    "docs/dart.dart": "Dart",
-    "docs/diff.diff": "Diff",
-    "docs/dot.dot": "Dot",
-    "docs/freemarker.ftl" : "FreeMarker",
-    "docs/glsl.glsl": "Glsl",
-    "docs/golang.go": "Go",
-    "docs/groovy.groovy": "Groovy",
-    "docs/haml.haml": "Haml",
-    "docs/Haxe.hx": "haXe",
-    "docs/html.html": "HTML",
-    "docs/html_ruby.erb": "HTML (Ruby)",
-    "docs/jade.jade": "Jade",
-    "docs/java.java": "Java",
-    "docs/jsp.jsp": "JSP",
-    "docs/json.json": "JSON",
-    "docs/jsx.jsx": "JSX",
+    "docs/javascript.js": {order: 1, name: "JavaScript"},
+
     "docs/latex.tex": {name: "LaTeX", wrapped: true},
-    "docs/less.less": "LESS",
-    "docs/lisp.lisp": "Lisp",
-    "docs/lsl.lsl": "LSL",
-    "docs/scheme.scm": "Scheme",
-    "docs/livescript.ls": "LiveScript",
-    "docs/liquid.liquid": "Liquid",
-    "docs/logiql.logic": "LogiQL",
-    "docs/lua.lua": "Lua",
-    "docs/lucene.lucene": "Lucene",
-    "docs/luapage.lp": "LuaPage",
-    "docs/Makefile": "Makefile",
     "docs/markdown.md": {name: "Markdown", wrapped: true},
     "docs/mushcode.mc": {name: "MUSHCode", wrapped: true},
-    "docs/objectivec.m": {name: "Objective-C"},
-    "docs/ocaml.ml": "OCaml",
-    "docs/OpenSCAD.scad": "OpenSCAD",
-    "docs/pascal.pas": "Pascal",
-    "docs/perl.pl": "Perl",
     "docs/pgsql.pgsql": {name: "pgSQL", wrapped: true},
-    "docs/php.php": "PHP",
     "docs/plaintext.txt": {name: "Plain Text", prepare: makeHuge, wrapped: true},
-    "docs/powershell.ps1": "Powershell",
-    "docs/properties.properties": "Properties",
-    "docs/python.py": "Python",
-    "docs/r.r": "R",
-    "docs/rdoc.Rd": "RDoc",
-    "docs/rhtml.rhtml": "RHTML",
-    "docs/ruby.rb": "Ruby",
-    "docs/abap.abap": "SAP - ABAP",
-    "docs/scala.scala": "Scala",
-    "docs/scss.scss": "SCSS",
-    "docs/sass.sass": "SASS",
-    "docs/sh.sh": "SH",
-    "docs/stylus.styl": "Stylus",
     "docs/sql.sql": {name: "SQL", wrapped: true},
-    "docs/svg.svg": "SVG",
-    "docs/tcl.tcl": "Tcl",
-    "docs/tex.tex": "Tex",
-    "docs/textile.textile": {name: "Textile", wrapped: true},
-    "docs/snippets.snippets": "snippets",
-    "docs/toml.toml": "TOML",
-    "docs/typescript.ts": "Typescript",
-    "docs/vbscript.vbs": "VBScript",
-    "docs/velocity.vm": "Velocity",
-    "docs/xml.xml": "XML",
-    "docs/xquery.xq": "XQuery",
-    "docs/yaml.yaml": "YAML",
-    "docs/c9search.c9search_results": "C9 Search Results",
 
-    "docs/actionscript.as": "ActionScript",
-    "docs/assembly_x86.asm": "Assembly_x86",
-    "docs/autohotkey.ahk": "AutoHotKey",
-    "docs/batchfile.bat": "BatchFile",
-    "docs/erlang.erl": "Erlang",
-    "docs/forth.frt": "Forth",
-    "docs/haskell.hs": "Haskell",
-    "docs/julia.js": "Julia",
-    "docs/prolog.plg": "Prolog",
-    "docs/rust.rs": "Rust",
-    "docs/twig.twig": "Twig",
-    "docs/Nix.nix": "Nix",
-    "docs/protobuf.proto": "Protobuf"
+    "docs/textile.textile": {name: "Textile", wrapped: true},
+
+    "docs/c9search.c9search_results": "C9 Search Results",
+    "docs/Nix.nix": "Nix"
 };
 
 var ownSource = {
@@ -1042,6 +1061,23 @@ var hugeDocs = {
     "src-min/ace.js": ""
 };
 
+modelist.modes.forEach(function(m) {
+    var ext = m.extensions.split("|")[0];
+    if (ext[0] === "^") {
+        path = ext.substr(1);
+    } else {
+        var path = m.name + "." + ext 
+    }
+    path = "docs/" + path;
+    if (!docs[path]) {
+        docs[path] = {name: m.caption};
+    } else if (typeof docs[path] == "object" && !docs[path].name) {
+        docs[path].name = m.caption;
+    }
+})
+
+
+
 if (window.require && window.require.s) try {
     for (var path in window.require.s.contexts._.defined) {
         if (path.indexOf("!") != -1)
@@ -1051,6 +1087,13 @@ if (window.require && window.require.s) try {
         ownSource[path] = "";
     }
 } catch(e) {}
+
+function sort(list) {
+    return list.sort(function(a, b) {
+        var cmp = (b.order || 0) - (a.order || 0);
+        return cmp || a.name && a.name.localeCompare(b.name);
+    })
+}
 
 function prepareDocList(docs) {
     var list = [];
@@ -1093,7 +1136,7 @@ function loadDoc(name, callback) {
 
 module.exports = {
     fileCache: fileCache,
-    docs: prepareDocList(docs),
+    docs: sort(prepareDocList(docs)),
     ownSource: prepareDocList(ownSource),
     hugeDocs: prepareDocList(hugeDocs),
     initDoc: initDoc,
@@ -1144,17 +1187,17 @@ Mode.prototype.supportsFile = function(filename) {
 };
 var supportedModes = {
     ABAP:        ["abap"],
-    ADA:         ["ada|adb"],
     ActionScript:["as"],
+    ADA:         ["ada|adb"],
     AsciiDoc:    ["asciidoc"],
     Assembly_x86:["asm"],
     AutoHotKey:  ["ahk"],
     BatchFile:   ["bat|cmd"],
     C9Search:    ["c9search_results"],
-    C_Cpp:       ["c|cc|cpp|cxx|h|hh|hpp"],
+    C_Cpp:       ["cpp|c|cc|cxx|h|hh|hpp"],
     Clojure:     ["clj"],
-    Cobol:       ["^CBL|COB"],
-    coffee:      ["^Cakefile|coffee|cf|cson"],
+    Cobol:       ["CBL|COB"],
+    coffee:      ["coffee|cf|cson|^Cakefile"],
     ColdFusion:  ["cfm"],
     CSharp:      ["cs"],
     CSS:         ["css"],
@@ -1171,20 +1214,22 @@ var supportedModes = {
     golang:      ["go"],
     Groovy:      ["groovy"],
     HAML:        ["haml"],
+    Handlebars:  ["hbs|handlebars|tpl|mustache"],
     Haskell:     ["hs"],
     haXe:        ["hx"],
-    HTML:        ["htm|html|xhtml"],
+    HTML:        ["html|htm|xhtml"],
     HTML_Ruby:   ["erb|rhtml|html.erb"],
-    Ini:         ["Ini|conf"],
+    INI:         ["ini|conf|cfg|prefs"],
+    Jack:        ["jack"],
     Jade:        ["jade"],
     Java:        ["java"],
-    JavaScript:  ["js"],
+    JavaScript:  ["js|jsm"],
     JSON:        ["json"],
     JSONiq:      ["jq"],
     JSP:         ["jsp"],
     JSX:         ["jsx"],
     Julia:       ["jl"],
-    LaTeX:       ["latex|tex|ltx|bib"],
+    LaTeX:       ["tex|latex|ltx|bib"],
     LESS:        ["less"],
     Liquid:      ["liquid"],
     Lisp:        ["lisp"],
@@ -1194,7 +1239,7 @@ var supportedModes = {
     Lua:         ["lua"],
     LuaPage:     ["lp"],
     Lucene:      ["lucene"],
-    Makefile:    ["^GNUmakefile|^makefile|^Makefile|^OCamlMakefile|make"],
+    Makefile:    ["^Makefile|^GNUmakefile|^makefile|^OCamlMakefile|make"],
     MATLAB:      ["matlab"],
     Markdown:    ["md|markdown"],
     MySQL:       ["mysql"],
@@ -1214,15 +1259,18 @@ var supportedModes = {
     R:           ["r"],
     RDoc:        ["Rd"],
     RHTML:       ["Rhtml"],
-    Ruby:        ["ru|gemspec|rake|rb"],
+    Ruby:        ["rb|ru|gemspec|rake|^Guardfile|^Rakefile|^Gemfile"],
     Rust:        ["rs"],
     SASS:        ["sass"],
     SCAD:        ["scad"],
     Scala:       ["scala"],
     Scheme:      ["scm|rkt"],
     SCSS:        ["scss"],
-    SH:          ["sh|bash"],
+    SH:          ["sh|bash|^.bashrc"],
+    SJS:         ["sjs"],
+    Space:       ["space"],
     snippets:    ["snippets"],
+    Soy_Template:["soy"],
     SQL:         ["sql"],
     Stylus:      ["styl|stylus"],
     SVG:         ["svg"],
@@ -1232,12 +1280,13 @@ var supportedModes = {
     Textile:     ["textile"],
     Toml:        ["toml"],
     Twig:        ["twig"],
-    Typescript:  ["typescript|ts|str"],
+    Typescript:  ["ts|typescript|str"],
     VBScript:    ["vbs"],
     Velocity:    ["vm"],
+    Verilog:     ["v|vh|sv|svh"],
     XML:         ["xml|rdf|rss|wsdl|xslt|atom|mathml|mml|xul|xbl"],
     XQuery:      ["xq"],
-    YAML:        ["yaml"]
+    YAML:        ["yaml|yml"]
 };
 
 var nameOverrides = {
@@ -4948,11 +4997,13 @@ var SnippetManager = function() {
             case "SELECTED_TEXT":
                 return s.getTextRange(r);
             case "CURRENT_LINE":
-                return s.getLine(e.getCursorPosition().row);
+                return s.getLine(editor.getCursorPosition().row);
+            case "PREV_LINE": // not possible in textmate
+                return s.getLine(editor.getCursorPosition().row - 1);
             case "LINE_INDEX":
-                return e.getCursorPosition().column;
+                return editor.getCursorPosition().column;
             case "LINE_NUMBER":
-                return e.getCursorPosition().row + 1;
+                return editor.getCursorPosition().row + 1;
             case "SOFT_TABS":
                 return s.getUseSoftTabs() ? "YES" : "NO";
             case "TAB_SIZE":
@@ -5156,9 +5207,14 @@ var SnippetManager = function() {
     this.$getScope = function(editor) {
         var scope = editor.session.$mode.$id || "";
         scope = scope.split("/").pop();
-        if (editor.session.$mode.$modes) {
+        if (scope === "html" || scope === "php") {
+            if (scope === "php") 
+                scope = "html";
             var c = editor.getCursorPosition()
             var state = editor.session.getState(c.row);
+            if (typeof state === "object") {
+                state = state[0];
+            }
             if (state.substring) {
                 if (state.substring(0, 3) == "js-")
                     scope = "javascript";
@@ -5168,6 +5224,7 @@ var SnippetManager = function() {
                     scope = "php";
             }
         }
+        
         return scope;
     };
 
@@ -5770,14 +5827,13 @@ var Autocomplete = function() {
 
             this.popup.show(pos, lineHeight);
         }
-        renderer.updateText();
     };
 
     this.detach = function() {
         this.editor.keyBinding.removeKeyboardHandler(this.keyboardHandler);
         this.editor.off("changeSelection", this.changeListener);
         this.editor.off("blur", this.changeListener);
-        this.editor.off("mousedown", this.changeListener);
+        this.editor.off("mousedown", this.mousedownListener);
         this.editor.off("mousewheel", this.mousewheelListener);
         this.changeTimer.cancel();
         
@@ -5911,7 +5967,7 @@ var Autocomplete = function() {
         editor.on("mousewheel", this.mousewheelListener);
         
         this.updateCompletions();
-    }
+    };
     
     this.updateCompletions = function(keepPopupPosition) {
         if (keepPopupPosition && this.base && this.completions) {
@@ -6065,6 +6121,8 @@ var AcePopup = function(parentNode) {
     el.style.display = "none";
     popup.renderer.content.style.cursor = "default";
     popup.renderer.setStyle("ace_autocomplete");
+    
+    popup.setOption("displayIndentGuides", false);
 
     var noop = function(){};
 
@@ -6101,16 +6159,22 @@ var AcePopup = function(parentNode) {
             hoverMarker.id = null;
         }
     }
-    popup.setSelectOnHover(false)
+    popup.setSelectOnHover(false);
     popup.on("mousemove", function(e) {
+        if (!lastMouseEvent) {
+            lastMouseEvent = e;
+            return;
+        }
+        if (lastMouseEvent.x == e.x && lastMouseEvent.y == e.y) {
+            return;
+        }
         lastMouseEvent = e;
         lastMouseEvent.scrollTop = popup.renderer.scrollTop;
         var row = lastMouseEvent.getDocumentPosition().row;
         if (hoverMarker.start.row != row) {
-            popup.session._emit("changeBackMarker");
             if (!hoverMarker.id)
                 popup.setRow(row);
-            hoverMarker.start.row = hoverMarker.end.row = row;
+            setHoverMarker(row);
         }
     });
     popup.renderer.on("beforeRender", function() {
@@ -6119,13 +6183,34 @@ var AcePopup = function(parentNode) {
             var row = lastMouseEvent.getDocumentPosition().row;
             if (!hoverMarker.id)
                 popup.setRow(row);
-            hoverMarker.start.row = hoverMarker.end.row = row;
+            setHoverMarker(row, true);
         }
     });
-    var hideHoverMarker = function() {
-        hoverMarker.start.row = hoverMarker.end.row = -1;
-        popup.session._emit("changeBackMarker");
+    popup.renderer.on("afterRender", function() {
+        var row = popup.getRow();
+        var t = popup.renderer.$textLayer;
+        var selected = t.element.childNodes[row - t.config.firstRow];
+        if (selected == t.selectedNode)
+            return;
+        if (t.selectedNode)
+            dom.removeCssClass(t.selectedNode, "ace_selected");
+        t.selectedNode = selected;
+        if (selected)
+            dom.addCssClass(selected, "ace_selected");
+    });
+    var hideHoverMarker = function() { setHoverMarker(-1) };
+    var setHoverMarker = function(row, suppressRedraw) {
+        if (row !== hoverMarker.start.row) {
+            hoverMarker.start.row = hoverMarker.end.row = row;
+            if (!suppressRedraw)
+                popup.session._emit("changeBackMarker");
+            popup._emit("changeHoverMarker");
+        }
     };
+    popup.getHoveredRow = function() {
+        return hoverMarker.start.row;
+    };
+    
     event.addListener(popup.container, "mouseout", hideHoverMarker);
     popup.on("hide", hideHoverMarker);
     popup.on("changeSelection", hideHoverMarker);
@@ -6172,6 +6257,7 @@ var AcePopup = function(parentNode) {
         return tokens;
     };
     bgTokenizer.$updateOnChange = noop;
+    bgTokenizer.start = noop;
     
     popup.session.$computeWidth = function() {
         return this.screenWidth = 0;
@@ -6180,6 +6266,7 @@ var AcePopup = function(parentNode) {
     popup.setData = function(list) {
         popup.data = list || [];
         popup.setValue(lang.stringRepeat("\n", list.length), -1);
+        popup.setRow(0);
     };
     popup.getData = function(row) {
         return popup.data[row];
@@ -6189,26 +6276,34 @@ var AcePopup = function(parentNode) {
         return selectionMarker.start.row;
     };
     popup.setRow = function(line) {
+        line = Math.max(-1, Math.min(this.data.length, line));
         if (selectionMarker.start.row != line) {
             popup.selection.clearSelection();
             selectionMarker.start.row = selectionMarker.end.row = line || 0;
             popup.session._emit("changeBackMarker");
             popup.moveCursorTo(line || 0, 0);
+            if (popup.isOpen)
+                popup._signal("select");
         }
     };
 
     popup.hide = function() {
         this.container.style.display = "none";
         this._signal("hide");
+        popup.isOpen = false;
     };
     popup.show = function(pos, lineHeight) {
         var el = this.container;
-        if (pos.top > window.innerHeight / 2  + lineHeight) {
+        var screenHeight = window.innerHeight;
+        var renderer = this.renderer;
+        var maxH = renderer.$maxLines * lineHeight * 1.4;
+        var top = pos.top + this.$borderSize;
+        if (top + maxH > screenHeight - lineHeight) {
             el.style.top = "";
-            el.style.bottom = window.innerHeight - pos.top + "px";
+            el.style.bottom = screenHeight - top + "px";
         } else {
-            pos.top += lineHeight;
-            el.style.top = pos.top + "px";
+            top += lineHeight;
+            el.style.top = top + "px";
             el.style.bottom = "";
         }
 
@@ -6217,11 +6312,16 @@ var AcePopup = function(parentNode) {
         this.renderer.$textLayer.checkForSizeChanges();
 
         this._signal("show");
+        lastMouseEvent = null;
+        popup.isOpen = true;
     };
     
     popup.getTextLeftOffset = function() {
-        return 1 + this.renderer.layerConfig.padding;
-    }
+        return this.$borderSize + this.renderer.$padding + this.$imageSize;
+    };
+    
+    popup.$imageSize = 0;
+    popup.$borderSize = 1;
 
     return popup;
 };
@@ -6233,10 +6333,12 @@ dom.importCssString("\
 }\
 .ace_autocomplete.ace-tm .ace_line-hover {\
     border: 1px solid #abbffe;\
-    position: absolute;\
-    background: rgba(233,233,253,0.4);\
-    z-index: 2;\
     margin-top: -1px;\
+    background: rgba(233,233,253,0.4);\
+}\
+.ace_autocomplete .ace_line-hover {\
+    position: absolute;\
+    z-index: 2;\
 }\
 .ace_rightAlignedText {\
     color: gray;\

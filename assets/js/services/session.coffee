@@ -1,14 +1,16 @@
 #= require ./../services/plunks
 #= require ./../services/notifier
 #= require ./../services/activity
+#= require ./../services/visitor
 
 module = angular.module "plunker.session", [
   "plunker.plunks"
   "plunker.notifier"
   "plunker.activity"
+  "plunker.visitor"
 ]
 
-module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier", "activity", ($rootScope, $q, $timeout, plunks, notifier, activity) ->
+module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier", "activity", "visitor", ($rootScope, $q, $timeout, plunks, notifier, activity, visitor) ->
 
   genid = (len = 16, prefix = "", keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") ->
     prefix += keyspace.charAt(Math.floor(Math.random() * keyspace.length)) while len-- > 0
@@ -373,6 +375,8 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       unless @plunk?.isSaved() then return notifier.warning """
         Fork cancelled: You cannot fork a plunk that does not exist.
       """.trim()
+      
+      options.private = true unless visitor.isMember()
   
       json = angular.extend @getSaveDelta(), options
       self = @
@@ -427,7 +431,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       @buffers[buffId] =
         id: buffId
         filename: filename
-        content: content or options.snippet
+        content: content
         participants: {}
         
       @buffers[buffId].snippet = options.snippet if options.snippet

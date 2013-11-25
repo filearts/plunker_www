@@ -3,6 +3,7 @@
 #= require ./../services/settings
 #= require ./../services/session
 #= require ./../services/notifier
+#= require ./../services/annotations
 
 
 module = angular.module("plunker.panes")
@@ -16,11 +17,23 @@ module.requires.push "plunker.notifier"
 module.service "previewer", ["$http", "$timeout", "url", "settings", "notifier", ($http, $timeout, url, settings, notifier) ->
 ]
 
-module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings", "notifier", ($q, $document, $timeout, url, panes, session, settings, notifier) ->
+module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings", "notifier", "annotations", ($q, $document, $timeout, url, panes, session, settings, notifier, annotations) ->
   
   genid = (len = 16, prefix = "", keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") ->
     prefix += keyspace.charAt(Math.floor(Math.random() * keyspace.length)) while len-- > 0
     prefix
+  
+  debounce = (delay, fn) ->
+    timeout = null
+    ->
+      context = @
+      args = arguments
+      
+      clearTimeout timeout if timeout
+      
+      timeout = setTimeout ->
+        fn.apply(context, args)
+      , delay
       
   panes.add
     id: "preview"
@@ -77,8 +90,20 @@ module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings
       $scope.expand = -> $scope.mode = "windowed"
       $scope.contract = -> $scope.mode = if pane.active then "embedded" else "disabled"
       
-      $scope.refresh = ->
+      $scope.refresh = debounce settings.previewer.delay, ->
         return if $scope.mode is "disabled"
+        
+        # Disable checking for now. More of a hindrance than benefit
+        return if false and do ->
+          for filename, notes of annotations
+            for annotation in notes when annotation.type is "error"
+              $scope.previewBlocker = filename
+              console.log "Preview refresh skipped. Syntax errors detected."
+              return true
+          
+          return false
+          
+        $scope.previewBlocker = ""
         
         form = document.createElement("form")
         form.style.display = "none"

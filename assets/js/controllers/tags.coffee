@@ -69,10 +69,14 @@ module.config ["$routeProvider", ($routeProvider) ->
     template: tagsTemplate
     
     controller: ["$rootScope", "$scope", "$location", "$routeParams", "plunks", "url", "menu", "tags", ($rootScope, $scope, $location, $routeParams, plunks, url, menu, tags) ->
+      defaultParams =
+        pp: 12
+        files: 'yes'
+        
       $scope.tags = tags
       $scope.view = "plunks"
       $scope.taglist = $routeParams.taglist.split(",").join(", ")
-      $scope.plunks = plunks.query(url: "#{url.api}/tags/#{$routeParams.taglist}", params: $location.search())
+      $scope.plunks = plunks.query(url: "#{url.api}/tags/#{$routeParams.taglist}", params: angular.extend(defaultParams, $location.search()))
       
       $rootScope.page_title = "Tags"          
       

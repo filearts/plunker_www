@@ -60,6 +60,10 @@ module.run [ "$q", "$timeout", "panes", "url", "updater", "session", "catalogue"
           $scope.markup.findAllDependencies()
           $scope.dirty = false
       
+      # TODO: Difficult to determine line number of an element
+      updateAnnotations = (deps) ->
+        console.log "Updated", $scope.markup, session.getActiveBuffer(), arguments...
+      
       setInterval ->
         $scope.$apply(recheck)
       , 2000

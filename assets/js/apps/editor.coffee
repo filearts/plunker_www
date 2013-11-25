@@ -81,13 +81,18 @@ module.config ["$routeProvider", ($routeProvider) ->
           "style.css":
             filename: "style.css"
             content: "/* Styles go here */\n\n"
+          "README.md":
+            filename: "README.md"
+            content: ""
       ]
     controller: [ "$rootScope", "$scope", "$location", "$browser", "$timeout", "$route", "session", "source", "notifier", "panes", ($rootScope, $scope, $location, $browser, $timeout, $route, session, source, notifier, panes) ->
       session.reset(source) if source?
 
-      unless panes.active or session.getEditPath()
-        catalogue = panes.findById("catalogue")
-        panes.open(catalogue)
+      unless panes.active
+        unless session.plunk?.id
+          panes.open(pane) if pane = panes.findById("catalogue")
+        else
+          panes.open(pane) if pane = panes.findById("info")
 
       $scope.$watch ( -> session.getEditPath()), (path) ->
         $location.path("/#{path}").replace()

@@ -43,14 +43,13 @@ var JadeHighlightRules = require("./jade_highlight_rules").JadeHighlightRules;
 var FoldMode = require("./folding/coffee").FoldMode;
 
 var Mode = function() {
-    var highlighter = new JadeHighlightRules();
+    this.HighlightRules = JadeHighlightRules;
     
-    this.$tokenizer = new Tokenizer(highlighter.getRules());
     this.foldingRules = new FoldMode();
 };
 oop.inherits(Mode, TextMode);
 
-(function() {
+(function() { 
 	this.lineCommentStart = "//";
 }).call(Mode.prototype);
 
@@ -1081,6 +1080,7 @@ var tagMap = lang.createMap({
     img         : 'image',
     input       : 'form',
     label       : 'form',
+    option      : 'form',
     script      : 'script',
     select      : 'form',
     textarea    : 'form',

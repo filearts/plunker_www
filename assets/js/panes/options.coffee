@@ -26,10 +26,13 @@ module.run [ "panes", "settings", (panes, settings) ->
               <select class="input-medium" id="opts-editor-theme" ng-model="settings.editor.theme" ng-options="theme for theme in themes"></select>
             </label>
             <label>Tab size:
-              <input class="input-mini" id="opts-editor-tabSize" ng-model="settings.editor.tab_size" type="number" />
+              <input class="input-mini" id="opts-editor-tabSize" ng-model="settings.editor.tab_size" type="number">
+            </label>
+            <label>Font size:
+              <input class="input-mini" id="opts-editor-fontSize" ng-model="settings.editor.font_size" type="number" min="8">
             </label>
             <label class="checkbox">
-              <input class="input-mini" id="opts-editor-lineWrap" ng-model="settings.editor.wrap.enabled" type="checkbox" />
+              <input class="input-mini" id="opts-editor-lineWrap" ng-model="settings.editor.wrap.enabled" type="checkbox">
               Line wrapping
             </label>
           </fieldset>

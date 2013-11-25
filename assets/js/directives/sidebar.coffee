@@ -10,6 +10,7 @@
 #= require ./../services/session
 #= require ./../services/notifier
 #= require ./../services/url
+#= require ./../services/visitor
 
 #= require ./../directives/inlineuser
 #= require ./../directives/plunkinfo
@@ -22,6 +23,7 @@ module = angular.module "plunker.sidebar", [
   "plunker.inlineuser"
   "plunker.plunkinfo"
   "plunker.restorer"
+  "plunker.visitor"
   "plunker.url"
   "ui.bootstrap"
 ]
@@ -109,7 +111,7 @@ module.directive "plunkerTagger", ["$timeout", "url", ($timeout, url) ->
       modelChange = false
 ]
 
-module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) ->
+module.directive "plunkerSidebar", [ "session", "notifier", "visitor", (session, notifier, visitor) ->
   restrict: "E"
   replace: true
   template: """
@@ -143,7 +145,7 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
               <div>User:</div>
               <plunker-inline-user user="session.plunk.user"></plunker-inline-user>
             </div>
-            <div ng-hide="session.isSaved()">
+            <div ng-hide="session.isSaved() || !visitor.isMember()">
               <div>Privacy:</div>
               <label>
                 <span tooltip="Only users who know the url of the plunk will be able to view it" tooltip-placement="right">
@@ -173,6 +175,7 @@ module.directive "plunkerSidebar", [ "session", "notifier", (session, notifier) 
   """
   link: ($scope, $el, attrs) ->
     $scope.session = session
+    $scope.visitor = visitor
     $scope.promptFileAdd = ->
       notifier.prompt "New filename", "",
         confirm: (filename) -> session.addBuffer(filename, "", activate: true)

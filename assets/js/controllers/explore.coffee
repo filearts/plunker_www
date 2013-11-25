@@ -35,18 +35,22 @@ filters =
     text: "Recent"
     order: "d"
 
+defaultParams =
+  pp: 12
+  files: 'yes'
+
 resolvers =
   trending: ["$location", "url", "plunks", ($location, url, plunks) ->
-    plunks.query(url: "#{url.api}/plunks/trending", params: $location.search()).$$refreshing
+    plunks.query(url: "#{url.api}/plunks/trending", params: angular.extend(defaultParams, $location.search())).$$refreshing
   ]
   views: ["$location", "url", "plunks", ($location, url, plunks) ->
-    plunks.query(url: "#{url.api}/plunks/views", params: $location.search()).$$refreshing
+    plunks.query(url: "#{url.api}/plunks/views", params: angular.extend(defaultParams, $location.search())).$$refreshing
   ]
   popular: ["$location", "url", "plunks", ($location, url, plunks) ->
-    plunks.query(url: "#{url.api}/plunks/popular", params: $location.search()).$$refreshing
+    plunks.query(url: "#{url.api}/plunks/popular", params: angular.extend(defaultParams, $location.search())).$$refreshing
   ]
   recent: ["$location", "url", "plunks", ($location, url, plunks) ->
-    plunks.query(url: "#{url.api}/plunks", params: $location.search()).$$refreshing
+    plunks.query(url: "#{url.api}/plunks", params: angular.extend(defaultParams, $location.search())).$$refreshing
   ]
 
 generateRouteHandler = (filter, options = {}) ->

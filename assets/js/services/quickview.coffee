@@ -1,6 +1,7 @@
-#= require ./../directives/inlineuser
-
 #= require ./../../vendor/jquery-timeago/jquery.timeago
+
+#= require ./../directives/inlineuser
+#= require ./../directives/markdown
 
 
 module = angular.module "plunker.quickview", [
@@ -19,7 +20,7 @@ module.directive "plunkerQuickView", [ "$timeout", ($timeout) ->
           <iframe frameborder="0" width="100%" height="100%" ng-src="{{plunk.raw_url}}"></iframe>
         </div>
         <div class="about">
-          <h1>{{plunk.description}} <small>({{plunk.id}})</small></h1>
+          <h3>{{plunk.description}} <small>({{plunk.id}})</small></h3>
 
           <plunker-plunk-info plunk="plunk"></plunker-plunk-info>
           
@@ -50,35 +51,7 @@ module.directive "plunkerQuickView", [ "$timeout", ($timeout) ->
               </a>
             </li>
           </ul>
-          <div class="feed">
-            <div class="event" ng-repeat="event in plunk.history" ng-switch on="event.event">
-              <hr />
-              <div ng-switch-when="fork">
-                <div class="type"><i class="icon-git-fork"></i></div>
-                <div class="details">
-                  <plunker-inline-user user="event.user"></plunker-inline-user>
-                  forked this plunk
-                  <abbr timeago="event.created_at"></abbr>.
-                </div>
-              </div>
-              <div ng-switch-when="create">
-                <div class="type"><i class="icon-file"></i></div>
-                <div class="details">
-                  <plunker-inline-user user="event.user"></plunker-inline-user>
-                  created this plunk
-                  <abbr timeago="event.created_at"></abbr>.
-                </div>
-              </div>
-              <div ng-switch-when="update">
-                <div class="type"><i class="icon-save"></i></div>
-                <div class="details">
-                  <plunker-inline-user user="event.user"></plunker-inline-user>
-                  saved this plunk
-                  <abbr timeago="event.created_at"></abbr>.
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="readme" ng-show="plunk.getReadme()" markdown="plunk.getReadme()"></div>
         </div>
       </div>
     </div>

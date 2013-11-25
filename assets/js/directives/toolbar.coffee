@@ -5,6 +5,7 @@
 #= require ./../services/downloader
 #= require ./../services/panes
 #= require ./../services/url
+#= require ./../services/beautifier
 
 module = angular.module "plunker.toolbar", [
   "plunker.visitor"
@@ -13,10 +14,11 @@ module = angular.module "plunker.toolbar", [
   "plunker.notifier"
   "plunker.panes"
   "plunker.url"
+  "plunker.beautifier"
   "ui.bootstrap"
 ]
 
-module.directive "plunkerToolbar", ["$location", "session", "downloader", "notifier", "panes", "visitor", "url", ($location, session, downloader, notifier, panes, visitor, url) ->
+module.directive "plunkerToolbar", ["$location", "session", "downloader", "notifier", "panes", "visitor", "url", "beautifier", ($location, session, downloader, notifier, panes, visitor, url, beautifier) ->
   restrict: "E"
   scope: {}
   replace: true
@@ -31,8 +33,8 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
         <button ng-click="session.fork()" class="btn" tooltip-placement="bottom" tooltip="Save your changes as a fork of this Plunk">
           <i class="icon-git-fork"></i><span class="shrink"> Fork</span>
         </button>
-        <button data-toggle="dropdown" class="btn dropdown-toggle" tooltip-placement="bottom" tooltip="Fork and toggle the privacy of this Plunk"><span class="caret"></span></button>
-        <ul class="dropdown-menu" ng-switch on="session.private">
+        <button ng-if="visitor.isMember()" data-toggle="dropdown" class="btn dropdown-toggle" tooltip-placement="bottom" tooltip="Fork and toggle the privacy of this Plunk"><span class="caret"></span></button>
+        <ul ng-if="visitor.isMember()" class="dropdown-menu" ng-switch on="session.private">
           <li ng-switch-when="false"><a ng-click="session.fork({private: true})">Fork to private plunk</a></li>
           <li ng-switch-when="true"><a ng-click="session.fork({private: false})">Fork to public plunk</a></li>
         </ul>
@@ -58,6 +60,8 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
               <li><a href="/edit/gist:5301635">1.0.x + Jasmine</a></li>
               <li class="divider"></li>
               <li><a href="/edit/gist:3662702">1.1.x (unstable)<a href="/edit/gist:3662696" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
+              <li class="divider"></li>
+              <li><a href="/edit/tpl:FrTqqTNoY8BEfHs9bB0f">1.2.x<a href="/edit/tpl:9dz4TT6og6hHx9QAOBT3" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
             </ul>
           </li>
           <li class="divider"></li>
@@ -66,6 +70,8 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
           <li><a href="/edit/gist:2050713">Backbone.js<a href="/edit/gist:2050746" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
           <li class="divider"></li>
           <li><a href="/edit/gist:3510115">YUI</a></li>
+          <li class="divider"></li>
+          <li><a href="/edit/tpl:tyvqGwgayf3COZGsB81s">KendoUI</a></li>
         </ul>
       </div>
       <div class="btn-group">
@@ -100,6 +106,11 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
           <i class="icon-briefcase" />
         </button>
       </div>
+      <div class="btn-group pull-right">
+        <button ng-click="beautifier.beautify()" class="btn" ng-class="{disabled: !beautifier.isBeautifiable()}" tooltip-placement="bottom" tooltip="Beautify your code">
+          <i class="icon-ok" />
+        </button>
+      </div>
     </div>
   """
   link: ($scope, el, attrs) ->
@@ -107,6 +118,7 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
     $scope.panes = panes
     $scope.visitor = visitor
     $scope.url = url
+    $scope.beautifier = beautifier
     
     $scope.promptReset = ->
       if session.isDirty() and not session.skipDirtyCheck then notifier.confirm "You have unsaved changes. This action will reset your plunk. Are you sure you would like to proceed?",

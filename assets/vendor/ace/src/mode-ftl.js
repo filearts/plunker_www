@@ -37,8 +37,7 @@ var Tokenizer = require("../tokenizer").Tokenizer;
 var FtlHighlightRules = require("./ftl_highlight_rules").FtlHighlightRules;
 
 var Mode = function() {
-    var highlighter = new FtlHighlightRules();
-    this.$tokenizer = new Tokenizer(highlighter.getRules());
+    this.HighlightRules = FtlHighlightRules;
 };
 oop.inherits(Mode, TextMode);
 
@@ -228,6 +227,7 @@ var tagMap = lang.createMap({
     img         : 'image',
     input       : 'form',
     label       : 'form',
+    option      : 'form',
     script      : 'script',
     select      : 'form',
     textarea    : 'form',

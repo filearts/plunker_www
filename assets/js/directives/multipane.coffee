@@ -23,6 +23,9 @@ module.directive "plunkerPane", [ "$compile", "panes", ($compile, panes) ->
 
     pane.link(pane.$scope, $child, attrs)
     
+    $scope.$watch "pane.hidden", (hidden) ->
+      panes.close(pane) if hidden and panes.active is pane
+    
     $scope.$watch "pane==panes.active", (active) ->
       pane.active = active
 ]

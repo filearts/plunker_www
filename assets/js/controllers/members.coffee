@@ -52,19 +52,24 @@ createProfileHandler = (pane = "plunks") ->
     <div class="container">
       <div class="row">
         <div class="span3">
-          <div class="thumbnail">
-            <img ng-src="http://www.gravatar.com/avatar/{{user.gravatar_id}}?s=260" />
+          <div class="row">
+            <div class="thumbnail span3">
+              <img ng-src="http://www.gravatar.com/avatar/{{user.gravatar_id}}?s=260" />
+            </div>
+            <div class="span4">
+              <h3>{{user.login}}</h3>
+              <hr />
+              <p>
+                <i class="icon-github"></i> Github profile:
+                <a class="github-link" ng-href="https://github.com/{{user.login}}" ng-bind="user.login"></a>
+              </p>
+              <p>
+                <i class="icon-calendar"></i> Member since:
+                <span class="join-date" ng-bind-template="{{user.created_at | date}}"></span>
+              </p>
+            </div>
           </div>
-          <h3>{{user.login}}</h3>
-          <hr />
-          <p>
-            <i class="icon-github"></i> Github profile:
-            <a class="github-link" ng-href="https://github.com/{{user.login}}" ng-bind="user.login"></a>
-          </p>
-          <p>
-            <i class="icon-calendar"></i> Member since:
-            <span class="join-date" ng-bind-template="{{user.created_at | date}}"></span>
-          </p>
+          
           <div id="carbonads-container">
             <div class="carbonad">
               <div id="azcarbon"></div>
@@ -123,7 +128,11 @@ createProfileHandler = (pane = "plunks") ->
       if id
         $scope.user.created_at = new Date(parseInt(id.toString().substring(0, 8), 16) * 1000)
     
-    $scope.plunks = user.getPlunks(params: $location.search())
+    defaultParams =
+      pp: 9
+      files: 'yes'
+    
+    $scope.plunks = user.getPlunks(params: angular.extend(defaultParams, $location.search()))
     
     $scope.favorites = user.getFavorites(params: $location.search())
     

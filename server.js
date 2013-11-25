@@ -25,7 +25,7 @@ serverDomain.run(function(){
     server(req, res);
     
   }).listen(nconf.get("PORT"), function(){
-    console.log("Server started");
+    console.log("[OK] Server started");
   });
   
 });

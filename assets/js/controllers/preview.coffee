@@ -53,7 +53,7 @@ module.config ["$routeProvider", ($routeProvider) ->
       
               Last saved by
               <plunker-inline-user user="plunk.user"></plunker-inline-user>
-              <abbr timeago="plunk.updated_at"></abbr>
+              <abbr timeago="{{plunk.updated_at}}"></abbr>
               
             </div>
           </div>
@@ -72,7 +72,7 @@ module.config ["$routeProvider", ($routeProvider) ->
                 <plunker-inline-user user="event.user"></plunker-inline-user>
                 forked this plunk off of <plunker-inline-plunk plunk="event.parent">{{event.parent.id}}</plunker-inline-plunk>
                 by <plunker-inline-user user="event.parent.user"></plunker-inline-user>
-                <abbr timeago="event.date"></abbr>.
+                <abbr timeago="{{event.date}}"></abbr>.
               </div>
             </div>
             <div ng-switch-when="create">
@@ -80,7 +80,7 @@ module.config ["$routeProvider", ($routeProvider) ->
               <div class="span11">
                 <plunker-inline-user user="event.user"></plunker-inline-user>
                 created this plunk
-                <abbr timeago="event.date"></abbr>.
+                <abbr timeago="{{event.date}}"></abbr>.
               </div>
             </div>
             <div ng-switch-when="forked">
@@ -89,7 +89,7 @@ module.config ["$routeProvider", ($routeProvider) ->
                 <plunker-inline-user user="event.user"></plunker-inline-user>
                 created <plunker-inline-plunk plunk="event.child">{{event.child.id}}</plunker-inline-plunk>
                 by forking this plunk
-                <abbr timeago="event.date"></abbr>.
+                <abbr timeago="{{event.date}}"></abbr>.
               </div>
             </div>
           </div>

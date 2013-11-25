@@ -60,7 +60,7 @@ module.run [ "panes", "session", "plunks", "url", "visitor", "quickview", (panes
             
             <p>
               <plunker-inline-user user="plunk.user"></plunker-inline-user>
-              <abbr class="timeago updated_at" title="{{plunk.updated_at}}" ng-bind="plunk.updated_at | date:'medium'"></abbr>
+              <abbr class="timeago updated_at" title="{{plunk.updated_at}}" timeago="{{plunk.updated_at | date:'medium'}}"></abbr>
             </p>
             <plunker-taglist class="pull-right" tags="plunk.tags"></plunker-taglist>
             <p>

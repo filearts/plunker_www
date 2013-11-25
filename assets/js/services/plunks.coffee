@@ -118,6 +118,10 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
     isWritable: -> !@id or !!@token
     isSaved: -> !!@id
     
+    getReadme: ->
+      for filename, file of @files
+        return file.content if filename.match /^(?:readme|index|article)(?:\.?(?:md|markdown))$/i
+    
     refresh: (options = {}) ->
       self = @
       
@@ -257,7 +261,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       options.cache ?= false
       options.params ||= {}
       options.params.sessid = visitor.session.id
-      options.params.pp = 12
+      options.params.pp ||= 12
       
       results.url = options.url || "#{url.api}/plunks"
       results.links = (rel) ->

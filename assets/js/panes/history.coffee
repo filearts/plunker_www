@@ -34,7 +34,7 @@ module.run [ "panes", "session", "notifier", (panes, session, notifier) ->
             <a>
               <i class="type" ng-class="icon(event.event)"></i>
               <plunker-inline-user user="event.user"></plunker-inline-user>
-              <abbr timeago="event.created_at"></abbr>
+              <abbr timeago="{{event.created_at}}"></abbr>
               <button class="btn btn-mini" ng-click="revertTo($index)"><i class="icon-undo"></i></button>
             </a>
           </li>
