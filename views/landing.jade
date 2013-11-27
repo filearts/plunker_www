@@ -68,22 +68,22 @@ html#ng-app(ng-app="plunker.landing", lang="en", class="ng-app:plunker.landingPa
                   span(ng-bind="item.text")
 
     div(ng-view)
-    div.container.footer
-      footer.row
-        div.span4
-        div.span4
-          h5 Thanks:
-          p
-            a(href="http://nodejitsu.com",title="NodeJitsu"): img(src="/img/Nodejitsu.png")
-            | is what has allowed Plunker to be on the Internet. If you use Node.js and want
-            | zero-downtime, command-line deploys, check them out.
-          p
-            a(href="http://mongolab.com",title="MongoLab"): img(src="/img/Mongolab.png")
-            | has generously provided the back-end storage for Plunker. If you are looking for
-            | good service and easy set-up, check them out.
-
-        div.span4
-          h5 Contact me
-          ul.unstyled
-            li: a(href="/group", title="Google Group") Mailing list
-            li: a(href="http://twitter.com/filearts", title="Twitter contact") @filearts
+    div.footer
+      footer.container
+        div.row
+          div.span4
+            p
+              a(href="http://nodejitsu.com",title="NodeJitsu"): img(src="/img/Nodejitsu.png")
+              | is what has allowed Plunker to be on the Internet. If you use Node.js and want
+              | zero-downtime, command-line deploys, check them out.
+          div.span4
+            p
+              a(href="http://mongolab.com",title="MongoLab"): img(src="/img/Mongolab.png")
+              | has generously provided the back-end storage for Plunker. If you are looking for
+              | good service and easy set-up, check them out.
+  
+          div.span4
+            h5 Contact me
+            ul.unstyled
+              li: a(href="/group", title="Google Group") Mailing list
+              li: a(href="http://twitter.com/filearts", title="Twitter contact") @filearts

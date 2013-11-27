@@ -1,8 +1,5 @@
-#= require ./../services/url
-
-
 module = angular.module "plunker.modes", [
-  "plunker.url"
+
 ]
 
 module.service "modes", -> new class Modes

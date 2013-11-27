@@ -11,6 +11,7 @@ lactate = require("lactate")
 path = require("path")
 xmlbuilder = require("xmlbuilder")
 es = require("event-stream")
+hbs = require("hbs")
 JSONStream = require("JSONStream")
 
 pkginfo = require("./package.json")
@@ -48,11 +49,13 @@ assetOptions =
 app.set "views", "#{__dirname}/views"
 app.set "view engine", "jade"
 app.set "view options", layout: false
+app.engine "html", hbs.__express
 
 app.use require("prerender-node")
 app.use require("./middleware/redirect").middleware(nconf.get("redirect"))
 #app.use express.logger() unless process.env.NODE_ENV is "PRODUCTION"
 app.use require("./middleware/vary").middleware()
+app.use require("./middleware/subdomain").middleware()
 app.use lactate.static "#{__dirname}/build", lactateOptions
 app.use lactate.static "#{__dirname}/assets", lactateOptions
 app.use "/css/font", lactate.static("#{__dirname}/assets/vendor/Font-Awesome-More/font/", lactateOptions)
@@ -140,6 +143,17 @@ authom.on "error", (req, res, auth) ->
 apiUrl = nconf.get("url:api")
 wwwUrl = nconf.get("url:www")
 
+localsMiddleware = (req, res, next) ->
+  res.locals.timestamp = ""
+  res.locals.suffix = "-min"
+  
+  if process.env.NODE_ENV is "development"
+    res.locals.timestamp = Date.now()
+    res.locals.suffix = ""
+  
+  next()
+
+
 app.get "/sitemap.xml", (req, res) ->
   outstanding = 0
   
@@ -170,6 +184,28 @@ apiUrl = nconf.get("url:api")
 
 app.get "/catalogue", addSession, (req, res) -> res.render "packages"
 app.get "/catalogue/*", addSession, (req, res) -> res.render "packages"
+
+
+secureFilters = require("secure-filters")
+
+
+hbs.registerHelper "jsObj", (obj) -> new hbs.SafeString(secureFilters.jsObj(obj))
+
+app.get "/embed/:plunkId/*", localsMiddleware, (req, res) ->
+  options = 
+    url: "#{apiUrl}/plunks/#{req.params.plunkId}"
+    json: true
+
+  request options, (err, subRes, body) ->
+    if err then res.send(404)
+    else if subRes.statusCode >= 400 then res.send(404)
+    else
+      res.locals.plunk = body
+      res.render "embed.html"
+
+app.get "/embed/:plunkId", (req, res, next) ->
+  res.redirect "/embed/#{req.params.plunkId}/"
+  
 
 
 app.get "/plunks", addSession, (req, res) -> res.render "landing"

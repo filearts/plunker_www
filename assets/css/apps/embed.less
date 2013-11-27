@@ -1,0 +1,150 @@
+.abs(@top: 0; @right: 0; @bottom: 0; @left: 0) {
+  position: absolute;
+  top: @top;
+  right: @right;
+  bottom: @bottom;
+  left: @left;
+}
+
+html, body {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size: 14px;
+}
+
+.plunker-brand {
+  background: url('/img/plunker.png') no-repeat;
+  background-size: 26px 26px;
+  background-position: center center;
+  padding: 0 20px;
+  height: 30px;
+  line-height: 30px;
+  display: inline-block;
+  float: left;
+
+}
+
+.header {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 30px;
+  overflow: visible;
+  background-color: #333;
+  
+  .description {
+    line-height: 30px;
+    font-size: 13.5px;
+    font-weight: bold;
+    margin: 0;
+    padding: 0 10px;
+    display: block;
+    float: left;
+    color: white;
+    overflow: hidden;
+  }
+  
+  .menu {
+    .abs(0, 0, auto, auto);
+    height: 30px;
+    display: block;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    
+    &::after {
+      content: '';
+      clear: both;
+    }
+    
+    li {
+      margin: 0;
+      padding: 0;
+      display: block;
+      list-style: none;
+      border-left: 1px solid white;
+      float: right;
+      
+      a {
+        line-height: 30px;
+        padding: 0 10px;
+        color: white;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    }
+    
+    li.active {
+      background-color: #757575;
+    }
+    
+  }
+    
+}
+
+.nav {
+  position: absolute;
+  top: 30px;
+  right: -250px;
+  bottom: 0;
+  width: 250px;
+  overflow: hidden;
+  -webkit-transition: right 0.3s;
+  transition: right 0.3s; 
+  z-index: 2;
+  background-color: #e5e5e5;
+  border-right: 2px solid #333;
+  color: #333;
+  
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    
+    li {
+      margin: 0;
+      padding: 0;
+      line-height: 30px;
+      height: 30px;
+      
+      &:hover {
+        background-color: #c5c5c5;
+      }
+      
+      a {
+        padding: 0 10px;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 14px;
+        color: #333;
+        display: block;
+      }
+    }
+  }
+}
+
+.showfiles {
+  .nav {
+    right: 0;
+  }
+}
+
+.content {
+  .abs(30px);
+  .ace_static_highlight {
+    padding: 10px;
+    font-size: 14px !important;
+  }
+}
+
+.preview {
+  .abs;
+  
+  iframe {
+    .abs;
+    overflow: auto;
+  }
+}
