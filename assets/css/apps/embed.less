@@ -68,6 +68,10 @@ html, body {
       border-left: 1px solid white;
       float: right;
       
+      &:hover {
+        background-color: #555;
+      }
+      
       a {
         line-height: 30px;
         padding: 0 10px;
@@ -79,8 +83,10 @@ html, body {
     
     li.active {
       background-color: #757575;
+      &:hover {
+        background-color: #888;
+      }
     }
-    
   }
     
 }
@@ -96,7 +102,7 @@ html, body {
   transition: right 0.3s; 
   z-index: 2;
   background-color: #e5e5e5;
-  border-right: 2px solid #333;
+  border-left: 2px solid #ddd;
   color: #333;
   
   ul {
@@ -126,14 +132,30 @@ html, body {
   }
 }
 
+.overlay {
+  .abs(30px);
+  z-index: 1;
+  display: none;
+  background: transparent;
+  -webkit-transition: 0.3s background;
+  transition: 0.3s background;
+}
+
 .showfiles {
   .nav {
     right: 0;
+  }
+  
+  .overlay {
+    background: rgba(0,0,0,0.2);
+    display: block;
   }
 }
 
 .content {
   .abs(30px);
+  overflow: auto;
+  
   .ace_static_highlight {
     padding: 10px;
     font-size: 14px !important;
@@ -145,6 +167,25 @@ html, body {
   
   iframe {
     .abs;
-    overflow: auto;
+    overflow: hidden;
   }
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-corner,
+::-webkit-scrollbar-thumb {
+    background: rgba(150, 150, 150, 0.8);
+}
+
+::-webkit-scrollbar-corner,
+::-webkit-scrollbar-thumb:window-inactive {
+    background: rgba(150, 150, 150, 0.4);
 }

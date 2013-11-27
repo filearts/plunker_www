@@ -30,6 +30,9 @@
         <li ng-class="{active: $state.includes('embed.preview')}">
           <a ui-sref="embed.preview">Preview</a>
         </li>
+        <li>
+          <a href="http://plnkr.co/edit/{{plunk.id}}">Edit</a>
+        </li>
         <li ng-class="{active: $state.includes('embed.file')}">
           <a ng-click="toggleFiles()">Code</a>
         </li>
@@ -43,6 +46,8 @@
         </li>
         {{/each}}
       </ul>
+    </div>
+    <div class="overlay" ng-show="showfiles" ng-click="toggleFiles(false)">
     </div>
     <div class="content" ui-view>
     </div>

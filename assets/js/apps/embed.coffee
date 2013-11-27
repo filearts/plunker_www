@@ -1,6 +1,7 @@
 require "../../vendor/angular-1.2.3"
 require "../../vendor/ui-router/ui-router"
 require "../../vendor/marked.js"
+require "../../vendor/angularytics/angularytics"
 
 require "../services/modes.coffee"
 require "../directives/markdown.coffee"
@@ -10,6 +11,8 @@ module = angular.module "plunker.embed", [
   
   "plunker.modes"
   "plunker.markdown"
+  
+  "angularytics"
 ]
 
 module.config ["$stateProvider", "$urlRouterProvider", "$locationProvider", ($stateProvider, $urlRouterProvider, $locationProvider) ->
@@ -28,7 +31,7 @@ module.controller "EmbedController", ["$rootScope", "$state", ($rootScope, $stat
 
 module.config ["$stateProvider", "$urlRouterProvider", ($stateProvider, $urlRouterProvider) ->
   $stateProvider.state "embed",
-    url: "/embed/:plunkId"
+    url: "/:plunkId"
     template: """<div ui-view></div>"""
     controller: ["$scope", "$state", ($scope, $state) ->
       $state.go "embed.preview" if $state.is("embed")
@@ -37,7 +40,7 @@ module.config ["$stateProvider", "$urlRouterProvider", ($stateProvider, $urlRout
   $stateProvider.state "embed.preview",
     url: "/preview"
     template: """
-      <div id="preview">
+      <div class="preview">
         <iframe ng-src="{{previewUrl}}" src="about:blank" width="100%" height="100%" frameborder="0"></iframe>
       </div>
     """
@@ -51,8 +54,8 @@ module.config ["$stateProvider", "$urlRouterProvider", ($stateProvider, $urlRout
   $stateProvider.state "embed.file",
     url: "/:filename"
     template: """
-      <div ng-bind="source" syntax-highlight="{{filename}}">
-      </div>
+      <pre ng-bind="source" syntax-highlight="{{filename}}">
+      </pre>
     """
     onEnter: ["$rootScope", ($rootScope) ->
       $rootScope.toggleFiles(false)

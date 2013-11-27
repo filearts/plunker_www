@@ -55,7 +55,6 @@ app.use require("prerender-node")
 app.use require("./middleware/redirect").middleware(nconf.get("redirect"))
 #app.use express.logger() unless process.env.NODE_ENV is "PRODUCTION"
 app.use require("./middleware/vary").middleware()
-app.use require("./middleware/subdomain").middleware()
 app.use lactate.static "#{__dirname}/build", lactateOptions
 app.use lactate.static "#{__dirname}/assets", lactateOptions
 app.use "/css/font", lactate.static("#{__dirname}/assets/vendor/Font-Awesome-More/font/", lactateOptions)
@@ -75,6 +74,7 @@ app.expose nconf.get("url"), "_plunker.url"
 app.expose pkginfo, "_plunker.package"
 app.expose null, "_plunker.bootstrap"
     
+app.use require("./middleware/subdomain").middleware()
 app.use app.router
 
 app.use express.errorHandler()
@@ -191,7 +191,7 @@ secureFilters = require("secure-filters")
 
 hbs.registerHelper "jsObj", (obj) -> new hbs.SafeString(secureFilters.jsObj(obj))
 
-app.get "/embed/:plunkId/*", localsMiddleware, (req, res) ->
+app.get "/embed/:plunkId*", localsMiddleware, (req, res) ->
   options = 
     url: "#{apiUrl}/plunks/#{req.params.plunkId}"
     json: true
@@ -203,8 +203,6 @@ app.get "/embed/:plunkId/*", localsMiddleware, (req, res) ->
       res.locals.plunk = body
       res.render "embed.html"
 
-app.get "/embed/:plunkId", (req, res, next) ->
-  res.redirect "/embed/#{req.params.plunkId}/"
   
 
 

@@ -24,7 +24,6 @@ assets/vendor/*.js
 assets/vendor/ace/demo
 assets/vendor/ace/kitchen-sink
 assets/vendor/ace/src
-assets/vendor/ace/src-min-noconflict
 assets/vendor/ace/src-noconflict
 assets/vendor/ace/textarea
 assets/vendor/ace/*.*
