@@ -84,6 +84,7 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-contrib-watch'
   grunt.loadNpmTasks 'grunt-contrib-uglify'
   grunt.loadNpmTasks 'grunt-browserify'
+  grunt.loadNpmTasks 'grunt-bump'
 
   # tasks
   grunt.task.registerTask 'clean', 'clears out temporary build files', ->
