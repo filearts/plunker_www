@@ -18,8 +18,7 @@ module = angular.module "plunker.embed", [
 module.config ["$stateProvider", "$urlRouterProvider", "$locationProvider", ($stateProvider, $urlRouterProvider, $locationProvider) ->
   $locationProvider.html5Mode(true).hashPrefix('!')
   
-  $urlRouterProvider.when "/embed/:plunkId", "/embed/:plunkId/preview"
-  $urlRouterProvider.when "/embed/:plunkId/", "/embed/:plunkId/preview"
+  $urlRouterProvider.otherwise "/"
 ]
 
 module.controller "EmbedController", ["$rootScope", "$state", ($rootScope, $state) ->
@@ -54,6 +53,7 @@ module.config ["$stateProvider", "$urlRouterProvider", ($stateProvider, $urlRout
   $stateProvider.state "embed.file",
     url: "/:filename"
     template: """
+      <span class="filename" ng-bind="filename"></span>
       <pre ng-bind="source" syntax-highlight="{{filename}}">
       </pre>
     """
@@ -104,5 +104,6 @@ module.directive "syntaxHighlight", ["modes", (modes) ->
       opts =
         mode: modes.findByFilename(filename).source
         showGutter: true
+        firstLineNumber: 1
       staticHighlight.highlight $element[0], opts
 ]

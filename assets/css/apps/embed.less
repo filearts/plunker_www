@@ -12,6 +12,9 @@ html, body {
   padding: 0;
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
   font-size: 14px;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 .plunker-brand {
@@ -48,7 +51,7 @@ html, body {
   }
   
   .menu {
-    .abs(0, 0, auto, auto);
+    .abs(0; 0; auto; auto);
     height: 30px;
     display: block;
     list-style: none;
@@ -67,6 +70,7 @@ html, body {
       list-style: none;
       border-left: 1px solid white;
       float: right;
+      background-color: #333;
       
       &:hover {
         background-color: #555;
@@ -156,9 +160,20 @@ html, body {
   .abs(30px);
   overflow: auto;
   
+  &>div.ng-scope {
+    .abs;
+  }
+  
   .ace_static_highlight {
     padding: 10px;
     font-size: 14px !important;
+  }
+  
+  .filename {
+    .abs(8px; 10px; auto; auto);
+    display: block;
+    text-shadow: rgba(0,0,0,0.5) 0 0 3px;
+    font-weight: bold;
   }
 }
 
