@@ -1,6 +1,6 @@
 require("coffee-script");
 
-//process.env.NODE_ENV = "production";
+process.env.NODE_ENV = process.env.NODE_ENV || "development";
 process.env.PWD = process.cwd();
 
 var nconf = require("nconf")
@@ -27,7 +27,7 @@ serverDomain.run(function(){
     server(req, res);
     
   }).listen(nconf.get("PORT"), nconf.get("IP"), function(){
-    console.log("Server started in ", process.env.NODE_ENV, "on", nconf.get("IP") + ":" + nconf.get("PORT"));
+    console.log("Server started in", process.env.NODE_ENV, "on", nconf.get("IP") + ":" + nconf.get("PORT"));
   });
   
 });

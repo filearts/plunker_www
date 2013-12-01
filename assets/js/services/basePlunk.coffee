@@ -5,34 +5,29 @@ module.value "basePlunk",
     filename: "index.html"
     content: """
       <!doctype html>
-      <html ng-app="plunker" >
       <head>
         <meta charset="utf-8">
-        <title>AngularJS Plunker</title>
-        <script>document.write('<base href="' + document.location + '" />');</script>
+        <title>Base Plunk</title>
         <link rel="stylesheet" href="style.css">
-        <script data-require="angular.js@1.1.x" src="http://code.angularjs.org/1.1.4/angular.js"></script>
-        <script src="app.js"></script>
+        <script src="script.js"></script>
       </head>
-      <body ng-controller="MainCtrl">
-        <p>Hello {{name}}!</p>
+      <body>
+        <h1>Hello Plunker</h1>
       </body>
       </html> 
     """
   ,
-    filename: "app.js"
+    filename: "script.js"
     content: """
-      var app = angular.module('plunker', []);
-       
-      app.controller('MainCtrl', function($scope) {
-        $scope.name = 'World';
-      });
+      // Add your code here
+      
+      
     """
   ,
     filename: "style.css"
     content: """
-      p {
-        color: red;
-      }
+      /* Add your styles here */
+      
+      
     """
   ]

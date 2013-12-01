@@ -46,16 +46,16 @@ class Region
   consume: (anchor, size = 0) ->
     switch anchor
       when "north"
-        style = { top: "#{@top}px", right: "#{@right}px", bottom: "auto", left: "#{@left}px", height: "#{size}px" }
+        style = { top: "#{@top}px", right: "#{@right}px", bottom: "auto", left: "#{@left}px", height: "#{size}px", width: "auto" }
         @top += size
       when "east"
-        style = { top: "#{@top}px", right: "#{@right}px", bottom: "#{@bottom}px", left: "auto", width: "#{size}px" }
+        style = { top: "#{@top}px", right: "#{@right}px", bottom: "#{@bottom}px", left: "auto", width: "#{size}px", height: "auto" }
         @right += size
       when "south"
-        style = { top: "auto", right: "#{@right}px", bottom: "#{@bottom}px", left: "#{@left}px", height: "#{size}px" }
+        style = { top: "auto", right: "#{@right}px", bottom: "#{@bottom}px", left: "#{@left}px", height: "#{size}px", width: "auto" }
         @bottom += size
       when "west"
-        style = { top: "#{@top}px", right: "auto", bottom: "#{@bottom}px", left: "#{@left}px", width: "#{size}px" }
+        style = { top: "#{@top}px", right: "auto", bottom: "#{@bottom}px", left: "#{@left}px", width: "#{size}px", height: "auto" }
         @left += size
     
     style.display = "none" if size is 0
@@ -75,6 +75,7 @@ class Region
       when "vertical" then @height - @top - @bottom
       when "horizontal" then @width - @right - @left
   
+  toString: -> "{#{@top}, #{@right}, #{@bottom}, #{@left}}, {#{@width}, #{@height}}"
   
 
 module.directive "pane", [ ->
@@ -180,7 +181,7 @@ module.directive "pane", [ ->
       @layout.reflow()
     
     @reflow = (region, target = pane.target) ->
-      anchor = pane.anchor
+      anchor = pane.anchor or "center"
       
       if open then $element.removeClass("closed")
       else $element.addClass("closed")
@@ -191,6 +192,8 @@ module.directive "pane", [ ->
           right: "#{region.right}px"
           bottom: "#{region.bottom}px"
           left: "#{region.left}px"
+          width: "auto"
+          height: "auto"
       else if anchor in ["north", "east", "south", "west"]
         orientation = @getOrientation(anchor)
 
@@ -242,6 +245,9 @@ module.directive "pane", [ ->
       $scope.$watch "constrained", (constrained) ->
         if constrained then $el.addClass("border-layout-constrained")
         else $el.removeClass("border-layout-constrained")
+      
+      $scope.$on "$destroy", ->
+        parent.removeChild(pane)
       
       $transclude $scope, (clone) ->
         $el.find("div").eq(2).append(clone)
@@ -327,7 +333,6 @@ module.directive "layoutHandle", [ "$window", ($window) ->
 
           pane.onHandleUp()
         
- 
         if displacementSq <= Math.pow(clickRadius, 2) and timeElapsed <= clickTime
           handleClick(e)
           cleanup()
@@ -364,6 +369,9 @@ module.directive "borderLayout", [ "$window", "$timeout", ($window, $timeout)->
     @attachChild = (child) ->
       @children.push(child)
     
+    @removeChild = (child) ->
+      @children.splice(idx, 1) unless 0 > idx = @children.indexOf(child)
+    
     @onHandleDown = -> $element.addClass("active")
     @onHandleUp = ->
       $element.removeClass("active")
@@ -371,14 +379,14 @@ module.directive "borderLayout", [ "$window", "$timeout", ($window, $timeout)->
     
     @reflow = (region) ->
       return if layout.reflowing
-      
+  
       layout.reflowing = true
       
       width = $element[0].offsetWidth
       height = $element[0].offsetHeight
       
       region ||= new Region(width, height)
-      
+  
       @children.sort (a, b) -> b.order - a.order
       
       region = child.reflow(region) for child in @children

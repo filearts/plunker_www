@@ -55,8 +55,6 @@ server.engine "html", require("hbs").__express
 server.set "view engine", "html"
 server.set "views", "#{process.env.PWD}/views"
 
-console.log "Serving views from", "#{process.env.PWD}/public"
-
 
 # Express middleware
 
@@ -83,9 +81,22 @@ server.get "/auth/:service", authom.app
 
 sessionMiddleware = require("./middleware/session.coffee").middleware()
 
+localsMiddleware = (req, res, next) ->
+  res.locals.timestamp = ""
+  res.locals.suffix = "-min"
+  
+  if process.env.NODE_ENV is "development"
+    res.locals.timestamp = Date.now()
+    res.locals.suffix = ""
+  
+  next()
 
-server.get "/edit/*", sessionMiddleware, (req, res) -> res.render "index", timestamp: Date.now()
-server.get "/", sessionMiddleware, (req, res) -> res.render "index", timestamp: Date.now()
+server.get "/edit/*", sessionMiddleware, localsMiddleware, (req, res) -> res.render "index"
+server.get "/", sessionMiddleware, localsMiddleware, (req, res) -> res.render "index"
+
+server.get "/*", sessionMiddleware, localsMiddleware, (req, res) ->
+  if req.accepts("html") then res.render "index"
+  else next()
 
 server.expose nconf.get("url"), "_plunker.url"
 

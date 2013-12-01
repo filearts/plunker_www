@@ -1,14 +1,16 @@
 require "../services/api.coffee"
+require "../services/dirty.coffee"
 
 module = angular.module "plunker.service.project", [
   "plunker.service.api"
+  "plunker.service.dirty"
 ]
 
 
 # Service representing the what the user is working on.
 #
 # Simplied interface over the session service
-module.factory "project", [ "$rootScope", "session", "api", ($rootScope, session, api) ->
+module.factory "project", [ "$rootScope", "session", "api", "dirty", ($rootScope, session, api, dirty) ->
   # Default project
   defaultProject =
     description: "Untitled project"
@@ -29,10 +31,16 @@ module.factory "project", [ "$rootScope", "session", "api", ($rootScope, session
     getIndexByFilename: (filename) -> client.getFileIndex(filename)
     getFileByIndex: (index) -> client.getFileByIndex(index)
     getState: -> client.getSnapshot()
+    getFileCount: -> @getFiles().length
     getFiles: -> @getState().files
     
     canSave: -> !@isSaved() or @isOwned()
     
+    hasFile: (filenameOrIndex) ->
+      if angular.isNumber(filenameOrIndex) then !!@getFileByIndex(filenameOrIndex)
+      else if angular.isString(filenameOrIndex) then 0 <= @getIndexByFilename(filenameOrIndex)
+    
+    isPublic: -> @isSaved() and @plunk.public
     isSaved: -> angular.isObject(@plunk)
     isOwned: -> @isSaved() and @plunk.token
       
@@ -46,23 +54,23 @@ module.factory "project", [ "$rootScope", "session", "api", ($rootScope, session
     openPlunk: (plunkId) ->
       # Error handled by caller
       api.all("plunks").one(plunkId).get().then (json) ->
+        json.files = (file for filename, file of json.files)
+        
         service.reset angular.copy(json)
         service.plunk = angular.copy(json)
         
-        $rootScope.$broadcast "plunkOpenSuccess", service.plunk    
+        dirty.markClean()
+        
+        $rootScope.$broadcast "plunkOpenSuccess", service.plunk
     
     fileCreate: (filename, content = "") ->
       client.fileCreate filename, content
       
-    fileRename: (indexOrFilename, newFilename) ->
-      [fileIndex, file] = @$resolveFile(indexOrFilename)
-      
-      client.fileRename file.filename, newFilename
+    fileRename: (filename, newFilename) ->
+      client.fileRename filename, newFilename
     
-    fileRemove: (indexOrFilename, newFilename) ->
-      [fileIndex, file] = @$resolveFile(indexOrFilename)
-      
-      client.fileRemove file.filename
+    fileRemove: (filename) ->
+      client.fileRemove filename
   
   return service
 ]

@@ -1,0 +1,24 @@
+<div class="header clearfix">
+  <button type="button" ng-click="pane.toggle()" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+  <h4>Search templates</h4>
+  <form ng-submit="search(templateSearch.taglist)">
+    <div class="input-group">
+      <span class="input-group-btn" ng-if="templateSearch.taglist.length">
+        <button type="button" class="btn btn-danger" ng-click="reset()"><i class="icon-remove"></i></button>
+      </span>
+      <input type="text" class="form-control" placeholder="Search by tags" ng-model="templateSearch.taglist">
+      <span class="input-group-btn">
+        <button type="submit" class="btn btn-default"><i class="icon-search"></i></button>
+      </span>
+    </div>
+  </form>
+</div>
+<div class="list-group">
+  <div class="list-group-item" ui-sref="editor.new({import: 'tpl:' + plunk.id})" ng-repeat="plunk in templates">
+    <span class="badge" ng-bind="plunk.views"></span>
+    <strong ng-bind="plunk.description"></strong>
+    <ul class="plunker-taglist">
+      <li ng-repeat="tag in plunk.tags"><a ng-click="addTag(tag)" ng-bind="tag" stop-propagation="click"></a></li>
+    </ul>
+  </div>
+</div>

@@ -1,0 +1,7 @@
+<ul class="list-unstyled">
+  <li ng-repeat="(paneName, paneDef) in multipane.panes" tooltip="{{paneDef.description}}" tooltip-placement="left" tooltip-append-to-body="true">
+    <button class="btn btn-default" ng-class="{active: multipane.isActive(paneName) && multipane.isOpen()}" ng-click="multipane.toggle(paneName)">
+      <i ng-class="paneDef.class"></i>
+    </button>
+  </li>
+</ul>

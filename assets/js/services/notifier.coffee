@@ -24,4 +24,9 @@ module.factory "notifier", ["$q", "growl", ($q, growl) ->
     dfd = $q.defer()
     dfd.resolve confirm(message)
     dfd.promise
+  
+  prompt: (message) ->
+    dfd = $q.defer()
+    dfd.resolve prompt(message)
+    dfd.promise                            
 ]

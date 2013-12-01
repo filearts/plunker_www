@@ -1,8 +1,6 @@
 genid = require("genid")
 debounce = require("lodash.debounce")
 
-require "../../vendor/operative.js"
-
 require "../services/session.coffee"
 require "../services/types.coffee"
 require "../services/url.coffee"
@@ -10,6 +8,7 @@ require "../services/settings.coffee"
 require "../services/annotations.coffee"
 require "../services/layout.coffee"
 require "../services/disabler.coffee"
+require "../services/debounce.js"
 
 
 module = angular.module "plunker.directive.previewer", [
@@ -19,9 +18,10 @@ module = angular.module "plunker.directive.previewer", [
   "plunker.service.annotations"
   "plunker.service.layout"
   "plunker.service.disabler"
+  "plunker.service.debounce"
 ]
 
-module.directive "previewer", [ "$timeout", "session", "url", "settings", "annotations", "layout", "disabler", ($timeout, session, url, settings, annotations, layout, disabler) ->
+module.directive "previewer", [ "$timeout", "$state", "session", "url", "settings", "annotations", "layout", "disabler", "debounce", ($timeout, $state, session, url, settings, annotations, layout, disabler, debounce) ->
   restrict: "E"
   replace: true
   scope:
@@ -41,18 +41,13 @@ module.directive "previewer", [ "$timeout", "session", "url", "settings", "annot
     $scope.previewUrl ||= "#{url.run}/#{genid()}/"
     
     iframeEl = document.getElementById("plunkerPreviewTarget")
-    
+    listening = false
     client = session.createClient("previewer")
-    firstOpen = true
-    
-    refresh = (snapshot) ->
-      return if layout.current.preview.closed
-      
-      if filename = annotations.hasError()
-        $scope.message = "Preview has not been updated due to syntax errors in #{filename}"
-        return
-      else
-        $scope.message = ""
+                               
+    refresh = () ->
+      return unless $state.includes("editor.new") or $state.includes("editor.plunk")
+                               
+      snapshot = client.getSnapshot()
       
       form = document.createElement("form")
       form.style.display = "none"
@@ -74,37 +69,54 @@ module.directive "previewer", [ "$timeout", "session", "url", "settings", "annot
       
       document.body.removeChild(form)
     
-    applyRefresh = -> $scope.$apply -> refresh(client.getSnapshot())
-    debouncedApplyRefresh = debounce applyRefresh, settings.previewer.delay
+    debouncedRefresh = debounce refresh, settings.previewer.delay
+    
+    addListeners = ->
+      client.on "reset", debouncedRefresh
+  
+      client.on "fileCreate", debouncedRefresh
+      client.on "fileRename", debouncedRefresh
+      client.on "fileRemove", debouncedRefresh
+  
+      client.on "textInsert", debouncedRefresh
+      client.on "textRemove", debouncedRefresh
+      
+      listening = true
+    
+    removeListeners = ->
+      client.off "reset", debouncedRefresh
+  
+      client.off "fileCreate", debouncedRefresh
+      client.off "fileRename", debouncedRefresh
+      client.off "fileRemove", debouncedRefresh
+  
+      client.off "textInsert", debouncedRefresh
+      client.off "textRemove", debouncedRefresh
+      
+      listening = false
+    
+    enable = ->
+      refresh()
+      addListeners()
+    
+    disable = ->
+      iframeEl.contentWindow.location = "about:blank"
+      removeListeners()
+      
+    
+    $scope.$on "$stateChangeSuccess", ->
+      if $state.includes("editor.new") or $state.includes("editor.plunk")
+        enable() unless listening
+      else
+        disable()
+        
+      
     
     $scope.$watch ( -> settings.previewer.delay), (delay, oldDelay) ->
       if delay != oldDelay
-        debouncedApplyRefresh = debounce debouncedApplyRefresh, delay
+        debouncedRefresh.setWait(delay)
 
     $scope.$watch ( -> layout.current.preview.closed), (closed, wasClosed) ->
-      if closed
-        iframeEl.contentWindow.location = "about:blank"
-      else if firstOpen or wasClosed
-        refresh(client.getSnapshot())
-      
-      firstOpen = false
-    
-    client.on "reset", debouncedApplyRefresh
-
-    client.on "fileCreate", debouncedApplyRefresh
-    client.on "fileRename", debouncedApplyRefresh
-    client.on "fileRemove", debouncedApplyRefresh
-
-    client.on "textInsert", debouncedApplyRefresh
-    client.on "textRemove", debouncedApplyRefresh
-    
-    $scope.$on "$destroy", ->
-      client.off "reset", debouncedApplyRefresh
-  
-      client.off "fileCreate", debouncedApplyRefresh
-      client.off "fileRename", debouncedApplyRefresh
-      client.off "fileRemove", debouncedApplyRefresh
-  
-      client.off "textInsert", debouncedApplyRefresh
-      client.off "textRemove", debouncedApplyRefresh
+      if closed then disable()
+      else enable()
 ]

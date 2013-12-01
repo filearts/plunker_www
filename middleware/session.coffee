@@ -5,8 +5,6 @@ url = require("url")
 
 module.exports.middleware = (options = {}) ->
 
-  console.log url.parse(nconf.get("url:www"))
-
   apiUrl = nconf.get("url:api")
   domain = url.parse(nconf.get("url:www")).hostname
   self = @
@@ -23,10 +21,6 @@ module.exports.middleware = (options = {}) ->
       request.post "#{apiUrl}/sessions", json: true, handleRequest
       
     exposeSession = (data) ->
-      console.log "plnkrsessid", data.id,
-        domain: domain
-        expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14)
-    
       res.cookie "plnkrsessid", data.id,
         domain: domain
         expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14)

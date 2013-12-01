@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" ng-app="plunker.app.editor"> <![endif]-->
-<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" ng-app="plunker.app.editor"> <![endif]-->
-<!--[if IE 8]>         <html class="no-js lt-ie9" ng-app="plunker.app.editor"> <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" ng-app="plunker.app.editor"> <!--<![endif]-->
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" ng-app="plunker.app.editor" xmlns:ng="http://angularjs.org"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" ng-app="plunker.app.editor" xmlns:ng="http://angularjs.org"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9" ng-app="plunker.app.editor" xmlns:ng="http://angularjs.org"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" id="ng-app" ng-app="plunker"> <!--<![endif]-->
 
   <head>
     <meta charset="utf-8">
@@ -13,12 +13,10 @@
         <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
         <script>window.html5 || document.write('<script src="/vendor/html5shiv.js"><\/script>')</script>
     <![endif]-->
-    <link rel="stylesheet" href="/css/apps/editor.css?rel={{timestamp}}" />
+    <link rel="stylesheet" href="/css/plunker{{suffix}}.css?_={{timestamp}}" />
     <script>{{{state}}}</script>
-    <script src="/vendor/ace/src-noconflict/ace.js"></script>
-    <script src="/vendor/ace/src-noconflict/ext-split.js"></script>
-    <script src="/vendor/ace/src-noconflict/ext-searchbox.js"></script>
-    <script src="/js/apps/editor.js?rel={{timestamp}}"></script>
+    <script src="/vendor/ace/src{{suffix}}-noconflict/ace.js"></script>
+    <script src="/js/plunker{{suffix}}.js?_={{timestamp}}"></script>
   </head>
 
   <body>

@@ -1,0 +1,68 @@
+body {
+  padding-top: 60px;
+  background-color: #e5e5e5;
+}
+
+.deckgrid::before {
+  /* Defines that the grid should have 3 columns. Each column will have the classes 'column' and 'column-1-4' */
+  content: '4 .col-xs-3';
+  display:none;
+}
+
+@media screen and (max-width: 991px){
+  .deckgrid[deckgrid]::before {
+    content: '3 .col-xs-4';
+  }
+}
+
+@media screen and (max-width: 767px){
+  .deckgrid[deckgrid]::before {
+    content: '2 .col-xs-6';
+  }
+}
+
+.plunker-viewer {
+  iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.plunker-card {
+  background-color: white;
+  margin-bottom: 20px;
+  border: 1px solid #d8d8d8;
+  border-bottom-width: 2px;
+  
+  .preview-wrapper {
+    width: 100%;
+    display: inline-block;
+    position: relative;
+  }
+  .preview-wrapper:after {
+    padding-top: 75%;
+    content: "";
+    display: block;
+  }
+  .preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .description {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 4px;
+    padding: 4px;
+    text-overflow: ellipsis;
+    word-break: break-word;
+  }
+}

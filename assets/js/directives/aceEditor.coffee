@@ -1,14 +1,18 @@
+emmetCore = require("../../vendor/emmet/emmet")
+
 require "../services/session.coffee"
 require "../services/types.coffee"
 require "../services/settings.coffee"
-require "../services/splitter.coffee"
+require "../services/workspace.coffee"
+require "../services/keybindings.coffee"
 
 
 module = angular.module "plunker.directive.aceEditor", [
   "plunker.service.session"
   "plunker.service.settings"
   "plunker.service.types"
-  "plunker.service.splitter"
+  "plunker.service.workspace"
+  "plunker.service.keybindings"
 ]
 
 module.service "aceSessions", ["$rootScope", "session", "settings", "types", ($rootScope, session, settings, types) ->
@@ -24,6 +28,7 @@ module.service "aceSessions", ["$rootScope", "session", "settings", "types", ($r
       @editSession = new EditSession(content)
       @editSession.setUndoManager(@undoManager)
       @editSession.setUseWorker(true)
+      @editSession.setUseSoftTabs(true)
       
       @document = @editSession.getDocument()
       
@@ -121,9 +126,11 @@ module.service "aceSessions", ["$rootScope", "session", "settings", "types", ($r
 ]
 
 
-module.directive "aceEditor", ["$rootScope", "settings", "aceSessions", ($rootScope, settings, aceSessions) ->                               
+module.directive "aceEditor", ["$rootScope", "settings", "aceSessions", "session", "workspace", "project", "keybindings", ($rootScope, settings, aceSessions, session, workspace, project, keybindings) ->
   Editor = ace.require("ace/editor").Editor
   Renderer = ace.require("ace/virtual_renderer").VirtualRenderer
+  
+  client = session.createClient("Editor")
   
   # Directive definition:
   require: "^?aceSplitEditor"
@@ -131,78 +138,38 @@ module.directive "aceEditor", ["$rootScope", "settings", "aceSessions", ($rootSc
   link: ($scope, $element, $attrs, parent) ->
     editor = new Editor(new Renderer($element[0], "ace/theme/#{settings.editor.theme || 'textmate'}"))
     editor.setBehavioursEnabled(true)
+    editor.keyBinding.addKeyboardHandler(keybindings.commands)
+    editor.setFontSize(settings.editor.font_size or 12)
 
-    ace.config.loadModule "ace/ext/language_tools", ->
+    ace.config.loadModule "ace/ext/language_tools", (languageTools) ->
       editor.setOptions
         enableBasicAutocompletion: true
         enableSnippets: true
     
-    $scope.$watch ( -> settings.editor.theme ), (theme) -> editor.setTheme "ace/theme/#{settings.editor.theme || 'textmate'}"
+    ace.config.loadModule "ace/ext/emmet", (emmet) ->
+      emmet.setCore(emmetCore)
+      editor.setOption "enableEmmet", true
     
-    console.log "$attrs", $attrs, $scope.session
-                               
-    $scope.$watch $attrs.aceEditor, (fileIndex) ->
-      return unless angular.isNumber(fileIndex)
-      throw new Error("Invalid file index") unless file = aceSessions.findByIndex(fileIndex)
+    $scope.$watch ( -> settings.editor.theme ), (theme) -> editor.setTheme "ace/theme/#{settings.editor.theme || 'textmate'}"
+    $scope.$watch ( -> settings.editor.font_size ), (fontSize) -> editor.setFontSize(fontSize or 12)
+ 
+    
+    $scope.$watch ( -> project.getFileByIndex($scope.$eval($attrs.aceEditor)) ), (editSession) ->
+      throw new Error("Invalid file index") unless file = aceSessions.findByIndex($scope.$eval($attrs.aceEditor))
       
       editor.setSession(file.editSession)
-      editor.focus()
+    
+    $scope.$watch ( -> workspace.getActiveFileIndex()), (activeFileIndex) ->
+      if activeFileIndex is $scope.$eval($attrs.aceEditor)
+         editor.focus()
+          
+    editor.on "focus", -> unless $rootScope.$$phase then $scope.$apply ->
+      fileIndex = $scope.$eval $attrs.aceEditor
+      throw new Error("Invalid file index") unless file = aceSessions.findByIndex(fileIndex)
+      
+      client.cursorSetFile file.filename
     
     # Clean up the editor 
     $scope.$on "$destroy", -> editor.destroy()
     $scope.$on "border-layout-reflow", -> editor.resize()    
-  ]
-
-module.directive "aceSplitEditor", ["$rootScope", "iface", ($rootScope, iface) ->
-  # Directive definition:
-  template: """
-    <border-layout>
-      <pane options="{anchor: anchor, size: size, handle: 4}" ng-repeat="split in splits">
-        <div ace-editor="{{split.fileIndex}}"></div>
-      </pane>
-    </border-layout>
-  """
-  
-  link: ($scope, $element, $attrs) ->
-    $scope.splits = []
-    
-    $scope.$watch "splits.length", (length) ->
-      $scope.size = "#{100 / length}% - 4px"
-    $scope.$watchCollection ( -> iface.getSplitIndices() ), (indices, prevIndices) ->
-      
-]
-
-module.controller "CodeEditorController", ["$scope", "session", "splitter", ($scope, session, splitter) ->
-  $scope.session = client = session.createClient("CodeEditorController")
-  $scope.panes = [
-    config:
-      anchor: "east"
-      size: "50% - 2px"
-      handle: 4
-    index: 0
-  ,
-    config:
-      anchor: "center"
-    index: 1
-
-  ]
-                    
-  $scope.$watchCollection ( -> splitter.indices), (indices) ->
-    return
-    console.log "$watchCollection", arguments...
-    return unless indices
-    $scope.panes.length = 0
-    size = indices.length
-    paneSize = 1 / size
-    for idx in indices
-      if idx == size - 1 then $scope.panes.push
-        index: idx
-        pane:
-          anchor: "center"
-      else $scope.panes.push
-        index: idx
-        pane:
-          anchor: "east"
-          size: "#{paneSize * 100}% - 2px"
-          handleSize: 4
 ]

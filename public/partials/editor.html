@@ -1,47 +1,20 @@
-<div class="plunker-editor-layout" ng-controller="LayoutController">
+<div class="plunker-editor-layout">
   <border-layout class="outer" plunker-disabler="editor">
     <pane class="plunker-toolbar" options="layout.current.toolbar">
       <div class="pull-left toolbar-template-toggler">
-        <button class="btn btn-sm btn-default" ng-class="{active: !layout.current.templates.closed}" ng-click="toggleTemplatePane()" tooltip="Toggle the templates pane" tooltip-append-to-body="true" tooltip-placement="right">
+        <button class="btn btn-sm btn-default" ng-class="{active: !layout.current.templates.closed}" ng-click="workspace.togglePane('templates')" tooltip="Toggle the templates pane" tooltip-append-to-body="true" tooltip-placement="right">
           <i class="icon-briefcase"></i>
         </button>
       </div>
-      <plunker-toolbar></plunker-toolbar>
+      <div ui-view="toolbar"></div>
     </pane>
     
     <pane class="plunker-templates" options="layout.current.templates">
-      <div class="header clearfix">
-        <button type="button" ng-click="pane.toggle()" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        <h4>Popular templates</h4>
-        <form ng-submit="search(templateSearch.taglist)">
-          <div class="input-group">
-            <span class="input-group-btn" ng-if="templateSearch.taglist.length">
-              <button type="button" class="btn btn-danger" ng-click="reset()"><i class="icon-remove"></i></button>
-            </span>
-            <input type="text" class="form-control" placeholder="Search by tags" ng-list="/, /" ng-model="templateSearch.taglist">
-            <span class="input-group-btn">
-              <button type="submit" class="btn btn-default"><i class="icon-search"></i></button>
-            </span>
-          </div>
-        </form>
-      </div>
-      <div class="list-group">
-        <a class="list-group-item" ui-sref="editor.plunk({plunkId: plunk.id})" ng-repeat="plunk in templates">
-          <span class="badge" ng-bind="plunk.views"></span>
-          <h4 ng-bind="plunk.description"></h4>
-          <plunker-taglist tags="plunk.tags" on-click="addTagToFilter(tag)"></plunker-taglist>
-        </a>
-      </div>
+      <div ui-view="templates"></div>
     </pane>
     
-    <pane class="plunker-paneselector" options="{anchor: 'east', size: '40px', order: 1, closed: false}">
-      <ul class="list-unstyled">
-        <li ng-repeat="(paneName, paneDef) in multipane.panes">
-          <button class="btn btn-success" ng-class="{active: multipane.isActive(paneName) && multipane.isOpen()}" ng-click="multipane.toggle(paneName)">
-            <i ng-class="paneDef.class"></i>
-          </button>
-        </li>
-      </ul>
+    <pane class="plunker-paneselector" options="{anchor: 'east', size: '50px', order: 8, closed: false}">
+      <div ui-view="paneselector"></div>
     </pane>
     
     <pane class="plunker-multipane" options="layout.current.multipane">
@@ -58,8 +31,8 @@
     </pane>
     
     <pane class="plunker-editor" options="{anchor: 'center'}">
-      <border-layout ng-controller="CodeEditorController">
-        <pane options="split.config" ng-repeat="split in panes"><div ace-editor="split.index"></div></pane>
+      <border-layout>
+        <pane options="{order:workspace.getSplitCount()-$index, anchor: $index!=workspace.getSplitCount() - 1 && 'west', size: 100/workspace.getSplitCount() + '% - 1px', handle: 2}" ng-repeat="fileIndex in workspace.getSplits() track by fileIndex"><div ace-editor="fileIndex"></div></pane>
       </border-layout>
     </pane>
   </border-layout>

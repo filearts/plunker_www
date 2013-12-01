@@ -1,0 +1,50 @@
+<div class="plunker-card">
+  <div class="preview-wrapper">
+    <img class="preview" src="http://placehold.it/248x186&text=Loading..." ng-src="http://immediatenet.com/t/l3?Size=1024x768&URL={{card.raw_url}}?_={{card.updated_at | date:'yyyy-MM-ddTHH:mm:ssZ'}}" />
+  </div>
+  <h3 class="description" ng-bind="card.description"></h3>
+</div>
+<!--
+<div class="plunk-card" ng-show="card.id" ng-class="{starred: card.thumbed, owned: card.token}">
+  <dic class="plunk-card-body">
+    <div class="plunk-card-image">
+      <div class="plunk-card-meta">
+        <plunker-plunk-info plunk="plunk"></plunker-plunk-info>
+        <ul class="meta inline">
+          <li ng-show="card.fork_of" tooltip-placement="bottom" tooltip="This plunk was forked from another">
+            <plunker-inline-plunk plunk="card.parent"><i class="icon-share-alt"></i></plunker-inline-plunk>
+          </li>
+          <li ng-show="card.thumbed" tooltip-placement="bottom" tooltip="You starred this Plunk">
+            <a ng-href="/users/{{visitor.user.login}}/favorites"><i class="icon-pushpin"></i></a>
+          </li>
+          <li ng-show="card.private" tooltip-placement="bottom" tooltip="Private plunk - only you see this plunk listed here">
+            <a ng-href="{{card.id}}"><i class="icon-eye-close"></i></a>
+          </li>
+        </ul>
+      </div>
+      <ul class="plunk-card-operations">
+        <li><a class="btn" title="Edit this Plunk" ng-href="/edit/{{card.id}}"><i class="icon-edit"></i></a></li>
+        <li><a class="btn" title="View this Plunk in an overlay" ng-click="showQuickView(plunk, $event)"><i class="icon-play"></i></a></li>
+        <li><a class="btn" title="View the detailed information about this Plunk" ng-href="/{{card.id}}"><i class="icon-info-sign"></i></a></li>
+        <li><a class="btn" title="Open the embedded view of this Plunk" ng-href="{{url.embed}}/{{card.id}}/" target="_blank"><i class="icon-external-link"></i></a></li>
+        <li ng-show="card.isWritable()"><a class="btn btn-danger" title="Delete this plunk" ng-click="confirmDelete(plunk)"><i class="icon-trash"></i></a></li>
+        <li ng-show="visitor.logged_in && card.thumbed"><button title="Unstar this Plunk" class="btn starred" ng-click="card.star()"><i class="icon-star"></i></button></li>
+        <li ng-show="visitor.logged_in && !card.thumbed"><button title="Star this Plunk" class="btn" ng-click="card.star()"><i class="icon-star"></i></button></li>
+      </ul>
+      <div class="plunk-card-image-container">
+        <img src="http://placehold.it/248x186&text=Loading..." ng-src="http://immediatenet.com/t/l3?Size=1024x768&URL={{card.raw_url}}?_={{card.updated_at | date:'yyyy-MM-ddTHH:mm:ssZ'}}" />
+      </div>
+    </div>
+    <div class="plunk-card-about">
+      <h4 title="{{card.description}}" ng-bind="card.description"></h4>
+      <div class="plunk-card-about-author">
+        <plunker-inline-user user="card.user"></plunker-inline-user>
+        <abbr class="timeago updated_at" title="{{card.updated_at}}" ng-bind="card.updated_at | date:'medium'"></abbr>
+      </div>
+      <plunker-taglist tags="card.tags" ng-show="tags.length"></plunker-taglist>
+      <div class="plunk-card-about-readme" ng-show="markdown" markdown="markdown">
+      </div>
+    </div>
+  </div>
+</div>
+-->

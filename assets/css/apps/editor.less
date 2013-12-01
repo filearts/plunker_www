@@ -63,23 +63,29 @@
   }
   
   li {
-    width: 40px;
+    width: 50px;
     height: 40px;
     font-size: 30px;
     text-align: center;
     
     .btn {
-      height: 36px;
-      width: 36px;
+      height: 40px;
+      width: 40px;
       text-align: center;
       padding: 0;
+      border: 4px solid #999;
+      
+      &.active {
+        border-color: #333;
+      }
     }
   }
 }
 
-.plunker-sidebar, .plunker-editor, .plunker-previewer, .plunker-multipane {
+.plunker-sidebar, .plunker-editor>.border-layout-pane-scroller, .plunker-previewer, .plunker-multipane {
   .border-layout-pane-scroller {
     border: 1px solid #a3a3a3;
+    background-color: #ffffff;
   }
 }
 
@@ -127,11 +133,19 @@
       z-index: 1;
     }
     
+    .unsplit, .split {
+      display: none;
+    }
+    
     &:hover {
       background-color: #eeeeee;
       border-color: #eeeeee;
       
       .remover {
+        display: block;
+      }
+      
+      .split, .unsplit {
         display: block;
       }
     }

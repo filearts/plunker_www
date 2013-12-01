@@ -9,6 +9,7 @@ module = angular.module "plunker.pane.config", [
 module.run ["multipane", "settings", (multipane, settings) ->
   multipane.add "config",
     class: "icon-cogs"
+    description: "Configure the editor"
     template: """
       <form role="form">
         <fieldset>
@@ -16,6 +17,10 @@ module.run ["multipane", "settings", (multipane, settings) ->
           <div class="form-group">
             <label>Theme:</label>
             <select class="form-control" id="opts-editor-theme" ng-model="settings.editor.theme" ng-options="theme for theme in themes"></select>
+          </div>
+          <div class="form-group">
+            <label>Font size:</label>
+            <input class="form-control" id="opts-editor-fontSize" ng-model="settings.editor.font_size" type="number" min="6" max="20" />
           </div>
           <div class="form-group">
             <label>Tab size:</label>

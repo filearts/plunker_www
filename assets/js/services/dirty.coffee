@@ -27,14 +27,15 @@ module.factory "dirty", [ "session", (session) ->
   isDirty: -> dirty
 ]
 
+
 module.run ["$rootScope", "$state", "$location", "dirty", "notifier", ($rootScope, $state, $location, dirty, notifier) ->
   window.onbeforeunload = -> "You have unsaved changes. Are you sure you would like to leave this page?" if dirty.isDirty()  
 
   $rootScope.$on "$stateChangeStart", (e, toState, toParams, fromState, fromParams) ->
-    if $state.includes("editor") and dirty.isDirty()
+    if ($state.includes("editor.new") or $state.includes("editor.plunk")) and dirty.isDirty()
       e.preventDefault()
       
-      $location.path($state.href(fromState, fromParams)).replace()
+      #$location.path($state.href(fromState, fromParams)).replace()
       
       notifier.confirm("You have unsaved changes. Are you would like to proceed?").then (answer) ->
         if answer

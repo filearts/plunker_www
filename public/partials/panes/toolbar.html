@@ -1,0 +1,52 @@
+<div class="plunker-editor-toolbar">
+  <div class="pull-left">
+    <a class="plunker-brand" ui-sref="home">Plunker <sub class="version">1.7.0</sub></a>
+  </div>
+  <div class="pull-left toolbar-block">
+    <button class="btn btn-sm btn-primary" ng-class="{disabled: !project.canSave()}" ng-click="save()">
+      Save
+    </button>
+    
+    <div class="btn-group" ng-if="project.canFork()">
+      <button class="btn btn-sm btn-default" ng-click="project.fork()">
+        Fork
+      </button>
+      <button class="btn btn-sm btn-default dropdown-toggle" ng-if="visitor.isMember()">
+        <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu" ng-if="visitor.isMember()">
+        <li ng-if="project.isPublic()"><a ng-click="project.fork({private: true})">Fork as private</a></li>
+        <li ng-if="!project.isPublic()"><a ng-click="project.fork({private: false})">Fork as public</a></li>
+      </ul>
+    </div>
+    
+    <button class="btn btn-sm btn-success" ui-sref="editor.reset" tooltip="Start a new plunk and open the templates pane" tooltip-append-to-body="true" tooltip-placement="bottom">
+      New
+    </button>
+    
+    <button class="btn btn-sm btn-info" ng-class="{active: !layout.current.preview.closed}" ng-click="layout.current.preview.closed = !!!layout.current.preview.closed">
+      Preview
+    </button>
+  </div>
+  <div class="pull-right toolbar-block">
+    Layout: 
+    <div class="btn-group btn-sm">
+      <button class="btn btn-sm btn-default" ng-click="layout.setLayout($index)" ng-class="{active: $index==layout.currentIndex}" ng-repeat="preset in layout.presets" tooltip="{{preset.name}}" tooltip-append-to-body="true" tooltip-placement="bottom">
+        <img ng-src="{{preset.img}}">
+      </button>
+    </div>
+    <div class="btn-group btn-sm" ng-if="!visitor.session.user">
+      <button class="btn btn-sm btn-default" ng-disabled="disableLogin" ng-class="{disabled: ngDisableLogin}" ng-click="login()" tooltip="Login using Github" tooltip-append-to-body="true" tooltip-placement="bottom">Login</button>
+    </div>
+    <div class="btn-group btn-sm" ng-if="visitor.session.user">
+      <button class="btn btn-sm btn-default dropdown-toggle" ng-disabled="disableLogout" ng-class="{disabled: disableLogout}">
+        <img class="gravatar" ng-src="http://www.gravatar.com/avatar/{{visitor.session.user.gravatar_id}}?s=20">
+        <span ng-bind="visitor.session.user.login"></span>
+        <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu pull-right">
+        <li><a ng-click="logout()">Logout</a></li>
+      </ul>
+    </div>
+  </div>
+</div>

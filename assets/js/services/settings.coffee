@@ -7,6 +7,7 @@ module.service "settings", [ () ->
       delay: 1000
       auto_refresh: true
     editor:
+      font_size: 14
       tab_size: 2
       soft_tabs: true
       theme: "textmate"

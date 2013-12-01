@@ -18,7 +18,7 @@ module.factory "layout", ["$rootScope", ($rootScope) ->
       anchor: "west"
       order: 2
       closed: true
-      size: "300px"
+      size: "30%"
     multipane:
       anchor: "east"
       order: 0
@@ -29,6 +29,7 @@ module.factory "layout", ["$rootScope", ($rootScope) ->
       
   presets = [
     name: "Preview on the right"
+    img: "/img/horizontal.png"
     layout:
       preview:
         anchor: "east"
@@ -37,19 +38,24 @@ module.factory "layout", ["$rootScope", ($rootScope) ->
 
   ,
     name: "Preview at the bottom"
+    img: "/img/vertical.png"
     layout:
       preview:
         anchor: "south"
         order: 1
-        size: "40% - 4px"
+        size: "40& - 4px"
+      multipane:
+        order: 3
   ]
   
   service =
     current: base
     currentIndex: null
     presets: presets
-    isOpen: (paneId) -> @current?.layout?[paneId].open
-    toggle: (paneId) -> @current?.layout?[paneId].open = !@current.layout[paneId].open
+    isOpen: (paneId) -> @current?[paneId].closed
+    toggle: (paneId) -> @current?[paneId].closed = !@current[paneId].closed
+    close: (paneId) ->  @current?[paneId].closed = true
+    open: (paneId) ->  @current?[paneId].closed = false
       
     setLayout: (idx) ->
       if preset = presets[idx]
@@ -62,7 +68,7 @@ module.factory "layout", ["$rootScope", ($rootScope) ->
         $rootScope.$broadcast "reflow"
       @current
   
-  service.setLayout(1) # Default
+  service.setLayout(0) # Default
 
   service
 ]

@@ -1,29 +1,28 @@
-      <ul class="list-group" ng-controller="SidebarController">
-        <li class="list-group-item" ng-class="{active: $index==workspace.getActiveFileIndex()}" ng-repeat="file in project.getFiles() track by file.filename | orderBy:'filename'" ng-dblclick="fileRename(file.filename)" ng-click="workspace.open(file.filename)">
-          <button type="button"  ng-click="fileRemove(file.filename)" class="close remover" stop-propagation="click" data-dismiss="alert" aria-hidden="true" tooltip="Delete this file" tooltip-append-to-body="true" tooltip-placement="right">&times;</button>
-          <i class="icon-file-alt"></i>&nbsp;<span ng-bind="file.filename"></span>
-          <button class="btn btn-xs btn-link pull-right" ng-click="workspace.close(file.filename)" stop-propagation="click" tooltip="Close this file's split" tooltip-append-to-body="true" tooltip-placement="right">
-            <i class="icon-resize-small"></i>
-          </button>
-          <button class="btn btn-xs btn-link pull-right" ng-click="workspace.open(file.filename, {split: true})" ng-if="!workspace.isFileOpen(file.filename)" stop-propagation="click" tooltip="Open file in a new split" tooltip-append-to-body="true" tooltip-placement="right">
-            <i class="icon-columns"></i>
-          </button>
-        </li>
-        <li class="list-group-item add-new" ng-click="fileCreate()">
-          <i class="icon-file"></i>
-          Add file...
-        </li>
-      </ul>
-      <fieldset>
-        <form>
-          <div class="form-group">
-            <textarea class="form-control" rows="3" ng-model="plunkInfo.description" placeholder="Plunk description" tooltip="Add a brief description of your plunk" tooltip-append-to-body="true" tooltip-placement="right"></textarea>
-          </div>
-          <div class="checkbox">
-            <label tooltip="{{plunkInfo.private && 'Only users who know the url of the plunk will be able to view it' || 'Anyone can discover this plunk'}}" tooltip-append-to-body="true" tooltip-placement="right">
-              <input type="checkbox" ng-model="plunkInfo.private"> Private
-            </label>
-          </div>
-        </form>
-      </fieldset>
- 
+<ul class="list-group">
+  <li class="list-group-item" ng-class="{active: $index==workspace.getActiveFileIndex()}" ng-repeat="file in project.getFiles() track by file.filename" ng-dblclick="fileRename(file.filename)" ng-click="workspace.open(file.filename)">
+    <button type="button"  ng-click="fileRemove(file.filename)" class="close remover" stop-propagation="click" data-dismiss="alert" aria-hidden="true" tooltip="Delete this file" tooltip-append-to-body="true" tooltip-placement="right">&times;</button>
+    <i class="icon-file-alt"></i>&nbsp;<span ng-bind="file.filename"></span>
+    <button class="btn btn-xs btn-link pull-right unsplit" ng-click="workspace.close(file.filename)" ng-if="workspace.isFileOpen(file.filename) && workspace.getSplitCount() > 1" stop-propagation="click" tooltip="Close this file's split" tooltip-append-to-body="true" tooltip-placement="right">
+      <i class="icon-resize-small"></i>
+    </button>
+    <button class="btn btn-xs btn-link pull-right split" ng-click="workspace.open(file.filename, {split: true})" ng-if="!workspace.isFileOpen(file.filename)" stop-propagation="click" tooltip="Open file in a new split" tooltip-append-to-body="true" tooltip-placement="right">
+      <i class="icon-columns"></i>
+    </button>
+  </li>
+  <li class="list-group-item add-new" ng-click="fileCreate()">
+    <i class="icon-file"></i>
+    Add file...
+  </li>
+</ul>
+<fieldset>
+  <form>
+    <div class="form-group">
+      <textarea class="form-control" rows="3" ng-model="plunkInfo.description" placeholder="Plunk description" tooltip="Add a brief description of your plunk" tooltip-append-to-body="true" tooltip-placement="right"></textarea>
+    </div>
+    <div class="checkbox">
+      <label tooltip="{{plunkInfo.private && 'Only users who know the url of the plunk will be able to view it' || 'Anyone can discover this plunk'}}" tooltip-append-to-body="true" tooltip-placement="right">
+        <input type="checkbox" ng-model="plunkInfo.private"> Private
+      </label>
+    </div>
+  </form>
+</fieldset>

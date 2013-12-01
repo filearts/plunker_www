@@ -8,88 +8,82 @@ module.exports = (grunt) ->
       src: 'assets',
       dest: 'public'
     
-    coffeelint:
-      files:
-        src: ['<%=build.src%>/js/**/*.coffee']
-      options:
-        max_line_length:
-          value: false
-          level: "warn"
-        no_trailing_whitespace:
-          value: true
-          level: false
-          
-    
     less:
-      compile:
+      development:
         files:
-          '<%=build.dest%>/css/apps/landing.css': ['<%=build.src%>/css/apps/landing.less']
-          '<%=build.dest%>/css/apps/editor.css': ['<%=build.src%>/css/apps/editor.less']
+          '<%=build.dest%>/css/plunker.css': ['<%=build.src%>/css/plunker.less']
         options:
           strictImports: true
           syncImports: true
-      build:
-        #options:
-        #  compress: true
+      production:
+        options:
+          compress: true
+          strictImports: true
+          syncImports: true
         files:
-          '<%=build.dest%>/css/apps/landing.css': ['<%=build.src%>/css/apps/landing.less']
-          '<%=build.dest%>/css/apps/editor.css': ['<%=build.src%>/css/apps/editor.less']
+          '<%=build.dest%>/css/plunker-min.css': ['<%=build.src%>/css/plunker.less']
           
     watch:
       scripts:
-        files: ['<%=build.src%>/**/*.coffee', '<%=build.src%>/**/*.js']
-        tasks: ['browserify:compile']
+        files: ['<%=build.src%>/**/*.coffee', '<%=build.src%>/**/*.js', '<%=build.src%>/**/*.html']
+        tasks: ['browserify:development']
       styles:
         files: ["<%=build.src%>/**/*.less", "<%=build.src%>/**/*.css"]
-        tasks: ['less:compile']
+        tasks: ['less:development']
       options:
         nospawn: true
 
     browserify:
-      compile:
+      development:
         files:
-          '<%=build.dest%>/js/apps/landing.js': ['<%=build.src%>/js/apps/landing.coffee']
-          '<%=build.dest%>/js/apps/editor.js': ['<%=build.src%>/js/apps/editor.coffee']
+          '<%=build.dest%>/js/plunker.js': ['<%=build.src%>/js/plunker.coffee']
         options:
-          #debug: true
-          transform: ['caching-coffeeify']
+          debug: true
+          transform: ['caching-coffeeify', 'brfs']
+          shim:
+            emmet:
+              path: "<%=build.src%>/vendor/emmet/emmet.js"
+              exports: "emmet"
           noParse: [
             '<%=build.src%>/vendor/angular/angular.js'
             '<%=build.src%>/vendor/angular/angular-cookies.js'
             '<%=build.src%>/vendor/angular-growl/angular-growl.js'
             '<%=build.src%>/vendor/angular-ui/ui-bootstrap.js'
             '<%=build.src%>/vendor/angular-ui/ui-router.js'
+            '<%=build.src%>/vendor/angular-deckgrid/angular-deckgrid.js'
             '<%=build.src%>/vendor/dominatrix/dominatrix.js'
             '<%=build.src%>/vendor/share/bcsocket-uncompressed.js'
             '<%=build.src%>/vendor/share/share.uncompressed.js'
+            '<%=build.src%>/vendor/emmet/emmet.js'
           ]
-      build:
+      production:
         files:
-          '<%=build.dest%>/js/apps/landing.js': ['<%=build.src%>/js/apps/landing.coffee']
-          '<%=build.dest%>/js/apps/editor.js': ['<%=build.src%>/js/apps/editor.coffee']
+          '<%=build.dest%>/js/plunker.js': ['<%=build.src%>/js/plunker.coffee', '<%=build.src%>/js/partials.coffee']
         options:
           debug: false
-          transform: ['caching-coffeeify']
-          noParse: ['<%=build.src%>/vendor/angular/angular.js','<%=build.src%>/vendor/angular/angular-cookies.js','<%=build.src%>/vendor/angular-ui/ui-bootstrap.js']
+          transform: ['caching-coffeeify', 'brfs']
+          shim:
+            emmet:
+              path: "<%=build.src%>/vendor/emmet/emmet.js"
+              exports: "emmet"
+          noParse: [
+            '<%=build.src%>/vendor/angular/angular.js'
+            '<%=build.src%>/vendor/angular/angular-cookies.js'
+            '<%=build.src%>/vendor/angular-growl/angular-growl.js'
+            '<%=build.src%>/vendor/angular-ui/ui-bootstrap.js'
+            '<%=build.src%>/vendor/angular-ui/ui-router.js'
+            '<%=build.src%>/vendor/angular-deckgrid/angular-deckgrid.js'
+            '<%=build.src%>/vendor/dominatrix/dominatrix.js'
+            '<%=build.src%>/vendor/share/bcsocket-uncompressed.js'
+            '<%=build.src%>/vendor/share/share.uncompressed.js'
+            '<%=build.src%>/vendor/emmet/emmet.js'
+          ]
 
     uglify:
       build:
-        expand: true
-        cwd: '<%=build.dest%>/js/'
-        src: ['**/*.js']
-        dest: '<%=build.dest%>/js/'
-        ext: ".min.js"
-
-    express:
-      options: 
-        port: process.env.PORT
-      livereload:
-        options:
-          server: path.resolve('./server/index.coffee')
-          #livereload: true
-          #serverreload: true
-          #bases: [path.resolve('./public')]
-          
+        files:
+          '<%=build.dest%>/js/plunker-min.js': ['<%=build.dest%>/js/plunker.js']
+        
 
   # load plugins
   grunt.loadNpmTasks 'grunt-contrib-less'
@@ -103,6 +97,5 @@ module.exports = (grunt) ->
     grunt.file.delete grunt.config.get('build').tmp
 
   grunt.registerTask 'default', ['compile', 'watch']
-  grunt.registerTask 'compile', ['browserify:compile', 'less:compile']
-  grunt.registerTask 'build', ['browserify:main', 'uglify', 'less:build']
-  grunt.registerTask 'spec', ['compile', 'browserify:specs', 'jasmine']
+  grunt.registerTask 'compile', ['browserify:development', 'less:development']
+  grunt.registerTask 'build', ['browserify:production', 'uglify', 'less:production']

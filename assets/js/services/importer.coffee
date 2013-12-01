@@ -1,16 +1,7 @@
 dominatrix = require("../../vendor/dominatrix/dominatrix")
+_ = require "lodash"
 
-require "../services/notifier"
-require "../services/url"
-
-plunkerRegex = ///
-  ^
-    \s*                   # Leading whitespace
-    (?:plunk:)?           # Optional plunk:prefix
-    ([-\._a-zA-Z0-9]+)     # Plunk ID
-    \s*                   # Trailing whitespace
-  $
-///i
+require "../services/api.coffee"
 
 templateRegex = ///
   ^
@@ -47,100 +38,47 @@ githubRegex = ///
 ///i
 
 
-module = angular.module "plunker.importer", [
-  "plunker.plunks"
-  "plunker.updater"
-  "plunker.notifier"
+module = angular.module "plunker.service.importer", [
+  "plunker.service.api"
 ]
 
-module.service "importer", [ "$q", "$http", "url", "notifier", ($q, $http, url, notifier) ->
+module.service "importer", [ "$q", "$http", "api", "notifier", ($q, $http, api, notifier) ->
   import: (source) ->
-    deferred = $q.defer()
-    
-    ###
+
     if matches = source.match(templateRegex)
-      plunks.findOrCreate(id: matches[1]).refresh().then (plunk) ->
-        files = {}
-        files[filename] = {filename: filename, content: file.content} for filename, file of plunk.files
-        
-        finalize = ->
-          deferred.resolve
-            description: plunk.description
-            tags: angular.copy(plunk.tags)
-            files: files
-            source: source
-        
-        if false and index = files['index.html']
-          markup = updater.parse(index.content)
-          markup.updateAll().then ->
-            index.content = markup.toHtml()
-            
-            finalize()
-        else finalize()
-        
+      api.all("plunks").one(matches[1]).get().then (plunk) ->
+        plunk.files = _.values(plunk.files)
+        plunk
       , (error) ->
         deferred.reject("Plunk not found")
         
-    else ###
-    if matches = source.match(plunkerRegex)
-      plunks.findOrCreate(id: matches[1]).refresh().then (plunk) ->
-        files = {}
-        files[filename] = {filename: filename, content: file.content} for filename, file of plunk.files
-        
-        
-        deferred.resolve
-          description: plunk.description
-          tags: angular.copy(plunk.tags)
-          files: files
-          plunk: angular.copy(plunk)
-      , (error) ->
-        deferred.reject("Plunk not found")
-        
-    else###
-    if matches = source.match(githubRegex)
+    else if matches = source.match(githubRegex)
       request = $http.jsonp("https://api.github.com/gists/#{matches[1]}?callback=JSON_CALLBACK")
       
-      request.then (response) ->
-        if response.data.meta.status >= 400 then deferred.reject("Gist not found")
-        else
-          gist = response.data.data
-          json = 
-            'private': true
-          
-          if manifest = gist.files["plunker.json"]
-            try
-              angular.extend json, angular.fromJson(manifest.content)
-            catch e
-              console.error "Unable to parse manifest file:", e
+      parser = request.then (response) ->
+        if response.data.meta.status >= 400 then return $q.reject("Gist not found")
+        
+        gist = response.data.data
+        json = 
+          'private': true
+          files: []
+        
+        if manifest = gist.files["plunker.json"]
+          try
+            angular.extend json, angular.fromJson(manifest.content)
+          catch e
+            return $q.reject("Unable to parse the plunker.json file")
 
-  
-          angular.extend json,
-            source:
-              type: "gist"
-              url: gist.html_url
-              title: "gist:#{gist.id}"
-            files: {}
-          
-          json.description = json.source.description = gist.description if gist.description
+        json.description = gist.description or "https://gist.github.com/#{$stateParams.gistId}"
 
-          for filename, file of gist.files
-            unless filename == "plunker.json"
-              json.files[filename] =
-                filename: filename
-                content: file.content 
-          
-          if false and index = json.files['index.html']
-            markup = updater.parse(index.content)
-            markup.updateAll().then ->
-              index.content = markup.toHtml()
-              
-              deferred.resolve(json)
-            , (err) ->
-              notifier.error "Auto-update failed", err.message
-              deferred.resolve(json)
-          else deferred.resolve(json)
-          
-    ###else if matches = source.match(fiddleRegex)
+        for filename, file of gist.files
+          unless filename == "plunker.json"
+            json.files.push
+              filename: filename
+              content: file.content 
+        
+        return json
+      ###else if matches = source.match(fiddleRegex)
       fiddleRef = matches[1] + if matches[2] then "/#{matches[2]}" else ""
       fiddleUrl = "http://jsfiddle.net/#{fiddleRef}/show"
       
@@ -211,8 +149,6 @@ module.service "importer", [ "$q", "$http", "url", "notifier", ($q, $http, url, 
           , (err) ->
             notifier.error "Auto-update failed", err.message
             deferred.resolve(json)
-    ###
+      ###
     else return $q.reject("Not a recognized source")
-    
-    deferred.promise
 ]
