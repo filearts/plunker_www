@@ -7,11 +7,11 @@
 }
 
 html, body {
-  overflow: hidden;
   margin: 0;
   padding: 0;
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
   font-size: 14px;
+  .abs;
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -108,6 +108,7 @@ html, body {
   background-color: #e5e5e5;
   border-left: 2px solid #ddd;
   color: #333;
+  box-sizing: border-box;
   
   ul {
     margin: 0;
@@ -168,7 +169,10 @@ html, body {
     padding: 10px;
     font-size: 14px !important;
   }
-  
+
+  .ace_line:empty {
+    height: 1em;
+  }
   .filename {
     .abs(8px; 10px; auto; auto);
     display: block;

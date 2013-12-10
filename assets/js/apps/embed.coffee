@@ -1,6 +1,6 @@
 require "../../vendor/angular-1.2.3"
 require "../../vendor/ui-router/ui-router"
-require "../../vendor/marked.js"
+#require "../../vendor/marked.js"
 require "../../vendor/angularytics/angularytics"
 
 require "../services/modes.coffee"
@@ -60,9 +60,13 @@ module.config ["$stateProvider", "$urlRouterProvider", ($stateProvider, $urlRout
     onEnter: ["$rootScope", ($rootScope) ->
       $rootScope.toggleFiles(false)
     ]
-    controller: ["$scope", "$sce", "$stateParams", "sourceCache", ($scope, $sce, $stateParams, sourceCache) ->
+    controller: ["$scope", "$sce", "$state", "$stateParams", "sourceCache", ($scope, $sce, $state, $stateParams, sourceCache) ->
+      return $state.go("embed.preview") unless $stateParams.filename
+                 
       $scope.filename = $stateParams.filename
-      $scope.source = window.plunk.files[$stateParams.filename].content or "*** EMPTY FILE ***"
+      $scope.source = 
+        if file = window.plunk.files[$stateParams.filename] then file.content or "*** EMPTY FILE ***"
+        else "*** NO SUCH FILE ***"
     ]
 ]
 
