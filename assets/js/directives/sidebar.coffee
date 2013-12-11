@@ -15,6 +15,7 @@
 #= require ./../directives/inlineuser
 #= require ./../directives/plunkinfo
 #= require ./../directives/restorer
+#= require ./../directives/overlay
 
 
 module = angular.module "plunker.sidebar", [
@@ -24,6 +25,7 @@ module = angular.module "plunker.sidebar", [
   "plunker.plunkinfo"
   "plunker.restorer"
   "plunker.visitor"
+  "plunker.overlay"
   "plunker.url"
   "ui.bootstrap"
 ]
@@ -111,7 +113,21 @@ module.directive "plunkerTagger", ["$timeout", "url", ($timeout, url) ->
       modelChange = false
 ]
 
-module.directive "plunkerSidebar", [ "session", "notifier", "visitor", (session, notifier, visitor) ->
+module.filter "eventIcon", ->
+  (event) ->
+    switch event
+      when "create" then "icon-file"
+      when "update" then "icon-save"
+      when "fork" then "icon-git-fork"
+
+module.filter "eventName", ->
+  (event) ->
+    switch event
+      when "create" then "Created"
+      when "update" then "Updated"
+      when "fork" then "Forked"
+
+module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "visitor", "overlay", ($timeout, $q, session, notifier, visitor, overlay) ->
   restrict: "E"
   replace: true
   template: """
@@ -125,6 +141,18 @@ module.directive "plunkerSidebar", [ "session", "notifier", "visitor", (session,
           <li class="newfile">
             <a ng-click="promptFileAdd()">
               <i class="icon-file"></i> New file
+            </a>
+          </li>
+        </ul>
+      </details>
+      <details ng-show="session.isSaved()">
+        <summary class="header">Versions <span class="label" ng-bind="session.plunk.history.length | number"></span></summary>
+        <ul class="plunker-filelist nav nav-list">
+          <li ng-class="{active: $index==session.currentRevisionIndex}" ng-repeat="event in session.plunk.history | orderBy:'-created_at'">
+            <a ng-click="revertTo($index)">
+              <i ng-class="event.event | eventIcon"></i>
+              <span ng-bind="event.event | eventName"></span>
+              <abbr timeago="{{event.created_at}}"></abbr>
             </a>
           </li>
         </ul>
@@ -179,6 +207,17 @@ module.directive "plunkerSidebar", [ "session", "notifier", "visitor", (session,
     $scope.promptFileAdd = ->
       notifier.prompt "New filename", "",
         confirm: (filename) -> session.addBuffer(filename, "", activate: true)
+
+    $scope.revertTo = (rel) ->
+      return unless session.isSaved()
+                                    
+      revert = ->
+        overlay.show "Reverting plunk", session.revertTo(rel)
+      
+      if session.isDirty() then notifier.confirm "You have unsaved changes that will be lost if you revert. Are you sure you would like to revert?",
+        confirm: revert
+      else revert()
+
     $desc = $el.find("#plunk-description")
     $desc.autosize(append: "\n")
 

@@ -30,7 +30,7 @@ module.service "overlay", [ "$q", ($q) ->
     show: (@message, promise) ->
       resolver = @remover(@message)
       
-      @queue = $q.all [ @queue, promise.then(resolver, resolver) ]
+      @queue = $q.all [ @queue, $q.when(promise).then(resolver, resolver) ]
 ]
 
 module.run [ "$rootScope", "$q", "overlay", ($rootScope, $q, overlay) ->

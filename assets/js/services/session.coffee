@@ -152,12 +152,18 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       current
     
     revertTo: (rel = 0) ->
+      dfd = $q.defer()
+      
       $script "/vendor/diff_match_patch/diff_match_patch.js", =>
         json = @getRevision(rel, angular.copy(@$$currentRevision ||= @toJSON()))
         
         @currentRevisionIndex = rel
         
         @reset json, soft: true
+        
+        dfd.resolve(json)
+      
+      dfd.promise
       
       
     getSaveDelta: ->
