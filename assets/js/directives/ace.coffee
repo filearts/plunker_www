@@ -269,7 +269,6 @@ module.directive "plunkerAce", ["$timeout", "$q", "session", "settings", "activi
       dfd.promise
     
     @loadScript = (scriptUrl) ->
-      console.log "loadScript", scriptUrl
       dfd = $q.defer()
       require("ace/lib/net").loadScript scriptUrl, -> dfd.resolve(scriptUrl)
       dfd.promise
