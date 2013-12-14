@@ -284,7 +284,12 @@ module.directive "plunkerAce", ["$timeout", "$q", "session", "settings", "activi
         @editor.setOption "enableEmmet", true
 
   
-    @bindKeys = ->
+    @bindKeys = (keyboardHandler) ->
+      if not keyboardHandler or keyboardHandler is "ace"
+        @editor.setKeyboardHandler(null)
+      else
+        @editor.setKeyboardHandler("ace/keyboard/#{keyboardHandler}"
+
       @editor.commands.addCommand
         name: "Save"
         bindKey:
@@ -326,7 +331,8 @@ module.directive "plunkerAce", ["$timeout", "$q", "session", "settings", "activi
     $aceEl = $el.find(".plunker-ace-canvas").get(0)
 
     controller.editor = new Editor(new Renderer($aceEl, "ace/theme/#{settings.editor.theme || 'textmate'}"))
-    controller.bindKeys()
+
+    controller.bindKeys(settings.editor.keyboard_handler)
     controller.setupAutocomplete()
     
     MultiSelect(controller.editor)
@@ -383,6 +389,9 @@ module.directive "plunkerAce", ["$timeout", "$q", "session", "settings", "activi
     
     $scope.$watch "settings.theme", (theme) ->
       controller.editor.setTheme("ace/theme/#{theme}")
+    
+    $scope.$watch "settings.keyboard_handler", (keyboard_handler) ->
+      controller.bindKeys(keyboard_handler)
     
     $scope.$on "resize", ->
       controller.editor.resize(true)
