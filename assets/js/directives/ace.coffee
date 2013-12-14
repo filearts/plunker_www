@@ -288,7 +288,7 @@ module.directive "plunkerAce", ["$timeout", "$q", "session", "settings", "activi
       if not keyboardHandler or keyboardHandler is "ace"
         @editor.setKeyboardHandler(null)
       else
-        @editor.setKeyboardHandler("ace/keyboard/#{keyboardHandler}"
+        @editor.setKeyboardHandler("ace/keyboard/#{keyboardHandler}")
 
       @editor.commands.addCommand
         name: "Save"
