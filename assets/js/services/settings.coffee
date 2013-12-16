@@ -11,6 +11,7 @@ module.service "settings", [ () ->
       font_size: 12
       soft_tabs: true
       theme: "textmate"
+      keyboard_handler: "ace"
       wrap:
         range:
           min: 0
