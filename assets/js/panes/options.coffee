@@ -11,7 +11,7 @@ module.run [ "panes", "settings", (panes, settings) ->
   panes.add
     id: "options"
     icon: "cog"
-    size: 230
+    size: 252
     order: 1000
     title: "Editor Options"
     description: """
