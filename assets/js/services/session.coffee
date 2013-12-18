@@ -42,13 +42,17 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
   
     $$asyncOp = (operation, fn) ->
       dfd = $q.defer()
-  
+      
+      console.log "AsyncOp starting", operation
+      
       fn.call(@, dfd)
   
       dfd.promise.then ->
+        console.log "AsyncOp completed", operation
         @loading = ""
       , ->
         @loading = ""
+        console.log "AsyncOp failed", operation
   
     constructor: ->
       @currentRevisionIndex = 0
@@ -301,7 +305,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       @addBuffer("index.html", "") unless $$history.length
   
       @activateBuffer(buffer) if buffer = @getBufferByFilename(/^index\./i)
-
+      
       activity.client("session").record "reset", @toJSON(includeBufferId: true)
       
       $$cleanState = angular.copy(json.$$cleanState) || @toJSON(raw: true)
@@ -425,6 +429,25 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
           notifier.error """
             Delete failed: #{err}
           """.trim()
+
+    freeze: (options = {}) ->
+      unless @plunk?.isSaved() then return notifier.warning """
+        Freeze cancelled: You cannot freeze a plunk that does not exist.
+      """.trim()
+  
+      self = @
+      
+      $$asyncOp.call @, "freeze", (dfd) ->
+        self.plunk.freeze().then ->
+          notifier.success "Plunk frozen"
+  
+          dfd.resolve(self)
+        , (err) ->
+          notifier.error """
+            Freeze failed: #{err}
+          """.trim()
+
+          dfd.reject(err)
   
   
     addBuffer: (filename, content = "", options = {}) ->

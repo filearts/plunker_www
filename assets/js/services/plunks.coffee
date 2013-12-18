@@ -142,6 +142,26 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
         
         $q.reject("Refresh failed")
     
+    freeze: (options = {}) ->
+      self = @
+      
+      options.params ||= {}
+      options.params.sessid = visitor.session.id
+      
+      options.cache ?= false
+      
+      self.$$refreshing ||= $http.post("#{url.api}/plunks/#{@id}/freeze", {}, options).then (res) ->
+        angular.copy(res.data, self)
+        
+        self.$$refreshing = null
+        self.$$refreshed_at = new Date()
+        
+        self
+      , (err) ->
+        self.$$refreshing = null
+        
+        $q.reject("Freeze failed")
+    
     star: (starred = !@thumbed, options = {}) ->
       self = @
       

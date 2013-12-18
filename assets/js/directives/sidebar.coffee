@@ -148,11 +148,12 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
       <details ng-show="session.isSaved()">
         <summary class="header">Versions <span class="label" ng-bind="session.plunk.history.length | number"></span></summary>
         <ul class="plunker-filelist nav nav-list">
-          <li ng-class="{active: $index==session.currentRevisionIndex}" ng-repeat="event in session.plunk.history | orderBy:'-created_at'">
+          <li ng-class="{active: $index==session.currentRevisionIndex, frozen: $index==session.plunk.frozen_version}" ng-repeat="event in session.plunk.history | orderBy:'-created_at'">
             <a ng-click="revertTo($index)">
               <i ng-class="event.event | eventIcon"></i>
               <span ng-bind="event.event | eventName"></span>
               <abbr timeago="{{event.created_at}}"></abbr>
+              <i class="icon-lock" ng-show="$index==session.plunk.history.length - 1 - session.plunk.frozen_version" tooltip="The plunk is currently frozen at this version" tooltip-placement="right"></i>
             </a>
           </li>
         </ul>

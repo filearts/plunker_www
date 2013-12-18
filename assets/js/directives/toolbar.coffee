@@ -24,9 +24,14 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
   replace: true
   template: """
     <div class="plunker-toolbar btn-toolbar">
-      <div class="btn-group" ng-show="!session.plunk || session.plunk.isWritable()">
-        <button ng-disabled="!session.isPlunkDirty()" ng-click="session.save()" class="btn btn-primary" tooltip-placement="bottom" tooltip="Save your work as a new Plunk">
+      <div class="btn-group" ng-show="session.isPlunkDirty() && (!session.plunk || session.plunk.isWritable())">
+        <button ng-click="session.save()" class="btn btn-primary" tooltip-placement="bottom" tooltip="Save your work as a new Plunk">
           <i class="icon-save"></i><span class="shrink"> Save</span>
+        </button>
+      </div>
+      <div class="btn-group" ng-show="!session.isPlunkDirty() && (!session.plunk || session.plunk.isWritable())">
+        <button ng-click="session.freeze()" class="btn btn-default" tooltip-placement="bottom" tooltip="Set this version as the version other users will see. You can then keep saving new versions that only you can see.">
+          <i class="icon-lock"></i><span class="shrink"> Freeze</span>
         </button>
       </div>
       <div class="btn-group" ng-show="session.isSaved()">

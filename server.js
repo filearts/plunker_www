@@ -31,5 +31,5 @@ serverDomain.run(function(){
 });
 
 serverDomain.on("error", function (error) {
-  console.error('[ERR]', "Server level error", error.code, error.message);
+  console.error('[ERR]', "Server level error", error.code, error.message, error);
 })
