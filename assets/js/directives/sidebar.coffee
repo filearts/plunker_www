@@ -153,7 +153,7 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
               <i ng-class="event.event | eventIcon"></i>
               <span ng-bind="event.event | eventName"></span>
               <abbr timeago="{{event.created_at}}"></abbr>
-              <i class="icon-lock" ng-show="$index==session.plunk.history.length - 1 - session.plunk.frozen_version" tooltip="The plunk is currently frozen at this version" tooltip-placement="right"></i>
+              <i class="icon-lock" ng-show="session.plunk.frozen_at && $index==session.plunk.history.length - 1 - session.plunk.frozen_version" tooltip="The plunk is currently frozen at this version" tooltip-placement="right"></i>
             </a>
           </li>
         </ul>

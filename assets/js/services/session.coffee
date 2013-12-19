@@ -156,7 +156,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       dfd = $q.defer()
       
       $script "/vendor/diff_match_patch/diff_match_patch.js", =>
-        if rel
+        if rel or !$$currentRevision
           json = @getRevision(rel, angular.copy($$currentRevision ||= @toJSON(includeBufferId: true)))
         else
           json = angular.copy($$currentRevision)
