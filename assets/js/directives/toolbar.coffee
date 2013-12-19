@@ -83,7 +83,7 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
         </ul>
       </div>
       <div class="btn-group">
-        <button ng-click="togglePreview() | trackEvent:'Plunk':'Toggle Preview':'Toolbar'" class="btn btn-inverse" ng-class="{active: panes.active.id=='preview'}" ng-switch on="panes.active.id=='preview'" tooltip-placement="bottom" tooltip="Preview your work">
+        <button ng-click="togglePreview() | trackEvent:'Multipane':panes.active.id=='preview'&&'Show Preview'||'Hide Preview':'Toolbar'" class="btn btn-inverse" ng-class="{active: panes.active.id=='preview'}" ng-switch on="panes.active.id=='preview'" tooltip-placement="bottom" tooltip="Preview your work">
           <div ng-switch-when="false">
             <i class="icon-play" />
             <span class="shrink">Run</span>

@@ -15,7 +15,7 @@ module.directive "plunkerPaneselector", [ "panes", (panes) ->
     <div class="plunker-paneselector">
       <ul>
         <li tooltip="{{pane.title}}" tooltip-placement="left" ng-repeat="pane in panes.panes | orderBy:'order'" class="{{pane.class}} plunker-pane-{{pane.id}}" ng-hide="pane.hidden" ng-class="{active:pane==panes.active}">
-          <a ng-click="panes.toggle(pane) | trackEvent:'Multipane':'Toggle':pane.title">
+          <a ng-click="panes.toggle(pane) | trackEvent:'Multipane':(panes.active==pane&&'Show '||'Hide ') + pane.title:'Paneselector'">
             <i class="icon-{{pane.icon}}"></i>
           </a>
         </li>
