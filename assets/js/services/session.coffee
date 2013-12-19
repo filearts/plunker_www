@@ -34,6 +34,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
   new class Session
     $$cleanState = {}
     $$savedState = {}
+    $$currentRevision = null
     $$history = []
   
     $$counter = 0
@@ -43,16 +44,12 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
     $$asyncOp = (operation, fn) ->
       dfd = $q.defer()
       
-      console.log "AsyncOp starting", operation
-      
       fn.call(@, dfd)
   
       dfd.promise.then ->
-        console.log "AsyncOp completed", operation
         @loading = ""
       , ->
         @loading = ""
-        console.log "AsyncOp failed", operation
   
     constructor: ->
       @currentRevisionIndex = 0
@@ -113,7 +110,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       
       return !angular.equals(previous, current)
     
-    getRevision: (rel = 0, current = @toJSON()) ->
+    getRevision: (rel = 0, current = $$currentRevision) ->
       session = @
       size = @plunk.history.length - 1
       dmp = new diff_match_patch()
@@ -143,7 +140,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
               # File renamed
               if chg.pn != chg.fn
                 #console.log "Renaming", chg.pn, "to", chg.fn
-                rename(chg.pn, chg.fn)
+                rename(chg.fn, chg.pn)
             else # Deleted the file
               #console.log "Adding", chg.fn, chg.pl
               current.files[chg.pn] =
@@ -159,11 +156,14 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       dfd = $q.defer()
       
       $script "/vendor/diff_match_patch/diff_match_patch.js", =>
-        json = @getRevision(rel, angular.copy(@$$currentRevision ||= @toJSON()))
-        
-        @currentRevisionIndex = rel
+        if rel
+          json = @getRevision(rel, angular.copy($$currentRevision ||= @toJSON(includeBufferId: true)))
+        else
+          json = angular.copy($$currentRevision)
         
         @reset json, soft: true
+        
+        @currentRevisionIndex = rel
         
         dfd.resolve(json)
       
@@ -306,10 +306,15 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
   
       @activateBuffer(buffer) if buffer = @getBufferByFilename(/^index\./i)
       
+      # Set currentRevisionIndex if we are not the owner and this plunk is frozen
+      if @plunk and @plunk.frozen_version and !@isWritable()
+        @currentRevisionIndex = @plunk.history.length - 1 - @plunk.frozen_version
+
       activity.client("session").record "reset", @toJSON(includeBufferId: true)
       
       $$cleanState = angular.copy(json.$$cleanState) || @toJSON(raw: true)
       $$savedState = angular.copy(json.$$savedState) || @toJSON(raw: true) if @plunk?.isSaved()
+      $$currentRevision = null unless options.soft
 
       @$resetting = false
 
@@ -351,6 +356,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
           plunk.save(json).then (plunk) ->
             $$cleanState = angular.copy(inFlightState)
             $$savedState = angular.copy(inFlightState)
+            $$currentRevision = null
             notifier.success "Plunk updated"
             dfd.resolve(self)
           , (err) ->
@@ -398,6 +404,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
           self.plunk = plunk
           $$cleanState = angular.copy(inFlightState)
           $$savedState = angular.copy(inFlightState)
+          $$currentRevision = null
   
           notifier.success "Plunk forked"
   
@@ -430,7 +437,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
             Delete failed: #{err}
           """.trim()
 
-    freeze: (options = {}) ->
+    freeze: (rel = @currentRevisionIndex, options = {}) ->
       unless @plunk?.isSaved() then return notifier.warning """
         Freeze cancelled: You cannot freeze a plunk that does not exist.
       """.trim()
@@ -438,7 +445,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       self = @
       
       $$asyncOp.call @, "freeze", (dfd) ->
-        self.plunk.freeze().then ->
+        self.plunk.freeze(rel).then ->
           notifier.success "Plunk frozen"
   
           dfd.resolve(self)

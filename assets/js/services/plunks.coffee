@@ -142,11 +142,12 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
         
         $q.reject("Refresh failed")
     
-    freeze: (options = {}) ->
+    freeze: (rel = 0, options = {}) ->
       self = @
       
       options.params ||= {}
       options.params.sessid = visitor.session.id
+      options.params.v = @history.length - 1 - rel if rel
       
       options.cache ?= false
       
