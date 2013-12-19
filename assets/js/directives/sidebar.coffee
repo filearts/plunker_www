@@ -41,10 +41,10 @@ module.directive "plunkerSidebarFile", [ "notifier", "session", (notifier, sessi
         <li ng-class="participant.style" ng-repeat="(id, participant) in buffer.participants" title="{{participant.handle}}">
         </li>
       </ul>
-      <a class="filename" ng-click="activateBuffer(buffer)" ng-dblclick="promptFileRename(buffer)">{{buffer.filename}}</a>
+      <a class="filename" ng-click="activateBuffer(buffer)" ng-dblclick="promptFileRename(buffer) | trackEvent:'File':'Rename':'Sidebar'">{{buffer.filename}}</a>
       <ul class="file-ops">
         <li class="delete">
-          <button ng-click="promptFileDelete(buffer)" class="btn btn-mini" tooltip="Delete this file" tooltip-placement="right">
+          <button ng-click="promptFileDelete(buffer) | trackEvent:'File':'Delete':'Sidebar'" class="btn btn-mini" tooltip="Delete this file" tooltip-placement="right">
             <i class="icon-remove"></i>
           </button>
         </li>
@@ -139,7 +139,7 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
           <plunker-sidebar-file buffer="buffer" ng-repeat="buffer in session.getBufferArray() | orderBy:'filename'">
           </plunker-sidebar-file>
           <li class="newfile">
-            <a ng-click="promptFileAdd()">
+            <a ng-click="promptFileAdd() | trackEvent:'File':'Add':'Sidebar'">
               <i class="icon-file"></i> New file
             </a>
           </li>
@@ -149,7 +149,7 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
         <summary class="header">Versions <span class="label" ng-bind="session.plunk.history.length | number"></span></summary>
         <ul class="plunker-filelist nav nav-list">
           <li ng-class="{active: $index==session.currentRevisionIndex, frozen: $index==session.plunk.frozen_version}" ng-repeat="event in session.plunk.history | orderBy:'-created_at'">
-            <a ng-click="revertTo($index)">
+            <a ng-click="revertTo($index) | trackEvent:'Plunk':'Revert':'Sidebar'">
               <i ng-class="event.event | eventIcon"></i>
               <span ng-bind="event.event | eventName"></span>
               <abbr timeago="{{event.created_at}}"></abbr>

@@ -1,4 +1,5 @@
 #= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
+#= require ./../../vendor/angularytics/angularytics
 
 #= require ./../services/visitor
 #= require ./../services/session
@@ -15,42 +16,44 @@ module = angular.module "plunker.toolbar", [
   "plunker.panes"
   "plunker.url"
   "plunker.beautifier"
+  
+  "angularytics"
   "ui.bootstrap"
 ]
 
-module.directive "plunkerToolbar", ["$location", "session", "downloader", "notifier", "panes", "visitor", "url", "beautifier", ($location, session, downloader, notifier, panes, visitor, url, beautifier) ->
+module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "downloader", "notifier", "panes", "visitor", "url", "beautifier", ($location, Angularytics, session, downloader, notifier, panes, visitor, url, beautifier) ->
   restrict: "E"
   scope: {}
   replace: true
   template: """
     <div class="plunker-toolbar btn-toolbar">
       <div class="btn-group" ng-show="session.isPlunkDirty() && (!session.plunk || session.plunk.isWritable())">
-        <button ng-click="session.save()" class="btn btn-primary" tooltip-placement="bottom" tooltip="Save your work as a new Plunk">
+        <button ng-click="session.save() | trackEvent:'Plunk':'Save':'Toolbar'" class="btn btn-primary" tooltip-placement="bottom" tooltip="Save your work as a new Plunk">
           <i class="icon-save"></i><span class="shrink"> Save</span>
         </button>
       </div>
       <div class="btn-group" ng-show="!session.isPlunkDirty() && (!session.plunk || session.plunk.isWritable())">
-        <button ng-disabled="session.plunk.frozen_version==session.plunk.history.length - 1 && !session.currentRevisionIndex" ng-click="session.freeze()" class="btn btn-default" tooltip-placement="bottom" tooltip="Set this version as the version other users will see. You can then keep saving new versions that only you can see.">
+        <button ng-disabled="session.plunk.frozen_version==session.plunk.history.length - 1 && !session.currentRevisionIndex" ng-click="session.freeze() | trackEvent:'Plunk':'Freeze':'Toolbar'" class="btn btn-default" tooltip-placement="bottom" tooltip="Set this version as the version other users will see. You can then keep saving new versions that only you can see.">
           <i class="icon-lock"></i><span class="shrink"> Freeze</span>
         </button>
       </div>
       <div class="btn-group" ng-show="session.isSaved()">
-        <button ng-click="session.fork()" class="btn" tooltip-placement="bottom" tooltip="Save your changes as a fork of this Plunk">
+        <button ng-click="session.fork() | trackEvent:'Plunk':'Fork':'Toolbar'" class="btn" tooltip-placement="bottom" tooltip="Save your changes as a fork of this Plunk">
           <i class="icon-git-fork"></i><span class="shrink"> Fork</span>
         </button>
         <button ng-if="visitor.isMember()" data-toggle="dropdown" class="btn dropdown-toggle" tooltip-placement="bottom" tooltip="Fork and toggle the privacy of this Plunk"><span class="caret"></span></button>
         <ul ng-if="visitor.isMember()" class="dropdown-menu" ng-switch on="session.private">
-          <li ng-switch-when="false"><a ng-click="session.fork({private: true})">Fork to private plunk</a></li>
-          <li ng-switch-when="true"><a ng-click="session.fork({private: false})">Fork to public plunk</a></li>
+          <li ng-switch-when="false"><a ng-click="session.fork({private: true}) | trackEvent:'Plunk':'Fork Private':'Toolbar'">Fork to private plunk</a></li>
+          <li ng-switch-when="true"><a ng-click="session.fork({private: false}) | trackEvent:'Plunk':'Fork Public':'Toolbar'">Fork to public plunk</a></li>
         </ul>
       </div>
       <div ng-show="session.plunk.isWritable() && session.plunk.isSaved()" class="btn-group">
-        <button ng-click="promptDestroy()" class="btn btn-danger" tooltip-placement="bottom" tooltip="Delete the current plunk">
+        <button ng-click="promptDestroy() | trackEvent:'Plunk':'Destroy':'Toolbar'" class="btn btn-danger" tooltip-placement="bottom" tooltip="Delete the current plunk">
           <i class="icon-trash"></i>
         </button>
       </div>
       <div class="btn-group">
-        <button ng-click="promptReset()" class="btn btn-success" tooltip-placement="bottom" tooltip="Create a new Plunk">
+        <button ng-click="promptReset() | trackEvent:'Plunk':'Reset':'Toolbar'" class="btn btn-success" tooltip-placement="bottom" tooltip="Create a new Plunk">
           <i class="icon-file"></i><span class="shrink"> New</span>
         </button>
         <button data-toggle="dropdown" class="btn btn-success dropdown-toggle" tooltip-placement="bottom" tooltip="Create a new Plunk from a template"><span class="caret"></span></button>
@@ -80,7 +83,7 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
         </ul>
       </div>
       <div class="btn-group">
-        <button ng-click="togglePreview()" class="btn btn-inverse" ng-class="{active: panes.active.id=='preview'}" ng-switch on="panes.active.id=='preview'" tooltip-placement="bottom" tooltip="Preview your work">
+        <button ng-click="togglePreview() | trackEvent:'Plunk':'Toggle Preview':'Toolbar'" class="btn btn-inverse" ng-class="{active: panes.active.id=='preview'}" ng-switch on="panes.active.id=='preview'" tooltip-placement="bottom" tooltip="Preview your work">
           <div ng-switch-when="false">
             <i class="icon-play" />
             <span class="shrink">Run</span>
@@ -97,22 +100,22 @@ module.directive "plunkerToolbar", ["$location", "session", "downloader", "notif
         </a>
       </div>
       <div class="btn-group pull-right">
-        <button ng-click="triggerDownload()" class="btn" tooltip-placement="bottom" tooltip="Download your Plunk as a zip file">
+        <button ng-click="triggerDownload() | trackEvent:'Plunk':'Download Zip':'Toolbar'" class="btn" tooltip-placement="bottom" tooltip="Download your Plunk as a zip file">
           <i class="icon-download-alt" />
         </button>
       </div>
       <div class="btn-group pull-right" ng-show="session.isSaved() && visitor.isMember()">
-        <button ng-click="toggleFavorite()" class="btn" ng-class="{activated: session.plunk.thumbed, 'active': session.plunk.thumbed}" tooltip-placement="bottom" tooltip="Save this Plunk to your favorites">
+        <button ng-click="toggleFavorite() | trackEvent:'Plunk':'Star':'Toolbar'" class="btn" ng-class="{activated: session.plunk.thumbed, 'active': session.plunk.thumbed}" tooltip-placement="bottom" tooltip="Save this Plunk to your favorites">
           <i class="icon-star" />
         </button>
       </div>
       <div class="btn-group pull-right" ng-show="session.isSaved() && visitor.isMember()">
-        <button ng-click="toggleRemembered()" class="btn" ng-class="{activated: session.plunk.remembered, 'active': session.plunk.remembered}" tooltip-placement="bottom" tooltip="Save this Plunk to your list of templates">
+        <button ng-click="toggleRemembered() | trackEvent:'Plunk':session.plunk.remembered && 'Remember' || 'Forget':'Toolbar'" class="btn" ng-class="{activated: session.plunk.remembered, 'active': session.plunk.remembered}" tooltip-placement="bottom" tooltip="Save this Plunk to your list of templates">
           <i class="icon-briefcase" />
         </button>
       </div>
       <div class="btn-group pull-right">
-        <button ng-click="beautifier.beautify()" class="btn" ng-class="{disabled: !beautifier.isBeautifiable()}" tooltip-placement="bottom" tooltip="Beautify your code">
+        <button ng-click="beautifier.beautify() | trackEvent:'Plunk':'Beautify':'Toolbar'" class="btn" ng-class="{disabled: !beautifier.isBeautifiable()}" tooltip-placement="bottom" tooltip="Beautify your code">
           <i class="icon-ok" />
         </button>
       </div>

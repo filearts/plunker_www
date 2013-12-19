@@ -14,7 +14,7 @@ module.directive "plunkerRestorer", [ "session", (session) ->
   template: """
     <div class="alert alert-info plunker-restorer" ng-show="savedState">
       <p><strong>Unsaved session</strong> Restore your previous session?</p>
-      <button class="btn btn-success btn-mini" ng-click="restoreSession()">Restore</button>
+      <button class="btn btn-success btn-mini" ng-click="restoreSession() | trackEvent:'Plunk':'Restore':'Sidebar'">Restore</button>
       <button class="btn btn-danger btn-mini" data-dismiss="alert">Discard</button>
     </div>
   """
