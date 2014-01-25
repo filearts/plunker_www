@@ -1,3 +1,5 @@
+#= require ./../../vendor/semver/semver.js
+
 #= require ./../services/panes
 #= require ./../services/url
 #= require ./../services/catalogue
@@ -71,6 +73,12 @@ module.run [ "$q", "$timeout", "panes", "url", "updater", "session", "catalogue"
       recheck()
           
 ]
+
+module.filter "sortBySemver", [ () ->
+  (arr) -> arr.sort (l, r) ->
+    semver.rcompare(l.semver, r.semver)
+]
+
 module.directive "plunkerPackageBlock", [ () ->
   restrict: "E"
   replace: true
@@ -93,13 +101,13 @@ module.directive "plunkerPackageBlock", [ () ->
           </button>
 
           <ul class="package-versions inline">
-            <li ng-repeat="version in package.versions | orderBy:'-semver' | limitTo:3">
+            <li ng-repeat="version in package.versions | sortBySemver | limitTo:3">
               <a class="label" ng-class="{'label-warning': version.unstable}" ng-click="click({package: package, version: version})" ng-bind="version.semver"></a>
             </li>
             <li class="dropdown" ng-show="package.versions.length > 3">
               <a class="more dropdown-toggle">More...</a>
               <ul class="dropdown-menu">
-                <li ng-repeat="version in package.versions | orderBy:'-semver' | limitTo:3 - package.versions.length">
+                <li ng-repeat="version in package.versions | sortBySemver | limitTo:3 - package.versions.length">
                   <a ng-click="click({package: package, version: version})" ng-bind="version.semver"></a>
                 </li>
               </ul>
@@ -248,7 +256,7 @@ module.directive "plunkerCatalogue", [ () ->
                     <span class="caret"></span>
                   </button>
                   <ul class="dropdown-menu">
-                    <li ng-repeat="verDef in entry.ref.pkg.getMatchingVersions(entry.ref.range)">
+                    <li ng-repeat="verDef in entry.ref.pkg.getMatchingVersions(entry.ref.range) | sortBySemver">
                       <a ng-click="updateInclude(entry, verDef)">Update to {{verDef.semver}}</a>
                     </li>
                   </ul>
@@ -270,7 +278,7 @@ module.directive "plunkerCatalogue", [ () ->
                     <span class="caret"></span>
                   </button>
                   <ul class="dropdown-menu">
-                    <li ng-repeat="verDef in entry.ref.pkg.getMatchingVersions(entry.ref.range)">
+                    <li ng-repeat="verDef in entry.ref.pkg.getMatchingVersions(entry.ref.range) | sortBySemver">
                       <a ng-click="updateInclude(entry, verDef)">Update to {{verDef.semver}}</a>
                     </li>
                   </ul>
@@ -305,7 +313,7 @@ module.directive "plunkerCatalogue", [ () ->
             <div class="package-version-toggle dropdown pull-right">
               <div class="dropdown-toggle"><span ng-bind="currentVersion.semver"></span><span ng-show="currentVersion.unstable"> (unstable)</span><span class="caret"></span></div>
               <ul class="dropdown-menu">
-                <li ng-class="{active: version == currentVersion}" ng-repeat="version in package.versions">
+                <li ng-class="{active: version == currentVersion}" ng-repeat="version in package.versions | sortBySemver">
                   <a ng-click="openVersion(package, version)" ng-bind="version.semver + (version.unstable && ' (unstable)' || '')"></a>
                 </li>
               </ul>
@@ -392,7 +400,7 @@ module.directive "packageEditor", [ "catalogue", "notifier", (catalogue, notifie
       <div ng-show="package.name">
         <label>Versions:</label>
         <ul class="" ng-show="package.name">
-          <li ng-repeat="version in editing.versions">
+          <li ng-repeat="version in editing.versions | sortBySemver">
             <a ng-click="controller.editPackageVersion(package, version)" ng-bind="version.semver"></a>
           </li>
           <li class="add-new">
