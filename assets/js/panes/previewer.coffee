@@ -1,3 +1,5 @@
+#= require ./../../vendor/qrcodejs/qrcode
+
 #= require ./../services/panes
 #= require ./../services/url
 #= require ./../services/settings
@@ -63,6 +65,8 @@ module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings
             <p>You've switched to previewing your work in windowed mode. This can be useful for using the developer tools without having to navigate
               down through the iframe that is used for the in-window preview.</p>
             <p>You can return to the in-window preview at any time simply by clicking below.</p>
+            <p>You can also scan this QR code to load the preview on your mobile device.</p>
+            <p id="preview-qrcode"></p>
             <p>
               <button class="btn btn-success" ng-click="refresh()">
                 <i class="icon-refresh"></i>
@@ -80,7 +84,7 @@ module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings
     link: ($scope, $el, attrs) ->
       pane = @
       iframe = $("iframe.plunker-previewer-iframe", $el)[0]
-      childWindow = null
+      @childWindow = null
       
       $scope.previewUrl ||= "#{url.run}/#{genid()}/" # Create a random new preview id
       $scope.iframeUrl = "about:blank" # Initial url until a windowed -> embedded switch
@@ -131,13 +135,19 @@ module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings
             childWindow?.close()
             childWindow = null
           when "windowed"
-            childWindow = window.open "about:blank", "plunkerPreviewTarget", "resizable=yes,scrollbars=yes,status=yes,toolbar=yes"
+            pane.childWindow = window.open "about:blank", "plunkerPreviewTarget", "resizable=yes,scrollbars=yes,status=yes,toolbar=yes"
+            qrcode = new QRCode "preview-qrcode",
+              text: $scope.previewUrl
+              width: 256,
+              height: 256,
+              colorDark : "#000000",
+              colorLight : "#ffffff",
+              correctLevel : QRCode.CorrectLevel.H
           else
             return # Return to prevent refresh
         
         # Refresh on next tick to make sure DOM udpated first
         setTimeout -> $scope.$apply -> $scope.refresh()
-            
       
       $scope.$watch "pane.active", (active) ->
         if !active and $scope.mode is "embedded" then $scope.mode = "disabled"
@@ -150,8 +160,9 @@ module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings
       @startInterval($scope)
       
     startInterval: ($scope) ->
+      pane = @
       setInterval ->
-        if $scope.mode is "windowed" and childWindow?.closed
+        if $scope.mode is "windowed" and (!pane.childWindow or pane.childWindow?.closed)
           $scope.$apply ->
             $scope.contract()
             childWindow = null
