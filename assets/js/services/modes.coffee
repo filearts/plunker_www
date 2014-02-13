@@ -54,6 +54,10 @@ module.service "modes", -> new class Modes
       less:
         title: "Less"
         extensions: ["less"]
+      livescript:
+        title: "LiveScript"
+        extensions: ["ls"]
+        snips: true
       lua:
         title: "Lua"
         extensions: ["lua"]
@@ -85,6 +89,9 @@ module.service "modes", -> new class Modes
       scss:
         title: "SCSS"
         extensions: ["scss"]
+      stylus:
+        title: "Stylus"
+        extensions: ["styl"]
       ruby:
         title: "Ruby"
         extensions: ["rb", "rbx"]
