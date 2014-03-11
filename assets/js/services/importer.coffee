@@ -173,13 +173,12 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q
             promises.push $http.get(fileUrl).then (fileResponse) ->
               if fileResponse.status >= 400 then $q.reject("Unable to load the example's file: #{filename}")
               else
-                console.log "json", json
                 json.files[filename] =
                   filename: filename
                   content: fileResponse.data
             
-            $q.all(promises).then ->
-              deferred.resolve(json)
+          $q.all(promises).then ->
+            deferred.resolve(json)
       , (err) -> deferred.reject("Unable to load the specified example's manifest")
           
     else if matches = source.match(fiddleRegex)
