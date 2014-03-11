@@ -167,16 +167,19 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q
             tags: ["angularjs"]
             files: {}
           
-          for filename in manifestResponse.data.files
+          for filename in manifestResponse.data.files then do (filename) ->
             fileUrl = NGDOC_BASE_URL.replace("{{VERSION}}", exampleVersion or "") + exampleId + "/" + filename
+            if filename is "index-production.html" then filename = "index.html"
             promises.push $http.get(fileUrl).then (fileResponse) ->
               if fileResponse.status >= 400 then $q.reject("Unable to load the example's file: #{filename}")
               else
+                console.log "json", json
                 json.files[filename] =
                   filename: filename
                   content: fileResponse.data
             
-            $q.all(promises).then -> deferred.resolve(json)
+            $q.all(promises).then ->
+              deferred.resolve(json)
       , (err) -> deferred.reject("Unable to load the specified example's manifest")
           
     else if matches = source.match(fiddleRegex)
