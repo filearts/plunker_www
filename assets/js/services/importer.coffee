@@ -5,7 +5,7 @@
 #= require ./../services/notifier
 
 # Use the identifier {{VERSION}} which will be substituted with the example's stated version
-NGDOC_BASE_URL = "http://ci.angularjs.org/job/angular.js-pete/485/artifact/build/docs/examples/"
+NGDOC_BASE_URL = "http://code.angularjs.org/{{VERSION}}/docs/examples/"
 
 plunkerRegex = ///
   ^
