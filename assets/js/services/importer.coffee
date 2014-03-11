@@ -54,7 +54,7 @@ ngdocRegex = ///
   ^
     \s*                   # Leading whitespace
     ngdoc:                # Angular documentation prefix
-    ([^\/]+)              # Example name
+    ([^\/@]+)              # Example name
     (?:@([^\/]+))?        # Optional example version
     \s*                   # Trailing whitespace
   $
