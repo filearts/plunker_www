@@ -4,6 +4,9 @@
 #= require ./../services/updater
 #= require ./../services/notifier
 
+# Use the identifier {{VERSION}} which will be substituted with the example's stated version
+NGDOC_BASE_URL = "http://ci.angularjs.org/job/angular.js-pete/485/artifact/build/docs/examples/"
+
 plunkerRegex = ///
   ^
     \s*                   # Leading whitespace
@@ -43,6 +46,16 @@ githubRegex = ///
     )
     ([0-9]+|[0-9a-z]{20}) # Gist ID
     (?:#.+)?              # Optional anchor
+    \s*                   # Trailing whitespace
+  $
+///i
+
+ngdocRegex = ///
+  ^
+    \s*                   # Leading whitespace
+    ngdoc:                # Angular documentation prefix
+    ([^\/]+)              # Example name
+    (?:@([^\/]+))?        # Optional example version
     \s*                   # Trailing whitespace
   $
 ///i
@@ -137,6 +150,34 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q
               notifier.error "Auto-update failed", err.message
               deferred.resolve(json)
           else deferred.resolve(json)
+
+    else if matches = source.match(ngdocRegex)
+      exampleId = matches[1]
+      exampleVersion = matches[2]
+      
+      manifestUrl = NGDOC_BASE_URL.replace("{{VERSION}}", exampleVersion or "") + exampleId + "/manifest.json"
+      
+      manifestRequest = $http.get(manifestUrl).then (manifestResponse) ->
+        if manifestResponse.status >= 400 then deferred.reject("Unable to load the specified example's manifest")
+        else
+          # Array of promises to fetch each file in the example
+          promises = []
+          json =
+            description: "Angular documentation example: #{manifestResponse.data.name}"
+            tags: ["angularjs"]
+            files: {}
+          
+          for filename in manifestResponse.data.files
+            fileUrl = NGDOC_BASE_URL.replace("{{VERSION}}", exampleVersion or "") + exampleId + "/" + filename
+            promises.push $http.get(fileUrl).then (fileResponse) ->
+              if fileResponse.status >= 400 then $q.reject("Unable to load the example's file: #{filename}")
+              else
+                json.files[filename] =
+                  filename: filename
+                  content: fileResponse.data
+            
+            $q.all(promises).then -> deferred.resolve(json)
+      , (err) -> deferred.reject("Unable to load the specified example's manifest")
           
     else if matches = source.match(fiddleRegex)
       fiddleRef = matches[1] + if matches[2] then "/#{matches[2]}" else ""
