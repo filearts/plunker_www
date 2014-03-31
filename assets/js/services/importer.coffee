@@ -60,6 +60,15 @@ ngdocRegex = ///
   $
 ///i
 
+manifestRegex = ///
+  ^
+    \s*                   # Leading whitespace
+    manifest:             # Angular documentation prefix
+    (.+)                  # Example name
+    \s*                   # Trailing whitespace
+  $
+///i
+
 
 module = angular.module "plunker.importer", [
   "plunker.plunks"
@@ -70,6 +79,8 @@ module = angular.module "plunker.importer", [
 module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q, $http, plunks, updater, notifier) ->
   import: (source) ->
     deferred = $q.defer()
+                            
+    console.log "Testing source", source
     
     if matches = source.match(templateRegex)
       plunks.findOrCreate(id: matches[1]).refresh().then (plunk) ->
@@ -169,6 +180,36 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q
           
           for filename in manifestResponse.data.files then do (filename) ->
             fileUrl = NGDOC_BASE_URL.replace("{{VERSION}}", exampleVersion or "") + exampleId + "/" + filename
+            if filename is "index-production.html" then filename = "index.html"
+            promises.push $http.get(fileUrl).then (fileResponse) ->
+              if fileResponse.status >= 400 then $q.reject("Unable to load the example's file: #{filename}")
+              else
+                json.files[filename] =
+                  filename: filename
+                  content: fileResponse.data
+            
+          $q.all(promises).then ->
+            deferred.resolve(json)
+      , (err) -> deferred.reject("Unable to load the specified example's manifest")
+          
+    else if matches = source.match(manifestRegex)
+      console.log("matched manifest", matches)
+      manifestUrl = matches[1]
+      baseUrl = manifestUrl.split("/").pop()
+      baseUrl = baseUrl.join("/")
+      
+      manifestRequest = $http.get(manifestUrl).then (manifestResponse) ->
+        if manifestResponse.status >= 400 then deferred.reject("Unable to load the specified example's manifest")
+        else
+          # Array of promises to fetch each file in the example
+          promises = []
+          json =
+            description: manifestResponse.data.name or manifestUrl
+            tags: manifestResponse.data.tags or []
+            files: {}
+          
+          for filename in manifestResponse.data.files then do (filename) ->
+            fileUrl = baseUrl + "/" + filename
             if filename is "index-production.html" then filename = "index.html"
             promises.push $http.get(fileUrl).then (fileResponse) ->
               if fileResponse.status >= 400 then $q.reject("Unable to load the example's file: #{filename}")
