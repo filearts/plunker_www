@@ -35,13 +35,17 @@ module.run [ "$timeout", "panes", "session", "activity", "url", ($timeout, panes
     """
     template: """
       <div class="plunker-info">
-        <h3>{{session.plunk.description}}</h3>
+        <h3>
+          <a class="permalink pull-right" ng-href="{{session.plunk.raw_url}}" target="_blank"><i class="icon icon-link"></i></a>
+          {{session.plunk.description}}
+        </h3>
         <div class="info-creation">
           <plunker-plunk-info plunk="session.plunk" class="pull-right"></plunker-plunk-info>
           <plunker-inline-user user="session.plunk.user"></plunker-inline-user>
           <abbr class="timeago updated_at" title="{{session.plunk.updated_at}}" timeago="{{session.plunk.updated_at | date:'medium'}}"></abbr>
         </div>
         <plunker-taglist tags="session.plunk.tags" ng-show="tags.length"></plunker-taglist>
+        <p></p>
         <div class="info-ad" ng-show="adcode">
           <div id="carbonads-container">
             <div class="carbonad">
