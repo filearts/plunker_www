@@ -77,7 +77,9 @@ module.exports = (grunt) ->
       build:
         files:
           '<%=build.dest%>/js/embed-min.js': ['<%=build.dest%>/js/embed.js']
-        
+    
+    exec:
+      editor: 'coffee build.coffee'
 
   # load plugins
   grunt.loadNpmTasks 'grunt-contrib-less'
@@ -85,6 +87,7 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-contrib-uglify'
   grunt.loadNpmTasks 'grunt-browserify'
   grunt.loadNpmTasks 'grunt-bump'
+  grunt.loadNpmTasks 'grunt-exec'
 
   # tasks
   grunt.task.registerTask 'clean', 'clears out temporary build files', ->
@@ -92,5 +95,5 @@ module.exports = (grunt) ->
 
   grunt.registerTask 'default', ['compile', 'watch']
   grunt.registerTask 'compile', ['browserify:development', 'less:development']
-  grunt.registerTask 'build', ['browserify:production', 'uglify', 'less:production']
+  grunt.registerTask 'build', ['exec:editor', 'browserify:production', 'uglify', 'less:production']
   grunt.registerTask 'release', ['bump', 'build']
