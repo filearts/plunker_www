@@ -51,7 +51,6 @@ app.set "view engine", "jade"
 app.set "view options", layout: false
 app.engine "html", hbs.__express
 
-app.use require("prerender-node")
 app.use require("./middleware/redirect").middleware(nconf.get("redirect"))
 #app.use express.logger() unless process.env.NODE_ENV is "PRODUCTION"
 app.use require("./middleware/vary").middleware()

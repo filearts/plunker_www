@@ -28,13 +28,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-define('ace/mode/mushcode', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/mode/text', 'ace/tokenizer', 'ace/mode/mushcode_high_rules', 'ace/mode/folding/pythonic', 'ace/range'], function(require, exports, module) {
+define('ace/mode/mushcode', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/mode/text', 'ace/tokenizer', 'ace/mode/mushcode_highlight_rules', 'ace/mode/folding/pythonic', 'ace/range'], function(require, exports, module) {
 
 
 var oop = require("../lib/oop");
 var TextMode = require("./text").Mode;
 var Tokenizer = require("../tokenizer").Tokenizer;
-var MushCodeRules = require("./mushcode_high_rules").MushCodeRules;
+var MushCodeRules = require("./mushcode_highlight_rules").MushCodeRules;
 var PythonFoldMode = require("./folding/pythonic").FoldMode;
 var Range = require("../range").Range;
 
@@ -103,12 +103,13 @@ oop.inherits(Mode, TextMode);
             doc.remove(new Range(row, indent.length-tab.length, row, indent.length));
     };
 
+    this.$id = "ace/mode/mushcode";
 }).call(Mode.prototype);
 
 exports.Mode = Mode;
 });
 
-define('ace/mode/mushcode_high_rules', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/mode/text_highlight_rules'], function(require, exports, module) {
+define('ace/mode/mushcode_highlight_rules', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/mode/text_highlight_rules'], function(require, exports, module) {
 
 
 var oop = require("../lib/oop");

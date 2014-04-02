@@ -29,13 +29,16 @@
  * ***** END LICENSE BLOCK ***** */
 
 
-define('kitchen-sink/demo', ['require', 'exports', 'module' , 'ace/lib/fixoldbrowsers', 'ace/multi_select', 'ace/ext/spellcheck', 'ace/config', 'ace/lib/dom', 'ace/lib/net', 'ace/lib/lang', 'ace/lib/useragent', 'ace/lib/event', 'ace/theme/textmate', 'ace/edit_session', 'ace/undomanager', 'ace/keyboard/hash_handler', 'ace/virtual_renderer', 'ace/editor', 'ace/ext/whitespace', 'kitchen-sink/doclist', 'ace/ext/modelist', 'kitchen-sink/layout', 'kitchen-sink/token_tooltip', 'kitchen-sink/util', 'ace/ext/elastic_tabstops_lite', 'ace/incremental_search', 'ace/worker/worker_client', 'ace/split', 'ace/keyboard/vim', 'ace/ext/statusbar', 'ace/ext/emmet', 'ace/snippets', 'ace/ext/language_tools'], function(require, exports, module) {
+define('kitchen-sink/demo', ['require', 'exports', 'module' , 'ace/lib/fixoldbrowsers', 'ace/multi_select', 'ace/ext/spellcheck', 'kitchen-sink/inline_editor', 'kitchen-sink/dev_util', 'kitchen-sink/file_drop', 'ace/config', 'ace/lib/dom', 'ace/lib/net', 'ace/lib/lang', 'ace/lib/useragent', 'ace/lib/event', 'ace/theme/textmate', 'ace/edit_session', 'ace/undomanager', 'ace/keyboard/hash_handler', 'ace/virtual_renderer', 'ace/editor', 'ace/ext/whitespace', 'kitchen-sink/doclist', 'ace/ext/modelist', 'ace/ext/themelist', 'kitchen-sink/layout', 'kitchen-sink/token_tooltip', 'kitchen-sink/util', 'ace/ext/elastic_tabstops_lite', 'ace/incremental_search', 'ace/worker/worker_client', 'ace/split', 'ace/keyboard/vim', 'ace/ext/statusbar', 'ace/ext/emmet', 'ace/snippets', 'ace/ext/language_tools'], function(require, exports, module) {
 
 
 require("ace/lib/fixoldbrowsers");
 
-require("ace/multi_select")
+require("ace/multi_select");
 require("ace/ext/spellcheck");
+require("./inline_editor");
+require("./dev_util");
+require("./file_drop");
 
 var config = require("ace/config");
 config.init();
@@ -58,8 +61,11 @@ var Editor = require("ace/editor").Editor;
 
 var whitespace = require("ace/ext/whitespace");
 
+
+
 var doclist = require("./doclist");
 var modelist = require("ace/ext/modelist");
+var themelist = require("ace/ext/themelist");
 var layout = require("./layout");
 var TokenTooltip = require("./token_tooltip").TokenTooltip;
 var util = require("./util");
@@ -152,11 +158,11 @@ env.editor.commands.addCommands([{
     bindKey: "ctrl+enter",
     exec: function(editor) {
         try {
-            var r = window.eval(editor.getCopyText()||editor.getValue());
+            var r = window.eval(editor.getCopyText() || editor.getValue());
         } catch(e) {
             r = e;
         }
-        editor.cmdLine.setValue(r + "")
+        editor.cmdLine.setValue(r + "");
     },
     readOnly: true
 }, {
@@ -165,8 +171,8 @@ env.editor.commands.addCommands([{
     exec: function(editor) {
         config.loadModule("ace/ext/keybinding_menu", function(module) {
             module.init(editor);
-            editor.showKeyboardShortcuts()
-        })
+            editor.showKeyboardShortcuts();
+        });
     }
 }, {
     name: "increaseFontSize",
@@ -212,7 +218,7 @@ commands.addCommand({
     bindKey: {win: "Ctrl-S", mac: "Command-S"},
     exec: function(arg) {
         var session = env.editor.session;
-        name = session.name.match(/[^\/]+$/)
+        var name = session.name.match(/[^\/]+$/);
         localStorage.setItem(
             "saved_file:" + name,
             session.getValue()
@@ -226,7 +232,7 @@ commands.addCommand({
     bindKey: {win: "Ctrl-O", mac: "Command-O"},
     exec: function(arg) {
         var session = env.editor.session;
-        name = session.name.match(/[^\/]+$/)
+        var name = session.name.match(/[^\/]+$/);
         var value = localStorage.getItem("saved_file:" + name);
         if (typeof value == "string") {
             session.setValue(value);
@@ -294,7 +300,7 @@ doclist.history = doclist.docs.map(function(doc) {
 });
 doclist.history.index = 0;
 doclist.cycleOpen = function(editor, dir) {
-    var h = this.history
+    var h = this.history;
     h.index += dir;
     if (h.index >= h.length) 
         h.index = 0;
@@ -303,17 +309,16 @@ doclist.cycleOpen = function(editor, dir) {
     var s = h[h.index];
     docEl.value = s;
     docEl.onchange();
-    h.index
-}
+};
 doclist.addToHistory = function(name) {
-    var h = this.history
+    var h = this.history;
     var i = h.indexOf(name);
     if (i != h.index) {
         if (i != -1)
             h.splice(i, 1);
         h.index = h.push(name);
     }
-}
+};
 
 bindDropdown("doc", function(name) {
     doclist.loadDoc(name, function(session) {
@@ -351,20 +356,26 @@ function updateUIEditorOptions() {
     saveOption(behavioursEl, editor.getBehavioursEnabled());
 }
 
+themelist.themes.forEach(function(x){ x.value = x.theme });
+fillDropdown(themeEl, {
+    Bright: themelist.themes.filter(function(x){return !x.isDark}),
+    Dark: themelist.themes.filter(function(x){return x.isDark}),
+});
+
 event.addListener(themeEl, "mouseover", function(e){
-    this.desiredValue = e.target.value;
-    if (!this.$timer)
-        this.$timer = setTimeout(this.updateTheme);
+    themeEl.desiredValue = e.target.value;
+    if (!themeEl.$timer)
+        themeEl.$timer = setTimeout(themeEl.updateTheme);
 });
 
 event.addListener(themeEl, "mouseout", function(e){
-    this.desiredValue = null;
-    if (!this.$timer)
-        this.$timer = setTimeout(this.updateTheme, 20);
+    themeEl.desiredValue = null;
+    if (!themeEl.$timer)
+        themeEl.$timer = setTimeout(themeEl.updateTheme, 20);
 });
 
 themeEl.updateTheme = function(){
-    env.split.setTheme(themeEl.desiredValue || themeEl.selectedValue);
+    env.split.setTheme((themeEl.desiredValue || themeEl.selectedValue));
     themeEl.$timer = null;
 };
 
@@ -516,41 +527,6 @@ bindCheckbox("highlight_token", function(checked) {
         editor.tokenTooltip = new TokenTooltip(editor);
     }
 });
-event.addListener(container, "dragover", function(e) {
-    var types = e.dataTransfer.types;
-    if (types && Array.prototype.indexOf.call(types, 'Files') !== -1)
-        return event.preventDefault(e);
-});
-
-event.addListener(container, "drop", function(e) {
-    var file;
-    try {
-        file = e.dataTransfer.files[0];
-        if (window.FileReader) {
-            var reader = new FileReader();
-            reader.onload = function() {
-                var mode = modelist.getModeForPath(file.name);
-
-                env.editor.session.doc.setValue(reader.result);
-                modeEl.value = mode.name;
-                env.editor.session.setMode(mode.mode);
-                env.editor.session.modeName = mode.name;
-            };
-            reader.readAsText(file);
-        }
-        return event.preventDefault(e);
-    } catch(err) {
-        return event.stopEvent(e);
-    }
-});
-
-
-
-
-
-
-
-
 
 var StatusBar = require("ace/ext/statusbar").StatusBar;
 new StatusBar(env.editor, cmdLine.container);
@@ -580,1226 +556,26 @@ env.editSnippets = function() {
         var text = m.snippetText;
         var s = doclist.initDoc(text, "", {});
         s.setMode("ace/mode/snippets");
-        doclist["snippets/" + id] = s
+        doclist["snippets/" + id] = s;
     }
     editor.on("blur", function() {
         m.snippetText = editor.getValue();
         snippetManager.unregister(m.snippets);
         m.snippets = snippetManager.parseSnippetFile(m.snippetText, m.scope);
         snippetManager.register(m.snippets);
-    })
+    });
     sp.$editors[0].once("changeMode", function() {
         sp.setSplits(1);
-    })
+    });
     editor.setSession(doclist["snippets/" + id], 1);
     editor.focus();
-}
+};
 
 require("ace/ext/language_tools");
 env.editor.setOptions({
     enableBasicAutocompletion: true,
     enableSnippets: true
-})
 });
-void function() {
-function isStrict() {
-    try { return !arguments.callee.caller.caller.caller}
-    catch(e){ return true }
-}
-function warn() {
-    if (isStrict()) {
-        console.error("trying to access to global variable");
-    }
-}
-function def(o, key, get) {
-    Object.defineProperty(o, key, {
-        configurable: true, 
-        get: get,
-        set: function(val) {
-            delete o[key];
-            o[key] = val;
-        }
-    });
-}
-def(window, "ace", function(){ warn(); return env.editor });
-def(window, "editor", function(){ warn(); return env.editor });
-def(window, "session", function(){ warn(); return env.editor.session });
-def(window, "split", function(){ warn(); return env.split });
-
-}();define('ace/ext/spellcheck', ['require', 'exports', 'module' , 'ace/lib/event', 'ace/editor', 'ace/config'], function(require, exports, module) {
-
-var event = require("../lib/event");
-
-exports.contextMenuHandler = function(e){
-    var host = e.target;
-    var text = host.textInput.getElement();
-    if (!host.selection.isEmpty())
-        return;
-    var c = host.getCursorPosition();
-    var r = host.session.getWordRange(c.row, c.column);
-    var w = host.session.getTextRange(r);
-
-    host.session.tokenRe.lastIndex = 0;
-    if (!host.session.tokenRe.test(w))
-        return;
-    var PLACEHOLDER = "\x01\x01";
-    var value = w + " " + PLACEHOLDER;
-    text.value = value;
-    text.setSelectionRange(w.length, w.length + 1);
-    text.setSelectionRange(0, 0);
-    text.setSelectionRange(0, w.length);
-
-    var afterKeydown = false;
-    event.addListener(text, "keydown", function onKeydown() {
-        event.removeListener(text, "keydown", onKeydown);
-        afterKeydown = true;
-    });
-
-    host.textInput.setInputHandler(function(newVal) {
-        console.log(newVal , value, text.selectionStart, text.selectionEnd)
-        if (newVal == value)
-            return '';
-        if (newVal.lastIndexOf(value, 0) === 0)
-            return newVal.slice(value.length);
-        if (newVal.substr(text.selectionEnd) == value)
-            return newVal.slice(0, -value.length);
-        if (newVal.slice(-2) == PLACEHOLDER) {
-            var val = newVal.slice(0, -2);
-            if (val.slice(-1) == " ") {
-                if (afterKeydown)
-                    return val.substring(0, text.selectionEnd);
-                val = val.slice(0, -1);
-                host.session.replace(r, val);
-                return "";
-            }
-        }
-
-        return newVal;
-    });
-};
-var Editor = require("../editor").Editor;
-require("../config").defineOptions(Editor.prototype, "editor", {
-    spellcheck: {
-        set: function(val) {
-            var text = this.textInput.getElement();
-            text.spellcheck = !!val;
-            if (!val)
-                this.removeListener("nativecontextmenu", exports.contextMenuHandler);
-            else
-                this.on("nativecontextmenu", exports.contextMenuHandler);
-        },
-        value: true
-    }
-});
-
-});
-
-define('ace/theme/textmate', ['require', 'exports', 'module' , 'ace/lib/dom'], function(require, exports, module) {
-
-
-exports.isDark = false;
-exports.cssClass = "ace-tm";
-exports.cssText = ".ace-tm .ace_gutter {\
-background: #f0f0f0;\
-color: #333;\
-}\
-.ace-tm .ace_print-margin {\
-width: 1px;\
-background: #e8e8e8;\
-}\
-.ace-tm .ace_fold {\
-background-color: #6B72E6;\
-}\
-.ace-tm {\
-background-color: #FFFFFF;\
-}\
-.ace-tm .ace_cursor {\
-color: black;\
-}\
-.ace-tm .ace_invisible {\
-color: rgb(191, 191, 191);\
-}\
-.ace-tm .ace_storage,\
-.ace-tm .ace_keyword {\
-color: blue;\
-}\
-.ace-tm .ace_constant {\
-color: rgb(197, 6, 11);\
-}\
-.ace-tm .ace_constant.ace_buildin {\
-color: rgb(88, 72, 246);\
-}\
-.ace-tm .ace_constant.ace_language {\
-color: rgb(88, 92, 246);\
-}\
-.ace-tm .ace_constant.ace_library {\
-color: rgb(6, 150, 14);\
-}\
-.ace-tm .ace_invalid {\
-background-color: rgba(255, 0, 0, 0.1);\
-color: red;\
-}\
-.ace-tm .ace_support.ace_function {\
-color: rgb(60, 76, 114);\
-}\
-.ace-tm .ace_support.ace_constant {\
-color: rgb(6, 150, 14);\
-}\
-.ace-tm .ace_support.ace_type,\
-.ace-tm .ace_support.ace_class {\
-color: rgb(109, 121, 222);\
-}\
-.ace-tm .ace_keyword.ace_operator {\
-color: rgb(104, 118, 135);\
-}\
-.ace-tm .ace_string {\
-color: rgb(3, 106, 7);\
-}\
-.ace-tm .ace_comment {\
-color: rgb(76, 136, 107);\
-}\
-.ace-tm .ace_comment.ace_doc {\
-color: rgb(0, 102, 255);\
-}\
-.ace-tm .ace_comment.ace_doc.ace_tag {\
-color: rgb(128, 159, 191);\
-}\
-.ace-tm .ace_constant.ace_numeric {\
-color: rgb(0, 0, 205);\
-}\
-.ace-tm .ace_variable {\
-color: rgb(49, 132, 149);\
-}\
-.ace-tm .ace_xml-pe {\
-color: rgb(104, 104, 91);\
-}\
-.ace-tm .ace_entity.ace_name.ace_function {\
-color: #0000A2;\
-}\
-.ace-tm .ace_heading {\
-color: rgb(12, 7, 255);\
-}\
-.ace-tm .ace_list {\
-color:rgb(185, 6, 144);\
-}\
-.ace-tm .ace_meta.ace_tag {\
-color:rgb(0, 22, 142);\
-}\
-.ace-tm .ace_string.ace_regex {\
-color: rgb(255, 0, 0)\
-}\
-.ace-tm .ace_marker-layer .ace_selection {\
-background: rgb(181, 213, 255);\
-}\
-.ace-tm.ace_multiselect .ace_selection.ace_start {\
-box-shadow: 0 0 3px 0px white;\
-border-radius: 2px;\
-}\
-.ace-tm .ace_marker-layer .ace_step {\
-background: rgb(252, 255, 0);\
-}\
-.ace-tm .ace_marker-layer .ace_stack {\
-background: rgb(164, 229, 101);\
-}\
-.ace-tm .ace_marker-layer .ace_bracket {\
-margin: -1px 0 0 -1px;\
-border: 1px solid rgb(192, 192, 192);\
-}\
-.ace-tm .ace_marker-layer .ace_active-line {\
-background: rgba(0, 0, 0, 0.07);\
-}\
-.ace-tm .ace_gutter-active-line {\
-background-color : #dcdcdc;\
-}\
-.ace-tm .ace_marker-layer .ace_selected-word {\
-background: rgb(250, 250, 255);\
-border: 1px solid rgb(200, 200, 250);\
-}\
-.ace-tm .ace_indent-guide {\
-background: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZgbYnAAAAE0lEQVQImWP4////f4bLly//BwAmVgd1/w11/gAAAABJRU5ErkJggg==\") right repeat-y;\
-}\
-";
-
-var dom = require("../lib/dom");
-dom.importCssString(exports.cssText, exports.cssClass);
-});
-
-define('ace/ext/whitespace', ['require', 'exports', 'module' , 'ace/lib/lang'], function(require, exports, module) {
-
-
-var lang = require("../lib/lang");
-exports.$detectIndentation = function(lines, fallback) {
-    var stats = [];
-    var changes = [];
-    var tabIndents = 0;
-    var prevSpaces = 0;
-    var max = Math.min(lines.length, 1000);
-    for (var i = 0; i < max; i++) {
-        var line = lines[i];
-        if (!/^\s*[^*+\-\s]/.test(line))
-            continue;
-
-        var tabs = line.match(/^\t*/)[0].length;
-        if (line[0] == "\t")
-            tabIndents++;
-
-        var spaces = line.match(/^ */)[0].length;
-        if (spaces && line[spaces] != "\t") {
-            var diff = spaces - prevSpaces;
-            if (diff > 0 && !(prevSpaces%diff) && !(spaces%diff))
-                changes[diff] = (changes[diff] || 0) + 1;
-
-            stats[spaces] = (stats[spaces] || 0) + 1;
-        }
-        prevSpaces = spaces;
-        while (line[line.length - 1] == "\\")
-            line = lines[i++];
-    }
-
-    function getScore(indent) {
-        var score = 0;
-        for (var i = indent; i < stats.length; i += indent)
-            score += stats[i] || 0;
-        return score;
-    }
-
-    var changesTotal = changes.reduce(function(a,b){return a+b}, 0);
-
-    var first = {score: 0, length: 0};
-    var spaceIndents = 0;
-    for (var i = 1; i < 12; i++) {
-        if (i == 1) {
-            spaceIndents = getScore(i);
-            var score = 1;
-        } else
-            var score = getScore(i) / spaceIndents;
-
-        if (changes[i]) {
-            score += changes[i] / changesTotal;
-        }
-
-        if (score > first.score)
-            first = {score: score, length: i};
-    }
-
-    if (first.score && first.score > 1.4)
-        var tabLength = first.length;
-
-    if (tabIndents > spaceIndents + 1)
-        return {ch: "\t", length: tabLength};
-
-    if (spaceIndents + 1 > tabIndents)
-        return {ch: " ", length: tabLength};
-};
-
-exports.detectIndentation = function(session) {
-    var lines = session.getLines(0, 1000);
-    var indent = exports.$detectIndentation(lines) || {};
-
-    if (indent.ch)
-        session.setUseSoftTabs(indent.ch == " ");
-
-    if (indent.length)
-        session.setTabSize(indent.length);
-    return indent;
-};
-
-exports.trimTrailingSpace = function(session, trimEmpty) {
-    var doc = session.getDocument();
-    var lines = doc.getAllLines();
-    
-    var min = trimEmpty ? -1 : 0;
-
-    for (var i = 0, l=lines.length; i < l; i++) {
-        var line = lines[i];
-        var index = line.search(/\s+$/);
-
-        if (index > min)
-            doc.removeInLine(i, index, line.length);
-    }
-};
-
-exports.convertIndentation = function(session, ch, len) {
-    var oldCh = session.getTabString()[0];
-    var oldLen = session.getTabSize();
-    if (!len) len = oldLen;
-    if (!ch) ch = oldCh;
-
-    var tab = ch == "\t" ? ch: lang.stringRepeat(ch, len);
-
-    var doc = session.doc;
-    var lines = doc.getAllLines();
-
-    var cache = {};
-    var spaceCache = {};
-    for (var i = 0, l=lines.length; i < l; i++) {
-        var line = lines[i];
-        var match = line.match(/^\s*/)[0];
-        if (match) {
-            var w = session.$getStringScreenWidth(match)[0];
-            var tabCount = Math.floor(w/oldLen);
-            var reminder = w%oldLen;
-            var toInsert = cache[tabCount] || (cache[tabCount] = lang.stringRepeat(tab, tabCount));
-            toInsert += spaceCache[reminder] || (spaceCache[reminder] = lang.stringRepeat(" ", reminder));
-
-            if (toInsert != match) {
-                doc.removeInLine(i, 0, match.length);
-                doc.insertInLine({row: i, column: 0}, toInsert);
-            }
-        }
-    }
-    session.setTabSize(len);
-    session.setUseSoftTabs(ch == " ");
-};
-
-exports.$parseStringArg = function(text) {
-    var indent = {};
-    if (/t/.test(text))
-        indent.ch = "\t";
-    else if (/s/.test(text))
-        indent.ch = " ";
-    var m = text.match(/\d+/);
-    if (m)
-        indent.length = parseInt(m[0], 10);
-    return indent;
-};
-
-exports.$parseArg = function(arg) {
-    if (!arg)
-        return {};
-    if (typeof arg == "string")
-        return exports.$parseStringArg(arg);
-    if (typeof arg.text == "string")
-        return exports.$parseStringArg(arg.text);
-    return arg;
-};
-
-exports.commands = [{
-    name: "detectIndentation",
-    exec: function(editor) {
-        exports.detectIndentation(editor.session);
-    }
-}, {
-    name: "trimTrailingSpace",
-    exec: function(editor) {
-        exports.trimTrailingSpace(editor.session);
-    }
-}, {
-    name: "convertIndentation",
-    exec: function(editor, arg) {
-        var indent = exports.$parseArg(arg);
-        exports.convertIndentation(editor.session, indent.ch, indent.length);
-    }
-}, {
-    name: "setIndentation",
-    exec: function(editor, arg) {
-        var indent = exports.$parseArg(arg);
-        indent.length && editor.session.setTabSize(indent.length);
-        indent.ch && editor.session.setUseSoftTabs(indent.ch == " ");
-    }
-}];
-
-});
-
- define('kitchen-sink/doclist', ['require', 'exports', 'module' , 'ace/edit_session', 'ace/undomanager', 'ace/lib/net', 'ace/ext/modelist'], function(require, exports, module) {
-
-
-var EditSession = require("ace/edit_session").EditSession;
-var UndoManager = require("ace/undomanager").UndoManager;
-var net = require("ace/lib/net");
-
-var modelist = require("ace/ext/modelist");
-var fileCache = {};
-
-function initDoc(file, path, doc) {
-    if (doc.prepare)
-        file = doc.prepare(file);
-
-    var session = new EditSession(file);
-    session.setUndoManager(new UndoManager());
-    doc.session = session;
-    doc.path = path;
-    session.name = doc.name;
-    if (doc.wrapped) {
-        session.setUseWrapMode(true);
-        session.setWrapLimitRange(80, 80);
-    }
-    var mode = modelist.getModeForPath(path);
-    session.modeName = mode.name;
-    session.setMode(mode.mode);
-    return session;
-}
-
-
-function makeHuge(txt) {
-    for (var i = 0; i < 5; i++)
-        txt += txt;
-    return txt;
-}
-
-var docs = {
-    "docs/javascript.js": {order: 1, name: "JavaScript"},
-
-    "docs/latex.tex": {name: "LaTeX", wrapped: true},
-    "docs/markdown.md": {name: "Markdown", wrapped: true},
-    "docs/mushcode.mc": {name: "MUSHCode", wrapped: true},
-    "docs/pgsql.pgsql": {name: "pgSQL", wrapped: true},
-    "docs/plaintext.txt": {name: "Plain Text", prepare: makeHuge, wrapped: true},
-    "docs/sql.sql": {name: "SQL", wrapped: true},
-
-    "docs/textile.textile": {name: "Textile", wrapped: true},
-
-    "docs/c9search.c9search_results": "C9 Search Results",
-    "docs/Nix.nix": "Nix"
-};
-
-var ownSource = {
-};
-
-var hugeDocs = {
-    "src/ace.js": "",
-    "src-min/ace.js": ""
-};
-
-modelist.modes.forEach(function(m) {
-    var ext = m.extensions.split("|")[0];
-    if (ext[0] === "^") {
-        path = ext.substr(1);
-    } else {
-        var path = m.name + "." + ext 
-    }
-    path = "docs/" + path;
-    if (!docs[path]) {
-        docs[path] = {name: m.caption};
-    } else if (typeof docs[path] == "object" && !docs[path].name) {
-        docs[path].name = m.caption;
-    }
-})
-
-
-
-if (window.require && window.require.s) try {
-    for (var path in window.require.s.contexts._.defined) {
-        if (path.indexOf("!") != -1)
-            path = path.split("!").pop();
-        else
-            path = path + ".js";
-        ownSource[path] = "";
-    }
-} catch(e) {}
-
-function sort(list) {
-    return list.sort(function(a, b) {
-        var cmp = (b.order || 0) - (a.order || 0);
-        return cmp || a.name && a.name.localeCompare(b.name);
-    })
-}
-
-function prepareDocList(docs) {
-    var list = [];
-    for (var path in docs) {
-        var doc = docs[path];
-        if (typeof doc != "object")
-            doc = {name: doc || path};
-
-        doc.path = path;
-        doc.desc = doc.name.replace(/^(ace|docs|demo|build)\//, "");
-        if (doc.desc.length > 18)
-            doc.desc = doc.desc.slice(0, 7) + ".." + doc.desc.slice(-9);
-
-        fileCache[doc.name] = doc;
-        list.push(doc);
-    }
-
-    return list;
-}
-
-function loadDoc(name, callback) {
-    var doc = fileCache[name];
-    if (!doc)
-        return callback(null);
-
-    if (doc.session)
-        return callback(doc.session);
-    var path = doc.path;
-    var parts = path.split("/");
-    if (parts[0] == "docs")
-        path = "kitchen-sink/" + path;
-    else if (parts[0] == "ace")
-        path = "lib/" + path;
-
-    net.get(path, function(x) {
-        initDoc(x, path, doc);
-        callback(doc.session);
-    });
-}
-
-module.exports = {
-    fileCache: fileCache,
-    docs: sort(prepareDocList(docs)),
-    ownSource: prepareDocList(ownSource),
-    hugeDocs: prepareDocList(hugeDocs),
-    initDoc: initDoc,
-    loadDoc: loadDoc
-};
-module.exports.all = {
-    "Mode Examples": module.exports.docs,
-    "Huge documents": module.exports.hugeDocs,
-    "own source": module.exports.ownSource
-};
-
-});
-
-define('ace/ext/modelist', ['require', 'exports', 'module' ], function(require, exports, module) {
-
-
-var modes = [];
-function getModeForPath(path) {
-    var mode = modesByName.text;
-    var fileName = path.split(/[\/\\]/).pop();
-    for (var i = 0; i < modes.length; i++) {
-        if (modes[i].supportsFile(fileName)) {
-            mode = modes[i];
-            break;
-        }
-    }
-    return mode;
-}
-
-var Mode = function(name, caption, extensions) {
-    this.name = name;
-    this.caption = caption;
-    this.mode = "ace/mode/" + name;
-    this.extensions = extensions;
-    if (/\^/.test(extensions)) {
-        var re = extensions.replace(/\|(\^)?/g, function(a, b){
-            return "$|" + (b ? "^" : "^.*\\.");
-        }) + "$";
-    } else {
-        var re = "^.*\\.(" + extensions + ")$";
-    }
-
-    this.extRe = new RegExp(re, "gi");
-};
-
-Mode.prototype.supportsFile = function(filename) {
-    return filename.match(this.extRe);
-};
-var supportedModes = {
-    ABAP:        ["abap"],
-    ActionScript:["as"],
-    ADA:         ["ada|adb"],
-    AsciiDoc:    ["asciidoc"],
-    Assembly_x86:["asm"],
-    AutoHotKey:  ["ahk"],
-    BatchFile:   ["bat|cmd"],
-    C9Search:    ["c9search_results"],
-    C_Cpp:       ["cpp|c|cc|cxx|h|hh|hpp"],
-    Clojure:     ["clj"],
-    Cobol:       ["CBL|COB"],
-    coffee:      ["coffee|cf|cson|^Cakefile"],
-    ColdFusion:  ["cfm"],
-    CSharp:      ["cs"],
-    CSS:         ["css"],
-    Curly:       ["curly"],
-    D:           ["d|di"],
-    Dart:        ["dart"],
-    Diff:        ["diff|patch"],
-    Dot:         ["dot"],
-    Erlang:      ["erl|hrl"],
-    EJS:         ["ejs"],
-    Forth:       ["frt|fs|ldr"],
-    FTL:         ["ftl"],
-    Glsl:        ["glsl|frag|vert"],
-    golang:      ["go"],
-    Groovy:      ["groovy"],
-    HAML:        ["haml"],
-    Handlebars:  ["hbs|handlebars|tpl|mustache"],
-    Haskell:     ["hs"],
-    haXe:        ["hx"],
-    HTML:        ["html|htm|xhtml"],
-    HTML_Ruby:   ["erb|rhtml|html.erb"],
-    INI:         ["ini|conf|cfg|prefs"],
-    Jack:        ["jack"],
-    Jade:        ["jade"],
-    Java:        ["java"],
-    JavaScript:  ["js|jsm"],
-    JSON:        ["json"],
-    JSONiq:      ["jq"],
-    JSP:         ["jsp"],
-    JSX:         ["jsx"],
-    Julia:       ["jl"],
-    LaTeX:       ["tex|latex|ltx|bib"],
-    LESS:        ["less"],
-    Liquid:      ["liquid"],
-    Lisp:        ["lisp"],
-    LiveScript:  ["ls"],
-    LogiQL:      ["logic|lql"],
-    LSL:         ["lsl"],
-    Lua:         ["lua"],
-    LuaPage:     ["lp"],
-    Lucene:      ["lucene"],
-    Makefile:    ["^Makefile|^GNUmakefile|^makefile|^OCamlMakefile|make"],
-    MATLAB:      ["matlab"],
-    Markdown:    ["md|markdown"],
-    MySQL:       ["mysql"],
-    MUSHCode:    ["mc|mush"],
-    Nix:         ["nix"],
-    ObjectiveC:  ["m|mm"],
-    OCaml:       ["ml|mli"],
-    Pascal:      ["pas|p"],
-    Perl:        ["pl|pm"],
-    pgSQL:       ["pgsql"],
-    PHP:         ["php|phtml"],
-    Powershell:  ["ps1"],
-    Prolog:      ["plg|prolog"],
-    Properties:  ["properties"],
-    Protobuf:    ["proto"],
-    Python:      ["py"],
-    R:           ["r"],
-    RDoc:        ["Rd"],
-    RHTML:       ["Rhtml"],
-    Ruby:        ["rb|ru|gemspec|rake|^Guardfile|^Rakefile|^Gemfile"],
-    Rust:        ["rs"],
-    SASS:        ["sass"],
-    SCAD:        ["scad"],
-    Scala:       ["scala"],
-    Scheme:      ["scm|rkt"],
-    SCSS:        ["scss"],
-    SH:          ["sh|bash|^.bashrc"],
-    SJS:         ["sjs"],
-    Space:       ["space"],
-    snippets:    ["snippets"],
-    Soy_Template:["soy"],
-    SQL:         ["sql"],
-    Stylus:      ["styl|stylus"],
-    SVG:         ["svg"],
-    Tcl:         ["tcl"],
-    Tex:         ["tex"],
-    Text:        ["txt"],
-    Textile:     ["textile"],
-    Toml:        ["toml"],
-    Twig:        ["twig"],
-    Typescript:  ["ts|typescript|str"],
-    VBScript:    ["vbs"],
-    Velocity:    ["vm"],
-    Verilog:     ["v|vh|sv|svh"],
-    XML:         ["xml|rdf|rss|wsdl|xslt|atom|mathml|mml|xul|xbl"],
-    XQuery:      ["xq"],
-    YAML:        ["yaml|yml"]
-};
-
-var nameOverrides = {
-    ObjectiveC: "Objective-C",
-    CSharp: "C#",
-    golang: "Go",
-    C_Cpp: "C/C++",
-    coffee: "CoffeeScript",
-    HTML_Ruby: "HTML (Ruby)",
-    FTL: "FreeMarker"
-};
-var modesByName = {};
-for (var name in supportedModes) {
-    var data = supportedModes[name];
-    var displayName = nameOverrides[name] || name;
-    var filename = name.toLowerCase();
-    var mode = new Mode(filename, displayName, data[0]);
-    modesByName[filename] = mode;
-    modes.push(mode);
-}
-
-module.exports = {
-    getModeForPath: getModeForPath,
-    modes: modes,
-    modesByName: modesByName
-};
-
-});
-
-
-define('kitchen-sink/layout', ['require', 'exports', 'module' , 'ace/lib/dom', 'ace/lib/event', 'ace/edit_session', 'ace/undomanager', 'ace/virtual_renderer', 'ace/editor', 'ace/multi_select', 'ace/theme/textmate'], function(require, exports, module) {
-
-
-var dom = require("ace/lib/dom");
-var event = require("ace/lib/event");
-
-var EditSession = require("ace/edit_session").EditSession;
-var UndoManager = require("ace/undomanager").UndoManager;
-var Renderer = require("ace/virtual_renderer").VirtualRenderer;
-var Editor = require("ace/editor").Editor;
-var MultiSelect = require("ace/multi_select").MultiSelect;
-
-dom.importCssString("\
-splitter {\
-    border: 1px solid #C6C6D2;\
-    width: 0px;\
-    cursor: ew-resize;\
-    z-index:10}\
-splitter:hover {\
-    margin-left: -2px;\
-    width:3px;\
-    border-color: #B5B4E0;\
-}\
-", "splitEditor");
-
-exports.edit = function(el) {
-    if (typeof(el) == "string")
-        el = document.getElementById(el);
-
-    var editor = new Editor(new Renderer(el, require("ace/theme/textmate")));
-
-    editor.resize();
-    event.addListener(window, "resize", function() {
-        editor.resize();
-    });
-    return editor;
-};
-
-
-var SplitRoot = function(el, theme, position, getSize) {
-    el.style.position = position || "relative";
-    this.container = el;
-    this.getSize = getSize || this.getSize;
-    this.resize = this.$resize.bind(this);
-
-    event.addListener(el.ownerDocument.defaultView, "resize", this.resize);
-    this.editor = this.createEditor();
-};
-
-(function(){
-    this.createEditor = function() {
-        var el = document.createElement("div");
-        el.className = this.$editorCSS;
-        el.style.cssText = "position: absolute; top:0px; bottom:0px";
-        this.$container.appendChild(el);
-        var session = new EditSession("");
-        var editor = new Editor(new Renderer(el, this.$theme));
-
-        this.$editors.push(editor);
-        editor.setFontSize(this.$fontSize);
-        return editor;
-    };
-    this.$resize = function() {
-        var size = this.getSize(this.container);
-        this.rect = {
-            x: size.left,
-            y: size.top,
-            w: size.width,
-            h: size.height
-        };
-        this.item.resize(this.rect);
-    };
-    this.getSize = function(el) {
-        return el.getBoundingClientRect();
-    };
-    this.destroy = function() {
-        var win = this.container.ownerDocument.defaultView;
-        event.removeListener(win, "resize", this.resize);
-    };
-
-
-}).call(SplitRoot.prototype);
-
-
-
-var Split = function(){
-
-};
-(function(){
-    this.execute = function(options) {
-        this.$u.execute(options);
-    };
-
-}).call(Split.prototype);
-
-
-
-exports.singleLineEditor = function(el) {
-    var renderer = new Renderer(el);
-    el.style.overflow = "hidden";
-
-    renderer.screenToTextCoordinates = function(x, y) {
-        var pos = this.pixelToScreenCoordinates(x, y);
-        return this.session.screenToDocumentPosition(
-            Math.min(this.session.getScreenLength() - 1, Math.max(pos.row, 0)),
-            Math.max(pos.column, 0)
-        );
-    };
-
-    renderer.$maxLines = 4;
-
-    renderer.setStyle("ace_one-line");
-    var editor = new Editor(renderer);
-    new MultiSelect(editor);
-    editor.session.setUndoManager(new UndoManager());
-
-    editor.setShowPrintMargin(false);
-    editor.renderer.setShowGutter(false);
-    editor.renderer.setHighlightGutterLine(false);
-    editor.$mouseHandler.$focusWaitTimout = 0;
-
-    return editor;
-};
-
-
-
-});
-
-define('kitchen-sink/token_tooltip', ['require', 'exports', 'module' , 'ace/lib/dom', 'ace/lib/event', 'ace/range'], function(require, exports, module) {
-
-
-var dom = require("ace/lib/dom");
-var event = require("ace/lib/event");
-var Range = require("ace/range").Range;
-
-var tooltipNode;
-
-var TokenTooltip = function(editor) {
-    if (editor.tokenTooltip)
-        return;
-    editor.tokenTooltip = this;    
-    this.editor = editor;
-    
-    editor.tooltip = tooltipNode || this.$init();
-
-    this.update = this.update.bind(this);
-    this.onMouseMove = this.onMouseMove.bind(this);
-    this.onMouseOut = this.onMouseOut.bind(this);
-    event.addListener(editor.renderer.scroller, "mousemove", this.onMouseMove);
-    event.addListener(editor.renderer.content, "mouseout", this.onMouseOut);
-};
-
-(function(){
-    this.token = {};
-    this.range = new Range();
-    
-    this.update = function() {
-        this.$timer = null;
-        
-        var r = this.editor.renderer;
-        if (this.lastT - (r.timeStamp || 0) > 1000) {
-            r.rect = null;
-            r.timeStamp = this.lastT;
-            this.maxHeight = innerHeight;
-            this.maxWidth = innerWidth;
-        }
-
-        var canvasPos = r.rect || (r.rect = r.scroller.getBoundingClientRect());
-        var offset = (this.x + r.scrollLeft - canvasPos.left - r.$padding) / r.characterWidth;
-        var row = Math.floor((this.y + r.scrollTop - canvasPos.top) / r.lineHeight);
-        var col = Math.round(offset);
-
-        var screenPos = {row: row, column: col, side: offset - col > 0 ? 1 : -1};
-        var session = this.editor.session;
-        var docPos = session.screenToDocumentPosition(screenPos.row, screenPos.column);
-        var token = session.getTokenAt(docPos.row, docPos.column);
-
-        if (!token && !session.getLine(docPos.row)) {
-            token = {
-                type: "",
-                value: "",
-                state: session.bgTokenizer.getState(0)
-            };
-        }
-        if (!token) {
-            session.removeMarker(this.marker);
-            tooltipNode.style.display = "none";
-            this.isOpen = false;
-            return;
-        }
-        if (!this.isOpen) {
-            tooltipNode.style.display = "";
-            this.isOpen = true;
-        }
-        
-        var tokenText = token.type;
-        if (token.state)
-            tokenText += "|" + token.state;
-        if (token.merge)
-            tokenText += "\n  merge";
-        if (token.stateTransitions)
-            tokenText += "\n  " + token.stateTransitions.join("\n  ");
-        
-        if (this.tokenText != tokenText) {
-            tooltipNode.textContent = tokenText;
-            this.tooltipWidth = tooltipNode.offsetWidth;
-            this.tooltipHeight = tooltipNode.offsetHeight;
-            this.tokenText = tokenText;
-        }
-        
-        this.updateTooltipPosition(this.x, this.y);
-
-        this.token = token;
-        session.removeMarker(this.marker);
-        this.range = new Range(docPos.row, token.start, docPos.row, token.start + token.value.length);
-        this.marker = session.addMarker(this.range, "ace_bracket", "text");
-    };
-    
-    this.onMouseMove = function(e) {
-        this.x = e.clientX;
-        this.y = e.clientY;
-        if (this.isOpen) {
-            this.lastT = e.timeStamp;
-            this.updateTooltipPosition(this.x, this.y);
-        }
-        if (!this.$timer)
-            this.$timer = setTimeout(this.update, 100);
-    };
-    
-    this.onMouseOut = function(e) {
-        var t = e && e.relatedTarget;
-        var ct = e &&  e.currentTarget;
-        while(t && (t = t.parentNode)) {
-            if (t == ct)
-                return;
-        }
-        tooltipNode.style.display = "none";
-        this.editor.session.removeMarker(this.marker);
-        this.$timer = clearTimeout(this.$timer);
-        this.isOpen = false;
-    };
-    
-    this.updateTooltipPosition = function(x, y) {
-        var st = tooltipNode.style;
-        if (x + 10 + this.tooltipWidth > this.maxWidth)
-            x = innerWidth - this.tooltipWidth - 10;
-        if (y > innerHeight * 0.75 || y + 20 + this.tooltipHeight > this.maxHeight)
-            y = y - this.tooltipHeight - 30;
-        
-        st.left = x + 10 + "px";
-        st.top = y + 20 + "px";
-    };
-
-    this.$init = function() {
-        tooltipNode = document.documentElement.appendChild(dom.createElement("div"));
-        var st = tooltipNode.style;
-        st.position = "fixed";
-        st.display = "none";
-        st.background = "lightyellow";
-        st.borderRadius = "";
-        st.border = "1px solid gray";
-        st.padding = "1px";
-        st.zIndex = 1000;
-        st.fontFamily = "monospace";
-        st.whiteSpace = "pre-line";
-        return tooltipNode;
-    };
-
-    this.destroy = function() {
-        this.onMouseOut();
-        event.removeListener(this.editor.renderer.scroller, "mousemove", this.onMouseMove);
-        event.removeListener(this.editor.renderer.content, "mouseout", this.onMouseOut);
-        delete this.editor.tokenTooltip;    
-    };
-
-}).call(TokenTooltip.prototype);
-
-exports.TokenTooltip = TokenTooltip;
-
-});
-
-define('kitchen-sink/util', ['require', 'exports', 'module' , 'ace/lib/dom', 'ace/lib/event', 'ace/edit_session', 'ace/undomanager', 'ace/virtual_renderer', 'ace/editor', 'ace/multi_select'], function(require, exports, module) {
-
-
-var dom = require("ace/lib/dom");
-var event = require("ace/lib/event");
-
-var EditSession = require("ace/edit_session").EditSession;
-var UndoManager = require("ace/undomanager").UndoManager;
-var Renderer = require("ace/virtual_renderer").VirtualRenderer;
-var Editor = require("ace/editor").Editor;
-var MultiSelect = require("ace/multi_select").MultiSelect;
-
-exports.createEditor = function(el) {
-    return new Editor(new Renderer(el));
-}
-
-exports.createSplitEditor = function(el) {
-    if (typeof(el) == "string")
-        el = document.getElementById(el);
-
-    var e0 = document.createElement("div");
-    var s = document.createElement("splitter");
-    var e1 = document.createElement("div");
-    el.appendChild(e0);
-    el.appendChild(e1);
-    el.appendChild(s);
-    e0.style.position = e1.style.position = s.style.position = "absolute";
-    el.style.position = "relative";
-    var split = {$container: el};
-
-    split.editor0 = split[0] = new Editor(new Renderer(e0));
-    split.editor1 = split[1] = new Editor(new Renderer(e1));
-    split.splitter = s;
-
-    MultiSelect(split.editor0);
-    MultiSelect(split.editor1);
-
-    s.ratio = 0.5;
-
-    split.resize = function resize(){
-        var height = el.parentNode.clientHeight - el.offsetTop;
-        var total = el.clientWidth;
-        var w1 = total * s.ratio;
-        var w2 = total * (1- s.ratio);
-        s.style.left = w1 - 1 + "px";
-        s.style.height = el.style.height = height + "px";
-
-        var st0 = split[0].container.style;
-        var st1 = split[1].container.style;
-        st0.width = w1 + "px";
-        st1.width = w2 + "px";
-        st0.left = 0 + "px";
-        st1.left = w1 + "px";
-
-        st0.top = st1.top = "0px";
-        st0.height = st1.height = height + "px";
-
-        split[0].resize();
-        split[1].resize();
-    };
-
-    split.onMouseDown = function(e) {
-        var rect = el.getBoundingClientRect();
-        var x = e.clientX;
-        var y = e.clientY;
-
-        var button = e.button;
-        if (button !== 0) {
-            return;
-        }
-
-        var onMouseMove = function(e) {
-            x = e.clientX;
-            y = e.clientY;
-        };
-        var onResizeEnd = function(e) {
-            clearInterval(timerId);
-        };
-
-        var onResizeInterval = function() {
-            s.ratio = (x - rect.left) / rect.width
-            split.resize()
-        };
-
-        event.capture(s, onMouseMove, onResizeEnd);
-        var timerId = setInterval(onResizeInterval, 40);
-
-        return e.preventDefault();
-    };
-
-
-
-    event.addListener(s, "mousedown", split.onMouseDown);
-    event.addListener(window, "resize", split.resize);
-    split.resize();
-    return split;
-};
-exports.stripLeadingComments = function(str) {
-    if(str.slice(0,2)=='/*') {
-        var j = str.indexOf('*/')+2;
-        str = str.substr(j);
-    }
-    return str.trim() + "\n";
-};
-exports.saveOption = function(el, val) {
-    if (!el.onchange && !el.onclick)
-        return;
-
-    if ("checked" in el) {
-        if (val !== undefined)
-            el.checked = val;
-
-        localStorage && localStorage.setItem(el.id, el.checked ? 1 : 0);
-    }
-    else {
-        if (val !== undefined)
-            el.value = val;
-
-        localStorage && localStorage.setItem(el.id, el.value);
-    }
-};
-
-exports.bindCheckbox = function(id, callback, noInit) {
-    if (typeof id == "string")
-        var el = document.getElementById(id);
-    else {
-        var el = id;
-        id = el.id;
-    }
-    var el = document.getElementById(id);
-    if (localStorage && localStorage.getItem(id))
-        el.checked = localStorage.getItem(id) == "1";
-
-    var onCheck = function() {
-        callback(!!el.checked);
-        exports.saveOption(el);
-    };
-    el.onclick = onCheck;
-    noInit || onCheck();
-    return el;
-};
-
-exports.bindDropdown = function(id, callback, noInit) {
-    if (typeof id == "string")
-        var el = document.getElementById(id);
-    else {
-        var el = id;
-        id = el.id;
-    }
-    if (localStorage && localStorage.getItem(id))
-        el.value = localStorage.getItem(id);
-
-    var onChange = function() {
-        callback(el.value);
-        exports.saveOption(el);
-    };
-
-    el.onchange = onChange;
-    noInit || onChange();
-};
-
-exports.fillDropdown = function(el, values) {
-    if (typeof el == "string")
-        el = document.getElementById(el);
-
-    dropdown(values).forEach(function(e) {
-        el.appendChild(e);
-    });
-};
-
-function elt(tag, attributes, content) {
-    var el = dom.createElement(tag);
-    if (typeof content == "string") {
-        el.appendChild(document.createTextNode(content));
-    } else if (content) {
-        content.forEach(function(ch) {
-            el.appendChild(ch);
-        });
-    }
-
-    for (var i in attributes)
-        el.setAttribute(i, attributes[i]);
-    return el;
-}
-
-function optgroup(values) {
-    return values.map(function(item) {
-        if (typeof item == "string")
-            item = {name: item, caption: item};
-        return elt("option", {value: item.name}, item.caption || item.desc);
-    });
-}
-
-function dropdown(values) {
-    if (Array.isArray(values))
-        return optgroup(values);
-
-    return Object.keys(values).map(function(i) {
-        return elt("optgroup", {"label": i}, optgroup(values[i]));
-    });
-}
-
 
 });
 
@@ -2407,82 +1183,205 @@ exports.IncrementalSearchKeyboardHandler = IncrementalSearchKeyboardHandler;
 
 });
 
-define('ace/commands/occur_commands', ['require', 'exports', 'module' , 'ace/config', 'ace/occur', 'ace/keyboard/hash_handler', 'ace/lib/oop'], function(require, exports, module) {
+define('kitchen-sink/util', ['require', 'exports', 'module' , 'ace/lib/dom', 'ace/lib/event', 'ace/edit_session', 'ace/undomanager', 'ace/virtual_renderer', 'ace/editor', 'ace/multi_select'], function(require, exports, module) {
 
-var config = require("../config"),
-    Occur = require("../occur").Occur;
-var occurStartCommand = {
-    name: "occur",
-    exec: function(editor, options) {
-        var alreadyInOccur = !!editor.session.$occur;
-        var occurSessionActive = new Occur().enter(editor, options);
-        if (occurSessionActive && !alreadyInOccur)
-            OccurKeyboardHandler.installIn(editor);
-    },
-    readOnly: true
+
+var dom = require("ace/lib/dom");
+var event = require("ace/lib/event");
+
+var EditSession = require("ace/edit_session").EditSession;
+var UndoManager = require("ace/undomanager").UndoManager;
+var Renderer = require("ace/virtual_renderer").VirtualRenderer;
+var Editor = require("ace/editor").Editor;
+var MultiSelect = require("ace/multi_select").MultiSelect;
+
+exports.createEditor = function(el) {
+    return new Editor(new Renderer(el));
 };
 
-var occurCommands = [{
-    name: "occurexit",
-    bindKey: 'esc|Ctrl-G',
-    exec: function(editor) {
-        var occur = editor.session.$occur;
-        if (!occur) return;
-        occur.exit(editor, {});
-        if (!editor.session.$occur) OccurKeyboardHandler.uninstallFrom(editor);
-    },
-    readOnly: true
-}, {
-    name: "occuraccept",
-    bindKey: 'enter',
-    exec: function(editor) {
-        var occur = editor.session.$occur;
-        if (!occur) return;
-        occur.exit(editor, {translatePosition: true});
-        if (!editor.session.$occur) OccurKeyboardHandler.uninstallFrom(editor);
-    },
-    readOnly: true
-}];
+exports.createSplitEditor = function(el) {
+    if (typeof(el) == "string")
+        el = document.getElementById(el);
 
-var HashHandler = require("../keyboard/hash_handler").HashHandler;
-var oop = require("../lib/oop");
+    var e0 = document.createElement("div");
+    var s = document.createElement("splitter");
+    var e1 = document.createElement("div");
+    el.appendChild(e0);
+    el.appendChild(e1);
+    el.appendChild(s);
+    e0.style.position = e1.style.position = s.style.position = "absolute";
+    el.style.position = "relative";
+    var split = {$container: el};
+
+    split.editor0 = split[0] = new Editor(new Renderer(e0));
+    split.editor1 = split[1] = new Editor(new Renderer(e1));
+    split.splitter = s;
+
+    s.ratio = 0.5;
+
+    split.resize = function resize(){
+        var height = el.parentNode.clientHeight - el.offsetTop;
+        var total = el.clientWidth;
+        var w1 = total * s.ratio;
+        var w2 = total * (1- s.ratio);
+        s.style.left = w1 - 1 + "px";
+        s.style.height = el.style.height = height + "px";
+
+        var st0 = split[0].container.style;
+        var st1 = split[1].container.style;
+        st0.width = w1 + "px";
+        st1.width = w2 + "px";
+        st0.left = 0 + "px";
+        st1.left = w1 + "px";
+
+        st0.top = st1.top = "0px";
+        st0.height = st1.height = height + "px";
+
+        split[0].resize();
+        split[1].resize();
+    };
+
+    split.onMouseDown = function(e) {
+        var rect = el.getBoundingClientRect();
+        var x = e.clientX;
+        var y = e.clientY;
+
+        var button = e.button;
+        if (button !== 0) {
+            return;
+        }
+
+        var onMouseMove = function(e) {
+            x = e.clientX;
+            y = e.clientY;
+        };
+        var onResizeEnd = function(e) {
+            clearInterval(timerId);
+        };
+
+        var onResizeInterval = function() {
+            s.ratio = (x - rect.left) / rect.width;
+            split.resize();
+        };
+
+        event.capture(s, onMouseMove, onResizeEnd);
+        var timerId = setInterval(onResizeInterval, 40);
+
+        return e.preventDefault();
+    };
 
 
-function OccurKeyboardHandler() {}
 
-oop.inherits(OccurKeyboardHandler, HashHandler);
+    event.addListener(s, "mousedown", split.onMouseDown);
+    event.addListener(window, "resize", split.resize);
+    split.resize();
+    return split;
+};
+exports.stripLeadingComments = function(str) {
+    if(str.slice(0,2)=='/*') {
+        var j = str.indexOf('*/')+2;
+        str = str.substr(j);
+    }
+    return str.trim() + "\n";
+};
+exports.saveOption = function(el, val) {
+    if (!el.onchange && !el.onclick)
+        return;
 
-;(function() {
+    if ("checked" in el) {
+        if (val !== undefined)
+            el.checked = val;
 
-    this.isOccurHandler = true;
+        localStorage && localStorage.setItem(el.id, el.checked ? 1 : 0);
+    }
+    else {
+        if (val !== undefined)
+            el.value = val;
 
-    this.attach = function(editor) {
-        HashHandler.call(this, occurCommands, editor.commands.platform);
-        this.$editor = editor;
+        localStorage && localStorage.setItem(el.id, el.value);
+    }
+};
+
+exports.bindCheckbox = function(id, callback, noInit) {
+    if (typeof id == "string")
+        var el = document.getElementById(id);
+    else {
+        var el = id;
+        id = el.id;
+    }
+    var el = document.getElementById(id);
+    if (localStorage && localStorage.getItem(id))
+        el.checked = localStorage.getItem(id) == "1";
+
+    var onCheck = function() {
+        callback(!!el.checked);
+        exports.saveOption(el);
+    };
+    el.onclick = onCheck;
+    noInit || onCheck();
+    return el;
+};
+
+exports.bindDropdown = function(id, callback, noInit) {
+    if (typeof id == "string")
+        var el = document.getElementById(id);
+    else {
+        var el = id;
+        id = el.id;
+    }
+    if (localStorage && localStorage.getItem(id))
+        el.value = localStorage.getItem(id);
+
+    var onChange = function() {
+        callback(el.value);
+        exports.saveOption(el);
+    };
+
+    el.onchange = onChange;
+    noInit || onChange();
+};
+
+exports.fillDropdown = function(el, values) {
+    if (typeof el == "string")
+        el = document.getElementById(el);
+
+    dropdown(values).forEach(function(e) {
+        el.appendChild(e);
+    });
+};
+
+function elt(tag, attributes, content) {
+    var el = dom.createElement(tag);
+    if (typeof content == "string") {
+        el.appendChild(document.createTextNode(content));
+    } else if (content) {
+        content.forEach(function(ch) {
+            el.appendChild(ch);
+        });
     }
 
-    var handleKeyboard$super = this.handleKeyboard;
-    this.handleKeyboard = function(data, hashId, key, keyCode) {
-        var cmd = handleKeyboard$super.call(this, data, hashId, key, keyCode);
-        return (cmd && cmd.command) ? cmd : undefined;
-    }
-
-}).call(OccurKeyboardHandler.prototype);
-
-OccurKeyboardHandler.installIn = function(editor) {
-    var handler = new this();
-    editor.keyBinding.addKeyboardHandler(handler);
-    editor.commands.addCommands(occurCommands);
+    for (var i in attributes)
+        el.setAttribute(i, attributes[i]);
+    return el;
 }
 
-OccurKeyboardHandler.uninstallFrom = function(editor) {
-    editor.commands.removeCommands(occurCommands);
-    var handler = editor.getKeyboardHandler();
-    if (handler.isOccurHandler)
-        editor.keyBinding.removeKeyboardHandler(handler);
+function optgroup(values) {
+    return values.map(function(item) {
+        if (typeof item == "string")
+            item = {name: item, caption: item};
+        return elt("option", {value: item.value || item.name}, item.caption || item.desc);
+    });
 }
 
-exports.occurStartCommand = occurStartCommand;
+function dropdown(values) {
+    if (Array.isArray(values))
+        return optgroup(values);
+
+    return Object.keys(values).map(function(i) {
+        return elt("optgroup", {"label": i}, optgroup(values[i]));
+    });
+}
+
 
 });
 
@@ -2890,7 +1789,7 @@ exports.handler = {
             if (util.currentMode === "insert") {            
                 this.onCompositionStartOrig(text);
             }
-        }
+        };
         if (enable) {
             if (!editor.onCompositionUpdateOrig) {
                 editor.onCompositionUpdateOrig = editor.onCompositionUpdate;
@@ -2909,7 +1808,7 @@ exports.handler = {
     },
 
     handleKeyboard: function(data, hashId, key, keyCode, e) {
-        if (hashId != 0 && (key == "" || key == "\x00"))
+        if (hashId !== 0 && (!key || keyCode == -1))
             return null;
         
         var editor = data.editor;
@@ -2927,7 +1826,7 @@ exports.handler = {
                 return {command: "null", passEvent: true};
             }
             return {command: coreCommands.stop};            
-        } else if ((key == "esc" && hashId == 0) || key == "ctrl-[") {
+        } else if ((key == "esc" && hashId === 0) || key == "ctrl-[") {
             return {command: coreCommands.stop};
         } else if (data.state == "start") {
             if (useragent.isMac && this.handleMacRepeat(data, hashId, key)) {
@@ -2935,15 +1834,15 @@ exports.handler = {
                 key = data.inputChar;
             }
             
-            if (hashId == -1 || hashId == 1 || hashId == 0 && key.length > 1) {
+            if (hashId == -1 || hashId == 1 || hashId === 0 && key.length > 1) {
                 if (cmds.inputBuffer.idle && startCommands[key])
                     return startCommands[key];
-                cmds.inputBuffer.push(editor, key);
-                return {command: "null", passEvent: false}; 
+                var isHandled = cmds.inputBuffer.push(editor, key);
+                return {command: "null", passEvent: !isHandled}; 
             } // if no modifier || shift: wait for input.
-            else if (key.length == 1 && (hashId == 0 || hashId == 4)) {
+            else if (key.length == 1 && (hashId === 0 || hashId == 4)) {
                 return {command: "null", passEvent: true};
-            } else if (key == "esc" && hashId == 0) {
+            } else if (key == "esc" && hashId === 0) {
                 return {command: coreCommands.stop};
             }
         } else {
@@ -3158,8 +2057,7 @@ var actions = exports.actions = {
     "V": {
         fn: function(editor, range, count, param) {
             var row = editor.getCursorPosition().row;
-            editor.selection.clearSelection();
-            editor.selection.moveCursorTo(row, 0);
+            editor.selection.moveTo(row, 0);
             editor.selection.selectLineEnd();
             editor.selection.visualLineStart = row;
 
@@ -3528,13 +2426,11 @@ var handleCursorMove = exports.onCursorMove = function(editor, e) {
             var cursorRow = editor.getCursorPosition().row;
             if(originRow <= cursorRow) {
                 var endLine = editor.session.getLine(cursorRow);
-                editor.selection.clearSelection();
-                editor.selection.moveCursorTo(originRow, 0);
+                editor.selection.moveTo(originRow, 0);
                 editor.selection.selectTo(cursorRow, endLine.length);
             } else {
                 var endLine = editor.session.getLine(originRow);
-                editor.selection.clearSelection();
-                editor.selection.moveCursorTo(originRow, endLine.length);
+                editor.selection.moveTo(originRow, endLine.length);
                 editor.selection.selectTo(cursorRow, 0);
             }
         }
@@ -3676,15 +2572,140 @@ module.exports = {
     },
     copyLine: function(editor) {
         var pos = editor.getCursorPosition();
-        editor.selection.clearSelection();
-        editor.moveCursorTo(pos.row, pos.column);
+        editor.selection.moveTo(pos.row, pos.column);
         editor.selection.selectLine();
         registers._default.isLine = true;
         registers._default.text = editor.getCopyText().replace(/\n$/, "");
-        editor.selection.clearSelection();
-        editor.moveCursorTo(pos.row, pos.column);
+        editor.selection.moveTo(pos.row, pos.column);
     }
 };
+});
+
+define('kitchen-sink/token_tooltip', ['require', 'exports', 'module' , 'ace/lib/dom', 'ace/lib/oop', 'ace/lib/event', 'ace/range', 'ace/tooltip'], function(require, exports, module) {
+
+
+var dom = require("ace/lib/dom");
+var oop = require("ace/lib/oop");
+var event = require("ace/lib/event");
+var Range = require("ace/range").Range;
+var Tooltip = require("ace/tooltip").Tooltip;
+
+function TokenTooltip (editor) {
+    if (editor.tokenTooltip)
+        return;
+    Tooltip.call(this, editor.container);
+    editor.tokenTooltip = this;
+    this.editor = editor;
+
+    this.update = this.update.bind(this);
+    this.onMouseMove = this.onMouseMove.bind(this);
+    this.onMouseOut = this.onMouseOut.bind(this);
+    event.addListener(editor.renderer.scroller, "mousemove", this.onMouseMove);
+    event.addListener(editor.renderer.content, "mouseout", this.onMouseOut);
+}
+
+oop.inherits(TokenTooltip, Tooltip);
+
+(function(){
+    this.token = {};
+    this.range = new Range();
+    
+    this.update = function() {
+        this.$timer = null;
+        
+        var r = this.editor.renderer;
+        if (this.lastT - (r.timeStamp || 0) > 1000) {
+            r.rect = null;
+            r.timeStamp = this.lastT;
+            this.maxHeight = window.innerHeight;
+            this.maxWidth = window.innerWidth;
+        }
+
+        var canvasPos = r.rect || (r.rect = r.scroller.getBoundingClientRect());
+        var offset = (this.x + r.scrollLeft - canvasPos.left - r.$padding) / r.characterWidth;
+        var row = Math.floor((this.y + r.scrollTop - canvasPos.top) / r.lineHeight);
+        var col = Math.round(offset);
+
+        var screenPos = {row: row, column: col, side: offset - col > 0 ? 1 : -1};
+        var session = this.editor.session;
+        var docPos = session.screenToDocumentPosition(screenPos.row, screenPos.column);
+        var token = session.getTokenAt(docPos.row, docPos.column);
+
+        if (!token && !session.getLine(docPos.row)) {
+            token = {
+                type: "",
+                value: "",
+                state: session.bgTokenizer.getState(0)
+            };
+        }
+        if (!token) {
+            session.removeMarker(this.marker);
+            this.hide();
+            return;
+        }
+
+        var tokenText = token.type;
+        if (token.state)
+            tokenText += "|" + token.state;
+        if (token.merge)
+            tokenText += "\n  merge";
+        if (token.stateTransitions)
+            tokenText += "\n  " + token.stateTransitions.join("\n  ");
+
+        if (this.tokenText != tokenText) {
+            this.setText(tokenText);
+            this.width = this.getWidth();
+            this.height = this.getHeight();
+            this.tokenText = tokenText;
+        }
+
+        this.show(null, this.x, this.y);
+
+        this.token = token;
+        session.removeMarker(this.marker);
+        this.range = new Range(docPos.row, token.start, docPos.row, token.start + token.value.length);
+        this.marker = session.addMarker(this.range, "ace_bracket", "text");
+    };
+    
+    this.onMouseMove = function(e) {
+        this.x = e.clientX;
+        this.y = e.clientY;
+        if (this.isOpen) {
+            this.lastT = e.timeStamp;
+            this.setPosition(this.x, this.y);
+        }
+        if (!this.$timer)
+            this.$timer = setTimeout(this.update, 100);
+    };
+
+    this.onMouseOut = function(e) {
+        if (e && e.currentTarget.contains(e.relatedTarget))
+            return;
+        this.hide();
+        this.editor.session.removeMarker(this.marker);
+        this.$timer = clearTimeout(this.$timer);
+    };
+
+    this.setPosition = function(x, y) {
+        if (x + 10 + this.width > this.maxWidth)
+            x = window.innerWidth - this.width - 10;
+        if (y > window.innerHeight * 0.75 || y + 20 + this.height > this.maxHeight)
+            y = y - this.height - 30;
+
+        Tooltip.prototype.setPosition.call(this, x + 10, y + 20);
+    };
+
+    this.destroy = function() {
+        this.onMouseOut();
+        event.removeListener(this.editor.renderer.scroller, "mousemove", this.onMouseMove);
+        event.removeListener(this.editor.renderer.content, "mouseout", this.onMouseOut);
+        delete this.editor.tokenTooltip;
+    };
+
+}).call(TokenTooltip.prototype);
+
+exports.TokenTooltip = TokenTooltip;
+
 });
 
 define('ace/keyboard/vim/registers', ['require', 'exports', 'module' ], function(require, exports, module) {
@@ -3697,6 +2718,134 @@ module.exports = {
         isLine: false
     }
 };
+
+});
+
+define('kitchen-sink/layout', ['require', 'exports', 'module' , 'ace/lib/dom', 'ace/lib/event', 'ace/edit_session', 'ace/undomanager', 'ace/virtual_renderer', 'ace/editor', 'ace/multi_select', 'ace/theme/textmate'], function(require, exports, module) {
+
+
+var dom = require("ace/lib/dom");
+var event = require("ace/lib/event");
+
+var EditSession = require("ace/edit_session").EditSession;
+var UndoManager = require("ace/undomanager").UndoManager;
+var Renderer = require("ace/virtual_renderer").VirtualRenderer;
+var Editor = require("ace/editor").Editor;
+var MultiSelect = require("ace/multi_select").MultiSelect;
+
+dom.importCssString("\
+splitter {\
+    border: 1px solid #C6C6D2;\
+    width: 0px;\
+    cursor: ew-resize;\
+    z-index:10}\
+splitter:hover {\
+    margin-left: -2px;\
+    width:3px;\
+    border-color: #B5B4E0;\
+}\
+", "splitEditor");
+
+exports.edit = function(el) {
+    if (typeof(el) == "string")
+        el = document.getElementById(el);
+
+    var editor = new Editor(new Renderer(el, require("ace/theme/textmate")));
+
+    editor.resize();
+    event.addListener(window, "resize", function() {
+        editor.resize();
+    });
+    return editor;
+};
+
+
+var SplitRoot = function(el, theme, position, getSize) {
+    el.style.position = position || "relative";
+    this.container = el;
+    this.getSize = getSize || this.getSize;
+    this.resize = this.$resize.bind(this);
+
+    event.addListener(el.ownerDocument.defaultView, "resize", this.resize);
+    this.editor = this.createEditor();
+};
+
+(function(){
+    this.createEditor = function() {
+        var el = document.createElement("div");
+        el.className = this.$editorCSS;
+        el.style.cssText = "position: absolute; top:0px; bottom:0px";
+        this.$container.appendChild(el);
+        var session = new EditSession("");
+        var editor = new Editor(new Renderer(el, this.$theme));
+
+        this.$editors.push(editor);
+        editor.setFontSize(this.$fontSize);
+        return editor;
+    };
+    this.$resize = function() {
+        var size = this.getSize(this.container);
+        this.rect = {
+            x: size.left,
+            y: size.top,
+            w: size.width,
+            h: size.height
+        };
+        this.item.resize(this.rect);
+    };
+    this.getSize = function(el) {
+        return el.getBoundingClientRect();
+    };
+    this.destroy = function() {
+        var win = this.container.ownerDocument.defaultView;
+        event.removeListener(win, "resize", this.resize);
+    };
+
+
+}).call(SplitRoot.prototype);
+
+
+
+var Split = function(){
+
+};
+(function(){
+    this.execute = function(options) {
+        this.$u.execute(options);
+    };
+
+}).call(Split.prototype);
+
+
+
+exports.singleLineEditor = function(el) {
+    var renderer = new Renderer(el);
+    el.style.overflow = "hidden";
+
+    renderer.screenToTextCoordinates = function(x, y) {
+        var pos = this.pixelToScreenCoordinates(x, y);
+        return this.session.screenToDocumentPosition(
+            Math.min(this.session.getScreenLength() - 1, Math.max(pos.row, 0)),
+            Math.max(pos.column, 0)
+        );
+    };
+
+    renderer.$maxLines = 4;
+
+    renderer.setStyle("ace_one-line");
+    var editor = new Editor(renderer);
+    new MultiSelect(editor);
+    editor.session.setUndoManager(new UndoManager());
+
+    editor.setShowPrintMargin(false);
+    editor.renderer.setShowGutter(false);
+    editor.renderer.setHighlightGutterLine(false);
+    editor.$mouseHandler.$focusWaitTimout = 0;
+
+    return editor;
+};
+
+
 
 });
 
@@ -3725,8 +2874,7 @@ function Motion(m) {
         var a = getPos(editor, range, count, param, false);
         if (!a)
             return;
-        editor.clearSelection();
-        editor.moveCursorTo(a.row, a.column);
+        editor.selection.moveTo(a.row, a.column);
     };
     m.sel = function(editor, range, count, param) {
         var a = getPos(editor, range, count, param, true);
@@ -4148,10 +3296,17 @@ module.exports = {
         }
     },
     "$": {
-        nav: function(editor) {
+        handlesCount: true,
+        nav: function(editor, range, count, param) {
+            if (count > 1) {
+                editor.navigateDown(count-1);
+            }
             editor.navigateLineEnd();
         },
-        sel: function(editor) {
+        sel: function(editor, range, count, param) {
+            if (count > 1) {
+                editor.selection.moveCursorBy(count-1, 0);
+            }
             editor.selection.selectLineEnd();
         }
     },
@@ -4327,6 +3482,62 @@ module.exports.up = module.exports.k;
 module.exports.down = module.exports.j;
 module.exports.pagedown = module.exports["ctrl-d"];
 module.exports.pageup = module.exports["ctrl-u"];
+module.exports.home = module.exports["0"];
+module.exports.end = module.exports["$"];
+
+});
+
+define('ace/ext/themelist', ['require', 'exports', 'module' ], function(require, exports, module) {
+
+
+var themeData = [
+    ["Chrome"         ],
+    ["Clouds"         ],
+    ["Crimson Editor" ],
+    ["Dawn"           ],
+    ["Dreamweaver"    ],
+    ["Eclipse"        ],
+    ["GitHub"         ],
+    ["Solarized Light"],
+    ["TextMate"       ],
+    ["Tomorrow"       ],
+    ["XCode"          ],
+    ["Kuroir"],
+    ["KatzenMilch"],
+    ["Ambiance"             ,"ambiance"                ,  "dark"],
+    ["Chaos"                ,"chaos"                   ,  "dark"],
+    ["Clouds Midnight"      ,"clouds_midnight"         ,  "dark"],
+    ["Cobalt"               ,"cobalt"                  ,  "dark"],
+    ["idle Fingers"         ,"idle_fingers"            ,  "dark"],
+    ["krTheme"              ,"kr_theme"                ,  "dark"],
+    ["Merbivore"            ,"merbivore"               ,  "dark"],
+    ["Merbivore Soft"       ,"merbivore_soft"          ,  "dark"],
+    ["Mono Industrial"      ,"mono_industrial"         ,  "dark"],
+    ["Monokai"              ,"monokai"                 ,  "dark"],
+    ["Pastel on dark"       ,"pastel_on_dark"          ,  "dark"],
+    ["Solarized Dark"       ,"solarized_dark"          ,  "dark"],
+    ["Terminal"             ,"terminal"                ,  "dark"],
+    ["Tomorrow Night"       ,"tomorrow_night"          ,  "dark"],
+    ["Tomorrow Night Blue"  ,"tomorrow_night_blue"     ,  "dark"],
+    ["Tomorrow Night Bright","tomorrow_night_bright"   ,  "dark"],
+    ["Tomorrow Night 80s"   ,"tomorrow_night_eighties" ,  "dark"],
+    ["Twilight"             ,"twilight"                ,  "dark"],
+    ["Vibrant Ink"          ,"vibrant_ink"             ,  "dark"]
+];
+
+
+exports.themesByName = {};
+exports.themes = themeData.map(function(data) {
+    var name = data[1] || data[0].replace(/ /g, "_").toLowerCase();
+    var theme = {
+        caption: data[0],
+        theme: "ace/theme/" + name,
+        isDark: data[2] == "dark",
+        name: name
+    };
+    exports.themesByName[name] = theme;
+    return theme;
+});
 
 });
  
@@ -4492,6 +3703,156 @@ module.exports = {
     }
 };
 });
+
+ define('kitchen-sink/doclist', ['require', 'exports', 'module' , 'ace/edit_session', 'ace/undomanager', 'ace/lib/net', 'ace/ext/modelist'], function(require, exports, module) {
+
+
+var EditSession = require("ace/edit_session").EditSession;
+var UndoManager = require("ace/undomanager").UndoManager;
+var net = require("ace/lib/net");
+
+var modelist = require("ace/ext/modelist");
+var fileCache = {};
+
+function initDoc(file, path, doc) {
+    if (doc.prepare)
+        file = doc.prepare(file);
+
+    var session = new EditSession(file);
+    session.setUndoManager(new UndoManager());
+    doc.session = session;
+    doc.path = path;
+    session.name = doc.name;
+    if (doc.wrapped) {
+        session.setUseWrapMode(true);
+        session.setWrapLimitRange(80, 80);
+    }
+    var mode = modelist.getModeForPath(path);
+    session.modeName = mode.name;
+    session.setMode(mode.mode);
+    return session;
+}
+
+
+function makeHuge(txt) {
+    for (var i = 0; i < 5; i++)
+        txt += txt;
+    return txt;
+}
+
+var docs = {
+    "docs/javascript.js": {order: 1, name: "JavaScript"},
+
+    "docs/latex.tex": {name: "LaTeX", wrapped: true},
+    "docs/markdown.md": {name: "Markdown", wrapped: true},
+    "docs/mushcode.mc": {name: "MUSHCode", wrapped: true},
+    "docs/pgsql.pgsql": {name: "pgSQL", wrapped: true},
+    "docs/plaintext.txt": {name: "Plain Text", prepare: makeHuge, wrapped: true},
+    "docs/sql.sql": {name: "SQL", wrapped: true},
+
+    "docs/textile.textile": {name: "Textile", wrapped: true},
+
+    "docs/c9search.c9search_results": "C9 Search Results",
+    "docs/mel.mel": "MEL",
+    "docs/Nix.nix": "Nix"
+};
+
+var ownSource = {
+};
+
+var hugeDocs = {
+    "src/ace.js": "",
+    "src-min/ace.js": ""
+};
+
+modelist.modes.forEach(function(m) {
+    var ext = m.extensions.split("|")[0];
+    if (ext[0] === "^") {
+        path = ext.substr(1);
+    } else {
+        var path = m.name + "." + ext;
+    }
+    path = "docs/" + path;
+    if (!docs[path]) {
+        docs[path] = {name: m.caption};
+    } else if (typeof docs[path] == "object" && !docs[path].name) {
+        docs[path].name = m.caption;
+    }
+});
+
+
+
+if (window.require && window.require.s) try {
+    for (var path in window.require.s.contexts._.defined) {
+        if (path.indexOf("!") != -1)
+            path = path.split("!").pop();
+        else
+            path = path + ".js";
+        ownSource[path] = "";
+    }
+} catch(e) {}
+
+function sort(list) {
+    return list.sort(function(a, b) {
+        var cmp = (b.order || 0) - (a.order || 0);
+        return cmp || a.name && a.name.localeCompare(b.name);
+    });
+}
+
+function prepareDocList(docs) {
+    var list = [];
+    for (var path in docs) {
+        var doc = docs[path];
+        if (typeof doc != "object")
+            doc = {name: doc || path};
+
+        doc.path = path;
+        doc.desc = doc.name.replace(/^(ace|docs|demo|build)\//, "");
+        if (doc.desc.length > 18)
+            doc.desc = doc.desc.slice(0, 7) + ".." + doc.desc.slice(-9);
+
+        fileCache[doc.name] = doc;
+        list.push(doc);
+    }
+
+    return list;
+}
+
+function loadDoc(name, callback) {
+    var doc = fileCache[name];
+    if (!doc)
+        return callback(null);
+
+    if (doc.session)
+        return callback(doc.session);
+    var path = doc.path;
+    var parts = path.split("/");
+    if (parts[0] == "docs")
+        path = "kitchen-sink/" + path;
+    else if (parts[0] == "ace")
+        path = "lib/" + path;
+
+    net.get(path, function(x) {
+        initDoc(x, path, doc);
+        callback(doc.session);
+    });
+}
+
+module.exports = {
+    fileCache: fileCache,
+    docs: sort(prepareDocList(docs)),
+    ownSource: prepareDocList(ownSource),
+    hugeDocs: prepareDocList(hugeDocs),
+    initDoc: initDoc,
+    loadDoc: loadDoc
+};
+module.exports.all = {
+    "Mode Examples": module.exports.docs,
+    "Huge documents": module.exports.hugeDocs,
+    "own source": module.exports.ownSource
+};
+
+});
  
 "use strict"
 
@@ -4557,6 +3918,185 @@ module.exports = {
 };
 });
 
+define('ace/ext/whitespace', ['require', 'exports', 'module' , 'ace/lib/lang'], function(require, exports, module) {
+
+
+var lang = require("../lib/lang");
+exports.$detectIndentation = function(lines, fallback) {
+    var stats = [];
+    var changes = [];
+    var tabIndents = 0;
+    var prevSpaces = 0;
+    var max = Math.min(lines.length, 1000);
+    for (var i = 0; i < max; i++) {
+        var line = lines[i];
+        if (!/^\s*[^*+\-\s]/.test(line))
+            continue;
+
+        var tabs = line.match(/^\t*/)[0].length;
+        if (line[0] == "\t")
+            tabIndents++;
+
+        var spaces = line.match(/^ */)[0].length;
+        if (spaces && line[spaces] != "\t") {
+            var diff = spaces - prevSpaces;
+            if (diff > 0 && !(prevSpaces%diff) && !(spaces%diff))
+                changes[diff] = (changes[diff] || 0) + 1;
+
+            stats[spaces] = (stats[spaces] || 0) + 1;
+        }
+        prevSpaces = spaces;
+        while (i < max && line[line.length - 1] == "\\")
+            line = lines[i++];
+    }
+    
+    if (!stats.length)
+        return;
+
+    function getScore(indent) {
+        var score = 0;
+        for (var i = indent; i < stats.length; i += indent)
+            score += stats[i] || 0;
+        return score;
+    }
+
+    var changesTotal = changes.reduce(function(a,b){return a+b}, 0);
+
+    var first = {score: 0, length: 0};
+    var spaceIndents = 0;
+    for (var i = 1; i < 12; i++) {
+        if (i == 1) {
+            spaceIndents = getScore(i);
+            var score = 1;
+        } else
+            var score = getScore(i) / spaceIndents;
+
+        if (changes[i]) {
+            score += changes[i] / changesTotal;
+        }
+
+        if (score > first.score)
+            first = {score: score, length: i};
+    }
+
+    if (first.score && first.score > 1.4)
+        var tabLength = first.length;
+
+    if (tabIndents > spaceIndents + 1)
+        return {ch: "\t", length: tabLength};
+
+    if (spaceIndents + 1 > tabIndents)
+        return {ch: " ", length: tabLength};
+};
+
+exports.detectIndentation = function(session) {
+    var lines = session.getLines(0, 1000);
+    var indent = exports.$detectIndentation(lines) || {};
+
+    if (indent.ch)
+        session.setUseSoftTabs(indent.ch == " ");
+
+    if (indent.length)
+        session.setTabSize(indent.length);
+    return indent;
+};
+
+exports.trimTrailingSpace = function(session, trimEmpty) {
+    var doc = session.getDocument();
+    var lines = doc.getAllLines();
+    
+    var min = trimEmpty ? -1 : 0;
+
+    for (var i = 0, l=lines.length; i < l; i++) {
+        var line = lines[i];
+        var index = line.search(/\s+$/);
+
+        if (index > min)
+            doc.removeInLine(i, index, line.length);
+    }
+};
+
+exports.convertIndentation = function(session, ch, len) {
+    var oldCh = session.getTabString()[0];
+    var oldLen = session.getTabSize();
+    if (!len) len = oldLen;
+    if (!ch) ch = oldCh;
+
+    var tab = ch == "\t" ? ch: lang.stringRepeat(ch, len);
+
+    var doc = session.doc;
+    var lines = doc.getAllLines();
+
+    var cache = {};
+    var spaceCache = {};
+    for (var i = 0, l=lines.length; i < l; i++) {
+        var line = lines[i];
+        var match = line.match(/^\s*/)[0];
+        if (match) {
+            var w = session.$getStringScreenWidth(match)[0];
+            var tabCount = Math.floor(w/oldLen);
+            var reminder = w%oldLen;
+            var toInsert = cache[tabCount] || (cache[tabCount] = lang.stringRepeat(tab, tabCount));
+            toInsert += spaceCache[reminder] || (spaceCache[reminder] = lang.stringRepeat(" ", reminder));
+
+            if (toInsert != match) {
+                doc.removeInLine(i, 0, match.length);
+                doc.insertInLine({row: i, column: 0}, toInsert);
+            }
+        }
+    }
+    session.setTabSize(len);
+    session.setUseSoftTabs(ch == " ");
+};
+
+exports.$parseStringArg = function(text) {
+    var indent = {};
+    if (/t/.test(text))
+        indent.ch = "\t";
+    else if (/s/.test(text))
+        indent.ch = " ";
+    var m = text.match(/\d+/);
+    if (m)
+        indent.length = parseInt(m[0], 10);
+    return indent;
+};
+
+exports.$parseArg = function(arg) {
+    if (!arg)
+        return {};
+    if (typeof arg == "string")
+        return exports.$parseStringArg(arg);
+    if (typeof arg.text == "string")
+        return exports.$parseStringArg(arg.text);
+    return arg;
+};
+
+exports.commands = [{
+    name: "detectIndentation",
+    exec: function(editor) {
+        exports.detectIndentation(editor.session);
+    }
+}, {
+    name: "trimTrailingSpace",
+    exec: function(editor) {
+        exports.trimTrailingSpace(editor.session);
+    }
+}, {
+    name: "convertIndentation",
+    exec: function(editor, arg) {
+        var indent = exports.$parseArg(arg);
+        exports.convertIndentation(editor.session, indent.ch, indent.length);
+    }
+}, {
+    name: "setIndentation",
+    exec: function(editor, arg) {
+        var indent = exports.$parseArg(arg);
+        indent.length && editor.session.setTabSize(indent.length);
+        indent.ch && editor.session.setUseSoftTabs(indent.ch == " ");
+    }
+}];
+
+});
 define('ace/ext/statusbar', ['require', 'exports', 'module' , 'ace/lib/dom', 'ace/lib/lang'], function(require, exports, module) {
 var dom = require("ace/lib/dom");
 var lang = require("ace/lib/lang");
@@ -4660,8 +4200,7 @@ AceEmmetEditor.prototype = {
     },
     setCaretPos: function(index){
         var pos = this.ace.indexToPosition(index);
-        this.ace.clearSelection();
-        this.ace.selection.moveCursorToPosition(pos);
+        this.ace.selection.moveToPosition(pos);
     },
     getCurrentLine: function() {
         var row = this.ace.getCursorPosition().row;
@@ -4870,6 +4409,137 @@ require("ace/config").defineOptions(Editor.prototype, "editor", {
 exports.setCore = function(e) {emmet = e;};
 });
 
+define('ace/theme/textmate', ['require', 'exports', 'module' , 'ace/lib/dom'], function(require, exports, module) {
+
+
+exports.isDark = false;
+exports.cssClass = "ace-tm";
+exports.cssText = ".ace-tm .ace_gutter {\
+background: #f0f0f0;\
+color: #333;\
+}\
+.ace-tm .ace_print-margin {\
+width: 1px;\
+background: #e8e8e8;\
+}\
+.ace-tm .ace_fold {\
+background-color: #6B72E6;\
+}\
+.ace-tm {\
+background-color: #FFFFFF;\
+color: black;\
+}\
+.ace-tm .ace_cursor {\
+color: black;\
+}\
+.ace-tm .ace_invisible {\
+color: rgb(191, 191, 191);\
+}\
+.ace-tm .ace_storage,\
+.ace-tm .ace_keyword {\
+color: blue;\
+}\
+.ace-tm .ace_constant {\
+color: rgb(197, 6, 11);\
+}\
+.ace-tm .ace_constant.ace_buildin {\
+color: rgb(88, 72, 246);\
+}\
+.ace-tm .ace_constant.ace_language {\
+color: rgb(88, 92, 246);\
+}\
+.ace-tm .ace_constant.ace_library {\
+color: rgb(6, 150, 14);\
+}\
+.ace-tm .ace_invalid {\
+background-color: rgba(255, 0, 0, 0.1);\
+color: red;\
+}\
+.ace-tm .ace_support.ace_function {\
+color: rgb(60, 76, 114);\
+}\
+.ace-tm .ace_support.ace_constant {\
+color: rgb(6, 150, 14);\
+}\
+.ace-tm .ace_support.ace_type,\
+.ace-tm .ace_support.ace_class {\
+color: rgb(109, 121, 222);\
+}\
+.ace-tm .ace_keyword.ace_operator {\
+color: rgb(104, 118, 135);\
+}\
+.ace-tm .ace_string {\
+color: rgb(3, 106, 7);\
+}\
+.ace-tm .ace_comment {\
+color: rgb(76, 136, 107);\
+}\
+.ace-tm .ace_comment.ace_doc {\
+color: rgb(0, 102, 255);\
+}\
+.ace-tm .ace_comment.ace_doc.ace_tag {\
+color: rgb(128, 159, 191);\
+}\
+.ace-tm .ace_constant.ace_numeric {\
+color: rgb(0, 0, 205);\
+}\
+.ace-tm .ace_variable {\
+color: rgb(49, 132, 149);\
+}\
+.ace-tm .ace_xml-pe {\
+color: rgb(104, 104, 91);\
+}\
+.ace-tm .ace_entity.ace_name.ace_function {\
+color: #0000A2;\
+}\
+.ace-tm .ace_heading {\
+color: rgb(12, 7, 255);\
+}\
+.ace-tm .ace_list {\
+color:rgb(185, 6, 144);\
+}\
+.ace-tm .ace_meta.ace_tag {\
+color:rgb(0, 22, 142);\
+}\
+.ace-tm .ace_string.ace_regex {\
+color: rgb(255, 0, 0)\
+}\
+.ace-tm .ace_marker-layer .ace_selection {\
+background: rgb(181, 213, 255);\
+}\
+.ace-tm.ace_multiselect .ace_selection.ace_start {\
+box-shadow: 0 0 3px 0px white;\
+border-radius: 2px;\
+}\
+.ace-tm .ace_marker-layer .ace_step {\
+background: rgb(252, 255, 0);\
+}\
+.ace-tm .ace_marker-layer .ace_stack {\
+background: rgb(164, 229, 101);\
+}\
+.ace-tm .ace_marker-layer .ace_bracket {\
+margin: -1px 0 0 -1px;\
+border: 1px solid rgb(192, 192, 192);\
+}\
+.ace-tm .ace_marker-layer .ace_active-line {\
+background: rgba(0, 0, 0, 0.07);\
+}\
+.ace-tm .ace_gutter-active-line {\
+background-color : #dcdcdc;\
+}\
+.ace-tm .ace_marker-layer .ace_selected-word {\
+background: rgb(250, 250, 255);\
+border: 1px solid rgb(200, 200, 250);\
+}\
+.ace-tm .ace_indent-guide {\
+background: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZgbYnAAAAE0lEQVQImWP4////f4bLly//BwAmVgd1/w11/gAAAABJRU5ErkJggg==\") right repeat-y;\
+}\
+";
+
+var dom = require("../lib/dom");
+dom.importCssString(exports.cssText, exports.cssClass);
+});
+
 define('ace/snippets', ['require', 'exports', 'module' , 'ace/lib/lang', 'ace/range', 'ace/keyboard/hash_handler', 'ace/tokenizer', 'ace/lib/dom'], function(require, exports, module) {
 
 var lang = require("./lib/lang")
@@ -5010,7 +4680,7 @@ var SnippetManager = function() {
                 return s.getTabSize();
             case "FILENAME":
             case "FILEPATH":
-                return "ace.ajax.org";
+                return "";
             case "FULLNAME":
                 return "Ace";
         }
@@ -5164,8 +4834,9 @@ var SnippetManager = function() {
                 continue;
             var id = p.tabstopId;
             var i1 = tokens.indexOf(p, i + 1);
-            if (expanding[id] == p) { 
-                expanding[id] = null;
+            if (expanding[id]) {
+                if (expanding[id] === p)
+                    expanding[id] = null;
                 continue;
             }
             
@@ -5228,16 +4899,26 @@ var SnippetManager = function() {
         return scope;
     };
 
+    this.getActiveScopes = function(editor) {
+        var scope = this.$getScope(editor);
+        var scopes = [scope];
+        var snippetMap = this.snippetMap;
+        if (snippetMap[scope] && snippetMap[scope].includeScopes) {
+            scopes.push.apply(scopes, snippetMap[scope].includeScopes);
+        }
+        scopes.push("_");
+        return scopes;
+    };
+
     this.expandWithTab = function(editor) {
         var cursor = editor.getCursorPosition();
         var line = editor.session.getLine(cursor.row);
         var before = line.substring(0, cursor.column);
         var after = line.substr(cursor.column);
 
-        var scope = this.$getScope(editor);
         var snippetMap = this.snippetMap;
         var snippet;
-        [scope, "_"].some(function(scope) {
+        this.getActiveScopes(editor).some(function(scope) {
             var snippets = snippetMap[scope];
             if (snippets)
                 snippet = this.findMatchingSnippet(snippets, before, after);
@@ -5394,10 +5075,9 @@ var SnippetManager = function() {
         return list;
     };
     this.getSnippetByName = function(name, editor) {
-        var scope = editor && this.$getScope(editor);
         var snippetMap = this.snippetNameMap;
         var snippet;
-        [scope, "_"].some(function(scope) {
+        this.getActiveScopes(editor).some(function(scope) {
             var snippets = snippetMap[scope];
             if (snippets)
                 snippet = snippets[name];
@@ -5630,6 +5310,10 @@ var TabstopManager = function(editor) {
     this.keyboardHandler = new HashHandler();
     this.keyboardHandler.bindKeys({
         "Tab": function(ed) {
+            if (exports.snippetManager && exports.snippetManager.expandWithTab(ed)) {
+                return;
+            }
+
             ed.tabstopManager.tabNext(1);
         },
         "Shift-Tab": function(ed) {
@@ -5671,6 +5355,176 @@ exports.snippetManager = new SnippetManager();
 
 
 });
+define('ace/ext/modelist', ['require', 'exports', 'module' ], function(require, exports, module) {
+
+
+var modes = [];
+function getModeForPath(path) {
+    var mode = modesByName.text;
+    var fileName = path.split(/[\/\\]/).pop();
+    for (var i = 0; i < modes.length; i++) {
+        if (modes[i].supportsFile(fileName)) {
+            mode = modes[i];
+            break;
+        }
+    }
+    return mode;
+}
+
+var Mode = function(name, caption, extensions) {
+    this.name = name;
+    this.caption = caption;
+    this.mode = "ace/mode/" + name;
+    this.extensions = extensions;
+    if (/\^/.test(extensions)) {
+        var re = extensions.replace(/\|(\^)?/g, function(a, b){
+            return "$|" + (b ? "^" : "^.*\\.");
+        }) + "$";
+    } else {
+        var re = "^.*\\.(" + extensions + ")$";
+    }
+
+    this.extRe = new RegExp(re, "gi");
+};
+
+Mode.prototype.supportsFile = function(filename) {
+    return filename.match(this.extRe);
+};
+var supportedModes = {
+    ABAP:        ["abap"],
+    ActionScript:["as"],
+    ADA:         ["ada|adb"],
+    Apache_Conf: ["^htaccess|^htgroups|^htpasswd|^conf|htaccess|htgroups|htpasswd"],
+    AsciiDoc:    ["asciidoc"],
+    Assembly_x86:["asm"],
+    AutoHotKey:  ["ahk"],
+    BatchFile:   ["bat|cmd"],
+    C9Search:    ["c9search_results"],
+    C_Cpp:       ["cpp|c|cc|cxx|h|hh|hpp"],
+    Cirru:       ["cirru|cr"],
+    Clojure:     ["clj"],
+    Cobol:       ["CBL|COB"],
+    coffee:      ["coffee|cf|cson|^Cakefile"],
+    ColdFusion:  ["cfm"],
+    CSharp:      ["cs"],
+    CSS:         ["css"],
+    Curly:       ["curly"],
+    D:           ["d|di"],
+    Dart:        ["dart"],
+    Diff:        ["diff|patch"],
+    Dot:         ["dot"],
+    Erlang:      ["erl|hrl"],
+    EJS:         ["ejs"],
+    Forth:       ["frt|fs|ldr"],
+    FTL:         ["ftl"],
+    Gherkin:     ["feature"],
+    Glsl:        ["glsl|frag|vert"],
+    golang:      ["go"],
+    Groovy:      ["groovy"],
+    HAML:        ["haml"],
+    Handlebars:  ["hbs|handlebars|tpl|mustache"],
+    Haskell:     ["hs"],
+    haXe:        ["hx"],
+    HTML:        ["html|htm|xhtml"],
+    HTML_Ruby:   ["erb|rhtml|html.erb"],
+    INI:         ["ini|conf|cfg|prefs"],
+    Jack:        ["jack"],
+    Jade:        ["jade"],
+    Java:        ["java"],
+    JavaScript:  ["js|jsm"],
+    JSON:        ["json"],
+    JSONiq:      ["jq"],
+    JSP:         ["jsp"],
+    JSX:         ["jsx"],
+    Julia:       ["jl"],
+    LaTeX:       ["tex|latex|ltx|bib"],
+    LESS:        ["less"],
+    Liquid:      ["liquid"],
+    Lisp:        ["lisp"],
+    LiveScript:  ["ls"],
+    LogiQL:      ["logic|lql"],
+    LSL:         ["lsl"],
+    Lua:         ["lua"],
+    LuaPage:     ["lp"],
+    Lucene:      ["lucene"],
+    Makefile:    ["^Makefile|^GNUmakefile|^makefile|^OCamlMakefile|make"],
+    MATLAB:      ["matlab"],
+    Markdown:    ["md|markdown"],
+    MEL:         ["mel"],
+    MySQL:       ["mysql"],
+    MUSHCode:    ["mc|mush"],
+    Nix:         ["nix"],
+    ObjectiveC:  ["m|mm"],
+    OCaml:       ["ml|mli"],
+    Pascal:      ["pas|p"],
+    Perl:        ["pl|pm"],
+    pgSQL:       ["pgsql"],
+    PHP:         ["php|phtml"],
+    Powershell:  ["ps1"],
+    Prolog:      ["plg|prolog"],
+    Properties:  ["properties"],
+    Protobuf:    ["proto"],
+    Python:      ["py"],
+    R:           ["r"],
+    RDoc:        ["Rd"],
+    RHTML:       ["Rhtml"],
+    Ruby:        ["rb|ru|gemspec|rake|^Guardfile|^Rakefile|^Gemfile"],
+    Rust:        ["rs"],
+    SASS:        ["sass"],
+    SCAD:        ["scad"],
+    Scala:       ["scala"],
+    Smarty:      ["smarty|tpl"],
+    Scheme:      ["scm|rkt"],
+    SCSS:        ["scss"],
+    SH:          ["sh|bash|^.bashrc"],
+    SJS:         ["sjs"],
+    Space:       ["space"],
+    snippets:    ["snippets"],
+    Soy_Template:["soy"],
+    SQL:         ["sql"],
+    Stylus:      ["styl|stylus"],
+    SVG:         ["svg"],
+    Tcl:         ["tcl"],
+    Tex:         ["tex"],
+    Text:        ["txt"],
+    Textile:     ["textile"],
+    Toml:        ["toml"],
+    Twig:        ["twig"],
+    Typescript:  ["ts|typescript|str"],
+    VBScript:    ["vbs"],
+    Velocity:    ["vm"],
+    Verilog:     ["v|vh|sv|svh"],
+    XML:         ["xml|rdf|rss|wsdl|xslt|atom|mathml|mml|xul|xbl"],
+    XQuery:      ["xq"],
+    YAML:        ["yaml|yml"]
+};
+
+var nameOverrides = {
+    ObjectiveC: "Objective-C",
+    CSharp: "C#",
+    golang: "Go",
+    C_Cpp: "C/C++",
+    coffee: "CoffeeScript",
+    HTML_Ruby: "HTML (Ruby)",
+    FTL: "FreeMarker"
+};
+var modesByName = {};
+for (var name in supportedModes) {
+    var data = supportedModes[name];
+    var displayName = (nameOverrides[name] || name).replace(/_/g, " ");
+    var filename = name.toLowerCase();
+    var mode = new Mode(filename, displayName, data[0]);
+    modesByName[filename] = mode;
+    modes.push(mode);
+}
+
+module.exports = {
+    getModeForPath: getModeForPath,
+    modes: modes,
+    modesByName: modesByName
+};
+
+});
 
 define('ace/ext/language_tools', ['require', 'exports', 'module' , 'ace/snippets', 'ace/autocomplete', 'ace/config', 'ace/autocomplete/text_completer', 'ace/editor'], function(require, exports, module) {
 
@@ -5690,10 +5544,9 @@ var keyWordCompleter = {
 
 var snippetCompleter = {
     getCompletions: function(editor, session, pos, prefix, callback) {
-        var scope = snippetManager.$getScope(editor);
         var snippetMap = snippetManager.snippetMap;
         var completions = [];
-        [scope, "_"].forEach(function(scope) {
+        snippetManager.getActiveScopes(editor).forEach(function(scope) {
             var snippets = snippetMap[scope] || [];
             for (var i = snippets.length; i--;) {
                 var s = snippets[i];
@@ -5724,22 +5577,39 @@ var expandSnippet = {
             editor.execCommand("indent");
     },
     bindKey: "tab"
-}
+};
 
 var onChangeMode = function(e, editor) {
-    var mode = editor.session.$mode;
-    var id = mode.$id
-    if (!snippetManager.files) snippetManager.files = {};
-    if (id && !snippetManager.files[id]) {
-        var snippetFilePath = id.replace("mode", "snippets");
-        config.loadModule(snippetFilePath, function(m) {
-            if (m) {
-                snippetManager.files[id] = m;
-                m.snippets = snippetManager.parseSnippetFile(m.snippetText);
-                snippetManager.register(m.snippets, m.scope);
+    loadSnippetsForMode(editor.session.$mode);
+};
+
+var loadSnippetsForMode = function(mode) {
+    var id = mode.$id;
+    if (!snippetManager.files)
+        snippetManager.files = {};
+    loadSnippetFile(id);
+    if (mode.modes)
+        mode.modes.forEach(loadSnippetsForMode);
+};
+
+var loadSnippetFile = function(id) {
+    if (!id || snippetManager.files[id])
+        return;
+    var snippetFilePath = id.replace("mode", "snippets");
+    snippetManager.files[id] = {};
+    config.loadModule(snippetFilePath, function(m) {
+        if (m) {
+            snippetManager.files[id] = m;
+            m.snippets = snippetManager.parseSnippetFile(m.snippetText);
+            snippetManager.register(m.snippets, m.scope);
+            if (m.includeScopes) {
+                snippetManager.snippetMap[m.scope].includeScopes = m.includeScopes;
+                m.includeScopes.forEach(function(x) {
+                    loadSnippetFile("ace/mode/" + x);
+                });
             }
-        });
-    }
+        }
+    });
 };
 
 var Editor = require("../editor").Editor;
@@ -5747,7 +5617,7 @@ require("../config").defineOptions(Editor.prototype, "editor", {
     enableBasicAutocompletion: {
         set: function(val) {
             if (val) {
-                this.completers = completers
+                this.completers = completers;
                 this.commands.addCommand(Autocomplete.startCommand);
             } else {
                 this.commands.removeCommand(Autocomplete.startCommand);
@@ -5760,13 +5630,57 @@ require("../config").defineOptions(Editor.prototype, "editor", {
             if (val) {
                 this.commands.addCommand(expandSnippet);
                 this.on("changeMode", onChangeMode);
-                onChangeMode(null, this)
+                onChangeMode(null, this);
             } else {
                 this.commands.removeCommand(expandSnippet);
                 this.off("changeMode", onChangeMode);
             }
         },
         value: false
+    }
+});
+
+});
+
+define('kitchen-sink/file_drop', ['require', 'exports', 'module' , 'ace/config', 'ace/lib/event', 'ace/ext/modelist', 'ace/editor'], function(require, exports, module) {
+
+var config = require("ace/config");
+var event = require("ace/lib/event");
+var modelist = require("ace/ext/modelist");
+
+module.exports = function(editor) {
+    event.addListener(editor.container, "dragover", function(e) {
+        var types = e.dataTransfer.types;
+        if (types && Array.prototype.indexOf.call(types, 'Files') !== -1)
+            return event.preventDefault(e);
+    });
+
+    event.addListener(editor.container, "drop", function(e) {
+        var file;
+        try {
+            file = e.dataTransfer.files[0];
+            if (window.FileReader) {
+                var reader = new FileReader();
+                reader.onload = function() {
+                    var mode = modelist.getModeForPath(file.name);
+                    editor.session.doc.setValue(reader.result);
+                    editor.session.setMode(mode.mode);
+                    editor.session.modeName = mode.name;
+                };
+                reader.readAsText(file);
+            }
+            return event.preventDefault(e);
+        } catch(err) {
+            return event.stopEvent(e);
+        }
+    });
+};
+
+var Editor = require("ace/editor").Editor;
+config.defineOptions(Editor.prototype, "editor", {
+    loadDroppedFile: {
+        set: function() { module.exports(this); },
+        value: true
     }
 });
 
@@ -5783,6 +5697,7 @@ var lang = require("./lib/lang");
 var snippetManager = require("./snippets").snippetManager;
 
 var Autocomplete = function() {
+    this.autoInsert = true;
     this.keyboardHandler = new HashHandler();
     this.keyboardHandler.bindKeys(this.commands);
 
@@ -5813,6 +5728,7 @@ var Autocomplete = function() {
 
         var renderer = editor.renderer;
         if (!keepPopupPosition) {
+            this.popup.setRow(0);
             this.popup.setFontSize(editor.getFontSize());
 
             var lineHeight = renderer.layerConfig.lineHeight;
@@ -5822,7 +5738,7 @@ var Autocomplete = function() {
             
             var rect = editor.container.getBoundingClientRect();
             pos.top += rect.top - renderer.layerConfig.offset;
-            pos.left += rect.left;
+            pos.left += rect.left - editor.renderer.scrollLeft;
             pos.left += renderer.$gutterLayer.gutterWidth;
 
             this.popup.show(pos, lineHeight);
@@ -5832,7 +5748,7 @@ var Autocomplete = function() {
     this.detach = function() {
         this.editor.keyBinding.removeKeyboardHandler(this.keyboardHandler);
         this.editor.off("changeSelection", this.changeListener);
-        this.editor.off("blur", this.changeListener);
+        this.editor.off("blur", this.blurListener);
         this.editor.off("mousedown", this.mousedownListener);
         this.editor.off("mousewheel", this.mousewheelListener);
         this.changeTimer.cancel();
@@ -5988,8 +5904,11 @@ var Autocomplete = function() {
 
             this.completions = new FilteredList(matches);
             this.completions.setFilter(results.prefix);
-            if (!this.completions.filtered.length)
+            var filtered = this.completions.filtered;
+            if (!filtered.length)
                 return this.detach();
+            if (this.autoInsert && filtered.length == 1)
+                return this.insertMatch(filtered[0]);
             this.openPopup(this.editor, results.prefix, keepPopupPosition);
         }.bind(this));
     };
@@ -6084,6 +6003,37 @@ exports.FilteredList = FilteredList;
 
 });
 
+define('kitchen-sink/dev_util', ['require', 'exports', 'module' ], function(require, exports, module) {
+function isStrict() {
+    try { return !arguments.callee.caller.caller.caller}
+    catch(e){ return true }
+}
+function warn() {
+    if (isStrict()) {
+        console.error("trying to access to global variable");
+    }
+}
+function def(o, key, get) {
+    try {
+        Object.defineProperty(o, key, {
+            configurable: true, 
+            get: get,
+            set: function(val) {
+                delete o[key];
+                o[key] = val;
+            }
+        });
+    } catch(e) {
+        console.error(e);
+    }
+}
+def(window, "ace", function(){ warn(); return window.env.editor });
+def(window, "editor", function(){ warn(); return window.env.editor });
+def(window, "session", function(){ warn(); return window.env.editor.session });
+def(window, "split", function(){ warn(); return window.env.split });
+
+});
+
 define('ace/autocomplete/popup', ['require', 'exports', 'module' , 'ace/edit_session', 'ace/virtual_renderer', 'ace/editor', 'ace/range', 'ace/lib/event', 'ace/lib/lang', 'ace/lib/dom'], function(require, exports, module) {
 
 
@@ -6141,8 +6091,7 @@ var AcePopup = function(parentNode) {
 
     popup.on("mousedown", function(e) {
         var pos = e.getDocumentPosition();
-        popup.moveCursorToPosition(pos);
-        popup.selection.clearSelection();
+        popup.selection.moveToPosition(pos);
         selectionMarker.start.row = selectionMarker.end.row = pos.row;
         e.stop();
     });
@@ -6262,6 +6211,9 @@ var AcePopup = function(parentNode) {
     popup.session.$computeWidth = function() {
         return this.screenWidth = 0;
     }
+    popup.isOpen = false;
+    popup.isTopdown = false;
+    
     popup.data = [];
     popup.setData = function(list) {
         popup.data = list || [];
@@ -6286,31 +6238,44 @@ var AcePopup = function(parentNode) {
                 popup._signal("select");
         }
     };
+    
+    popup.on("changeSelection", function() {
+        if (popup.isOpen)
+            popup.setRow(popup.selection.lead.row);
+    });
 
     popup.hide = function() {
         this.container.style.display = "none";
         this._signal("hide");
         popup.isOpen = false;
     };
-    popup.show = function(pos, lineHeight) {
+    popup.show = function(pos, lineHeight, topdownOnly) {
         var el = this.container;
         var screenHeight = window.innerHeight;
+        var screenWidth = window.innerWidth;
         var renderer = this.renderer;
         var maxH = renderer.$maxLines * lineHeight * 1.4;
         var top = pos.top + this.$borderSize;
-        if (top + maxH > screenHeight - lineHeight) {
+        if (top + maxH > screenHeight - lineHeight && !topdownOnly) {
             el.style.top = "";
             el.style.bottom = screenHeight - top + "px";
+            popup.isTopdown = false;
         } else {
             top += lineHeight;
             el.style.top = top + "px";
             el.style.bottom = "";
+            popup.isTopdown = true;
         }
 
-        el.style.left = pos.left + "px";
         el.style.display = "";
         this.renderer.$textLayer.checkForSizeChanges();
-
+        
+        var left = pos.left;
+        if (left + el.offsetWidth > screenWidth)
+            left = screenWidth - el.offsetWidth;
+            
+        el.style.left = left + "px";
+        
         this._signal("show");
         lastMouseEvent = null;
         popup.isOpen = true;
@@ -6367,6 +6332,81 @@ exports.AcePopup = AcePopup;
 
 });
 
+
+define('kitchen-sink/inline_editor', ['require', 'exports', 'module' , 'ace/line_widgets', 'ace/editor', 'ace/virtual_renderer', 'ace/lib/dom', 'ace/commands/default_commands'], function(require, exports, module) {
+
+
+var LineWidgets = require("ace/line_widgets").LineWidgets;
+var Editor = require("ace/editor").Editor;
+var Renderer = require("ace/virtual_renderer").VirtualRenderer;
+var dom = require("ace/lib/dom");
+
+
+require("ace/commands/default_commands").commands.push({
+    name: "openInlineEditor",
+    bindKey: "F3",
+    exec: function(editor) {
+        var split = window.env.split;
+        var s = editor.session;
+        var inlineEditor = new Editor(new Renderer());
+        var splitSession = split.$cloneSession(s);
+
+        var row = editor.getCursorPosition().row;
+        if (editor.session.lineWidgets && editor.session.lineWidgets[row]) {
+            editor.session.lineWidgets[row].destroy();
+            return;
+        }
+        
+        var rowCount = 10;        
+        var w = {
+            row: row, 
+            fixedWidth: true,
+            el: dom.createElement("div"),
+            editor: editor
+        };
+        var el = w.el;
+        el.appendChild(inlineEditor.container);      
+
+        if (!editor.session.widgetManager) {
+            editor.session.widgetManager = new LineWidgets(editor.session);
+            editor.session.widgetManager.attach(editor);
+        }
+        
+        var h = rowCount*editor.renderer.layerConfig.lineHeight;
+        inlineEditor.container.style.height = h + "px";
+
+        el.style.position = "absolute";
+        el.style.zIndex = "4";
+        el.style.borderTop = "solid blue 2px";
+        el.style.borderBottom = "solid blue 2px";
+        
+        inlineEditor.setSession(splitSession);
+        editor.session.widgetManager.addLineWidget(w);
+        
+        var kb = {
+            handleKeyboard:function(_,hashId, keyString) {
+                if (hashId === 0 && keyString === "esc") {
+                    w.destroy();
+                    return true;
+                }
+            }
+        };
+        
+        w.destroy = function() {
+            editor.keyBinding.removeKeyboardHandler(kb);
+            s.widgetManager.removeLineWidget(w);
+        };
+        
+        editor.keyBinding.addKeyboardHandler(kb);
+        inlineEditor.keyBinding.addKeyboardHandler(kb);
+        editor.on("changeSession", function(e) {
+            w.el.parentNode && w.el.parentNode.removeChild(w.el);
+        });
+        inlineEditor.setTheme("ace/theme/solarized_light");
+    }
+});
+});
+
 define('ace/autocomplete/util', ['require', 'exports', 'module' ], function(require, exports, module) {
 
 
@@ -6409,6 +6449,73 @@ exports.retrieveFollowingIdentifier = function(text, pos, regex) {
     }
     return buf;
 }
+
+});
+define('ace/ext/spellcheck', ['require', 'exports', 'module' , 'ace/lib/event', 'ace/editor', 'ace/config'], function(require, exports, module) {
+
+var event = require("../lib/event");
+
+exports.contextMenuHandler = function(e){
+    var host = e.target;
+    var text = host.textInput.getElement();
+    if (!host.selection.isEmpty())
+        return;
+    var c = host.getCursorPosition();
+    var r = host.session.getWordRange(c.row, c.column);
+    var w = host.session.getTextRange(r);
+
+    host.session.tokenRe.lastIndex = 0;
+    if (!host.session.tokenRe.test(w))
+        return;
+    var PLACEHOLDER = "\x01\x01";
+    var value = w + " " + PLACEHOLDER;
+    text.value = value;
+    text.setSelectionRange(w.length, w.length + 1);
+    text.setSelectionRange(0, 0);
+    text.setSelectionRange(0, w.length);
+
+    var afterKeydown = false;
+    event.addListener(text, "keydown", function onKeydown() {
+        event.removeListener(text, "keydown", onKeydown);
+        afterKeydown = true;
+    });
+
+    host.textInput.setInputHandler(function(newVal) {
+        console.log(newVal , value, text.selectionStart, text.selectionEnd)
+        if (newVal == value)
+            return '';
+        if (newVal.lastIndexOf(value, 0) === 0)
+            return newVal.slice(value.length);
+        if (newVal.substr(text.selectionEnd) == value)
+            return newVal.slice(0, -value.length);
+        if (newVal.slice(-2) == PLACEHOLDER) {
+            var val = newVal.slice(0, -2);
+            if (val.slice(-1) == " ") {
+                if (afterKeydown)
+                    return val.substring(0, text.selectionEnd);
+                val = val.slice(0, -1);
+                host.session.replace(r, val);
+                return "";
+            }
+        }
+
+        return newVal;
+    });
+};
+var Editor = require("../editor").Editor;
+require("../config").defineOptions(Editor.prototype, "editor", {
+    spellcheck: {
+        set: function(val) {
+            var text = this.textInput.getElement();
+            text.spellcheck = !!val;
+            if (!val)
+                this.removeListener("nativecontextmenu", exports.contextMenuHandler);
+            else
+                this.on("nativecontextmenu", exports.contextMenuHandler);
+        },
+        value: true
+    }
+});
 
 });
 
@@ -6454,4 +6561,83 @@ define('ace/autocomplete/text_completer', ['require', 'exports', 'module' , 'ace
             };
         }));
     };
+});
+
+define('ace/commands/occur_commands', ['require', 'exports', 'module' , 'ace/config', 'ace/occur', 'ace/keyboard/hash_handler', 'ace/lib/oop'], function(require, exports, module) {
+
+var config = require("../config"),
+    Occur = require("../occur").Occur;
+var occurStartCommand = {
+    name: "occur",
+    exec: function(editor, options) {
+        var alreadyInOccur = !!editor.session.$occur;
+        var occurSessionActive = new Occur().enter(editor, options);
+        if (occurSessionActive && !alreadyInOccur)
+            OccurKeyboardHandler.installIn(editor);
+    },
+    readOnly: true
+};
+
+var occurCommands = [{
+    name: "occurexit",
+    bindKey: 'esc|Ctrl-G',
+    exec: function(editor) {
+        var occur = editor.session.$occur;
+        if (!occur) return;
+        occur.exit(editor, {});
+        if (!editor.session.$occur) OccurKeyboardHandler.uninstallFrom(editor);
+    },
+    readOnly: true
+}, {
+    name: "occuraccept",
+    bindKey: 'enter',
+    exec: function(editor) {
+        var occur = editor.session.$occur;
+        if (!occur) return;
+        occur.exit(editor, {translatePosition: true});
+        if (!editor.session.$occur) OccurKeyboardHandler.uninstallFrom(editor);
+    },
+    readOnly: true
+}];
+
+var HashHandler = require("../keyboard/hash_handler").HashHandler;
+var oop = require("../lib/oop");
+
+
+function OccurKeyboardHandler() {}
+
+oop.inherits(OccurKeyboardHandler, HashHandler);
+
+;(function() {
+
+    this.isOccurHandler = true;
+
+    this.attach = function(editor) {
+        HashHandler.call(this, occurCommands, editor.commands.platform);
+        this.$editor = editor;
+    }
+
+    var handleKeyboard$super = this.handleKeyboard;
+    this.handleKeyboard = function(data, hashId, key, keyCode) {
+        var cmd = handleKeyboard$super.call(this, data, hashId, key, keyCode);
+        return (cmd && cmd.command) ? cmd : undefined;
+    }
+
+}).call(OccurKeyboardHandler.prototype);
+
+OccurKeyboardHandler.installIn = function(editor) {
+    var handler = new this();
+    editor.keyBinding.addKeyboardHandler(handler);
+    editor.commands.addCommands(occurCommands);
+}
+
+OccurKeyboardHandler.uninstallFrom = function(editor) {
+    editor.commands.removeCommands(occurCommands);
+    var handler = editor.getKeyboardHandler();
+    if (handler.isOccurHandler)
+        editor.keyBinding.removeKeyboardHandler(handler);
+}
+
+exports.occurStartCommand = occurStartCommand;
+
 });
