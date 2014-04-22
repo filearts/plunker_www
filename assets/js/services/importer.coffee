@@ -5,7 +5,7 @@
 #= require ./../services/notifier
 
 # Use the identifier {{VERSION}} which will be substituted with the example's stated version
-NGDOC_BASE_URL = "http://code.angularjs.org/{{VERSION}}/docs/examples/"
+NGDOC_BASE_URL = "https://code.angularjs.org/{{VERSION}}/docs/examples/"
 
 plunkerRegex = ///
   ^
@@ -79,8 +79,6 @@ module = angular.module "plunker.importer", [
 module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q, $http, plunks, updater, notifier) ->
   import: (source) ->
     deferred = $q.defer()
-                            
-    console.log "Testing source", source
     
     if matches = source.match(templateRegex)
       plunks.findOrCreate(id: matches[1]).refresh().then (plunk) ->
