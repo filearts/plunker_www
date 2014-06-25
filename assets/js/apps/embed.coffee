@@ -1,4 +1,4 @@
-require "../../vendor/angular-1.2.3"
+require "../../vendor/angular-1.2"
 require "../../vendor/ui-router/ui-router"
 #require "../../vendor/marked.js"
 require "../../vendor/angularytics/angularytics"

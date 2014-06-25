@@ -30,8 +30,9 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-define('ace/ext/themelist', ['require', 'exports', 'module' ], function(require, exports, module) {
+define('ace/ext/themelist', ['require', 'exports', 'module' , 'ace/lib/fixoldbrowsers'], function(require, exports, module) {
 
+require("ace/lib/fixoldbrowsers");
 
 var themeData = [
     ["Chrome"         ],

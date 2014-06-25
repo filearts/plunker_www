@@ -1,4 +1,4 @@
-#= require ./../../vendor/angular.js
+#= require ./../../vendor/angular-1.0.js
 #= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
 #= require ./../../vendor/angularytics/angularytics
 

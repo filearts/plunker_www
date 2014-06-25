@@ -1,4 +1,4 @@
-#= require ./../../vendor/angular
+#= require ./../../vendor/angular-1.0
 #= require ./../../vendor/angularytics/angularytics
 
 #= require ./../controllers/explore
