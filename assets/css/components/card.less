@@ -28,25 +28,24 @@
         width: 248px;
         height: 186px;
         overflow: hidden;
-        
-        img {
-          width: 248px;
-          height: 186px;
-        }
       }
     }
     
     .plunk-card-operations  {
       margin: 0;
       padding: 10px;
-      display: none;
+      opacity: 0;
       position: absolute;
       bottom: 30px;
       right: 0;
       top: 0;
       left: 0;
-      background-color: rgba(255, 255, 255, 0.5);
-      padding-top: 0;  
+      padding-top: 0;
+      z-index: 1;
+      -webkit-transition: opacity 100ms ease-in-out 100ms;
+      -moz-transition: opacity 100ms ease-in-out 100ms;
+      -o-transition: opacity 100ms ease-in-out 100ms;
+      transition: opacity 100ms ease-in-out 100ms;
       
       li {
         display: inline-block;
@@ -56,7 +55,7 @@
     }
     
     &:hover .plunk-card-operations {
-      display: block;
+      opacity: 1;
     }
     
     .plunk-card-about {
@@ -95,6 +94,7 @@
       margin: 0;
       padding: 4px;
       background: rgba(255, 255, 255, 0.75);
+      z-index: 1;
       
       .plunk-info {
         margin: 0;
@@ -141,6 +141,22 @@
     }
   }
   
+  .plunk-card-image-container img {
+    width: 248px;
+    height: 186px;
+    -webkit-transition: all 0.1s ease-in-out;
+    transition: all 0.1s ease-in-out;
+    -moz-transition: all 0.1s ease-in-out;
+    -o-transition: all 0.1s ease-in-out;
+    transition: all 0.1s ease-in-out;
+    
+  }
+   
+  &:hover .plunk-card-image-container img {
+    -webkit-filter: contrast(2) blur(4px);
+    filter: contrast(1.5) blur(4px);
+  }
+
   .btn.starred {
     color: #08C;
   }
