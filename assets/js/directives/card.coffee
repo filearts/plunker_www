@@ -46,15 +46,17 @@ module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", "visitor"
               </li>
             </ul>
           </div>
-          <ul class="plunk-card-operations">
-            <li><a class="btn" title="Edit this Plunk" ng-href="/edit/{{plunk.id}}"><i class="icon-edit"></i></a></li>
-            <li><a class="btn" title="View this Plunk in an overlay" ng-click="showQuickView(plunk, $event)"><i class="icon-play"></i></a></li>
-            <li><a class="btn" title="View the detailed information about this Plunk" ng-href="/{{plunk.id}}"><i class="icon-info-sign"></i></a></li>
-            <li><a class="btn" title="Open the embedded view of this Plunk" ng-href="{{url.embed}}/{{plunk.id}}/" target="_blank"><i class="icon-external-link"></i></a></li>
-            <li ng-show="plunk.isWritable()"><a class="btn btn-danger" title="Delete this plunk" ng-click="confirmDelete(plunk)"><i class="icon-trash"></i></a></li>
-            <li ng-show="visitor.logged_in && plunk.thumbed"><button title="Unstar this Plunk" class="btn starred" ng-click="plunk.star()"><i class="icon-star"></i></button></li>
-            <li ng-show="visitor.logged_in && !plunk.thumbed"><button title="Star this Plunk" class="btn" ng-click="plunk.star()"><i class="icon-star"></i></button></li>
-          </ul>
+          <div class="plunk-card-ops-cont">
+            <ul class="plunk-card-operations">
+              <li><a class="btn" title="Edit this Plunk" ng-href="/edit/{{plunk.id}}"><i class="icon-edit"></i></a></li>
+              <li><a class="btn" title="View this Plunk in an overlay" ng-click="showQuickView(plunk, $event)"><i class="icon-play"></i></a></li>
+              <li><a class="btn" title="View the detailed information about this Plunk" ng-href="/{{plunk.id}}"><i class="icon-info-sign"></i></a></li>
+              <li><a class="btn" title="Open the embedded view of this Plunk" ng-href="{{url.embed}}/{{plunk.id}}/" target="_blank"><i class="icon-external-link"></i></a></li>
+              <li ng-show="plunk.isWritable()"><a class="btn btn-danger" title="Delete this plunk" ng-click="confirmDelete(plunk)"><i class="icon-trash"></i></a></li>
+              <li ng-show="visitor.logged_in && plunk.thumbed"><button title="Unstar this Plunk" class="btn starred" ng-click="plunk.star()"><i class="icon-star"></i></button></li>
+              <li ng-show="visitor.logged_in && !plunk.thumbed"><button title="Star this Plunk" class="btn" ng-click="plunk.star()"><i class="icon-star"></i></button></li>
+            </ul>
+          </div>
           <div class="plunk-card-image-container">
             <img src="http://placehold.it/248x186&text=Loading..." data-original="http://immediatenet.com/t/l3?Size=1024x768&URL={{plunk.raw_url}}?_={{plunk.updated_at | date:'yyyy-MM-ddTHH:mm:ssZ'}}" />
           </div>

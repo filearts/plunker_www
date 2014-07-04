@@ -32,6 +32,11 @@ module.config ["$locationProvider", ($locationProvider) ->
   $locationProvider.html5Mode(true)
 ]
 
+module.config ["$tooltipProvider", ($tooltipProvider) ->
+  $tooltipProvider.options
+    appendToBody: true
+]
+
 module.config ["$routeProvider", ($routeProvider) ->
   $routeProvider.when "/:source",
     template: "<div></div>"

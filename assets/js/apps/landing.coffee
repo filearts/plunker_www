@@ -1,4 +1,5 @@
 #= require ./../../vendor/angular-1.0
+#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
 #= require ./../../vendor/angularytics/angularytics
 
 #= require ./../controllers/explore
@@ -29,11 +30,17 @@ module = angular.module "plunker.landing", [
   "plunker.plunks"
   
   "angularytics"
+  "ui.bootstrap"
 ]
 
 
 module.config ["$locationProvider", ($locationProvider) ->
   $locationProvider.html5Mode(true)
+]
+
+module.config ["$tooltipProvider", ($tooltipProvider) ->
+  $tooltipProvider.options
+    appendToBody: true
 ]
 
 module.run ["$rootScope", "$location", "$window", "menu", ($rootScope, $location, $window, menu) ->
