@@ -30,7 +30,7 @@ module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", "visitor"
     plunk: "="
   template: """
     <div class="plunk-card" ng-show="plunk.id" ng-class="{starred: plunk.thumbed, owned: plunk.token}">
-      <dic class="plunk-card-body">
+      <div class="plunk-card-body">
         <div class="plunk-card-image">
           <div class="plunk-card-meta">
             <plunker-plunk-info plunk="plunk"></plunker-plunk-info>
