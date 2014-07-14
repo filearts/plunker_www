@@ -61,7 +61,7 @@ module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings
         </div>
         <div ng-switch-when="windowed">
           <div class="well">
-            <h4>Previeweing in windowed mode</h4>
+            <h4>Previewing in windowed mode</h4>
             <p>You've switched to previewing your work in windowed mode. This can be useful for using the developer tools without having to navigate
               down through the iframe that is used for the in-window preview.</p>
             <p>You can return to the in-window preview at any time simply by clicking below.</p>
