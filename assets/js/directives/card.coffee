@@ -58,7 +58,7 @@ module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", "visitor"
             </ul>
           </div>
           <div class="plunk-card-image-container">
-            <img src="http://placehold.it/248x186&text=Loading..." data-original="http://immediatenet.com/t/l3?Size=1024x768&URL={{plunk.raw_url}}?_={{plunk.updated_at | date:'yyyy-MM-ddTHH:mm:ssZ'}}" />
+            <img src="http://placehold.it/248x186&text=Screenshots temporarily unavailable." />
           </div>
         </div>
         <div class="plunk-card-about">

@@ -166,6 +166,14 @@ module.run ["$templateCache", ($templateCache) ->
       
       <div class="page-header">
         <h1>See what users have been creating</h1>
+        <div class="alert alert-info alert-block">
+          <h4>Plunker needs help finding a new screenshot provider</h4>
+          <p>
+            The free website thumbnail service provided by the amazing folk at <a href="http://immediatenet.com/" target="_blank">Immediatenet</a> is shutting down.
+            This means that Plunker needs to find (or build) a new screenshotting service. If you have any ideas please contact filearts on gmail leave a note on
+            the <a href="https://github.com/filearts/plunker_www/issues" target="_blank">issue tracker</a>.
+          </p>
+        </div>
       </div>
       
       <plunker-pager class="pull-right" path="/plunks/" collection="plunks"></plunker-pager>
