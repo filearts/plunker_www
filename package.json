@@ -13,16 +13,19 @@
   "engines": {
     "node": "0.10.x"
   },
-  "version": "0.7.39",
+  "version": "0.7.40",
   "private": true,
   "description": "The code powering the public facing component of http://plnkr.co",
   "main": "server.js",
   "dependencies": {
     "JSONStream": "0.4.x",
     "authom": "https://github.com/ggoodman/authom/tarball/patch-1",
+    "bluebird": "^2.2.2",
+    "bluebird-lru-cache": "^0.1.0",
     "body-parser": "^1.5.2",
     "coffee-script": "~1.6.x",
     "compression": "^1.0.9",
+    "concat-stream": "^1.4.6",
     "connect-assets": "https://github.com/filearts/connect-assets/tarball/master",
     "cookie-parser": "^1.3.2",
     "errorhandler": "^1.1.1",
