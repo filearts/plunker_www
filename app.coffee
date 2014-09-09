@@ -79,6 +79,10 @@ app.use bodyParser.json(limit: "2mb")
 app.expose nconf.get("url"), "_plunker.url"
 app.expose pkginfo, "_plunker.package"
 app.expose null, "_plunker.bootstrap"
+
+app.use (req, res, next) ->
+  res.locals.url = nconf.get("url")
+  next()
     
 app.use require("./middleware/subdomain").middleware()
 
@@ -208,45 +212,6 @@ app.get "/embed/:plunkId*", localsMiddleware, (req, res) ->
       res.locals.plunk = body
       res.render "embed.html"
 
-webshot = require("webshot")
-webshotParams =
-  screenSize:
-    width: 1024
-    height: 768
-  renderDelay: 3
-  errorIfStatusIsNot200: true
-im = require("imagemagick-stream")
-
-Concat = require("concat-stream")
-Promise = require("bluebird")
-LRU = require("bluebird-lru-cache")
-imageCache = LRU({
-  max: 1024 * 1024 * 16
-  length: (buf) -> return buf.length
-  fetchFn: (key) ->
-    [plunkId, timestamp] = key.split("@")
-    return new Promise (resolve, reject) ->
-      webshot "#{runUrl}/plunks/#{plunkId}/", webshotParams, (err, renderStream) ->
-        return reject(err) if err
-        
-        resize = im().resize("248x186").quality(75)
-        write = Concat (buf) ->
-          return reject(new Error("Invalid buffer")) if !buf.length
-            
-          resolve(buf)
-        
-        
-        renderStream.pipe(resize).pipe(write)
-})
-
-app.get "/screenshots/:plunkId", (req, res) ->
-  imageCache.get(req.params.plunkId + "@" + req.query.t).then (buf) ->
-    res.set("content-type", "image/png")
-    res.send(buf)
-  , (err) ->
-    res.set("content-type", "image/png")
-    res.status(404)
-    res.send()
 
 app.get "/plunks", addSession, (req, res) -> res.render "landing"
 app.get "/plunks/trending", addSession, (req, res) -> res.render "landing"
