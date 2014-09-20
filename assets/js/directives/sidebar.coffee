@@ -206,7 +206,7 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
     $scope.session = session
     $scope.visitor = visitor
     $scope.promptFileAdd = ->
-      notifier.prompt "New filename", "",
+      notifier.prompt "New filename", " (supported formats include: .html,.md,.js,.jade,.less,.coffee)",
         confirm: (filename) -> session.addBuffer(filename, "", activate: true)
 
     $scope.revertTo = (rel) ->
