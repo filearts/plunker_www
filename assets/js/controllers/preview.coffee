@@ -1,12 +1,14 @@
 #= require ./../services/plunks
 #= require ./../services/visitor
 
+#= require ./../directives/addthis
 #= require ./../directives/gallery
 #= require ./../directives/overlay
 #= require ./../directives/plunkinfo
 #= require ./../directives/timeago
 
 module = angular.module "plunker.preview", [
+  "plunker.addthis"
   "plunker.plunks"
   "plunker.visitor"
   "plunker.gallery"
@@ -42,6 +44,15 @@ module.config ["$routeProvider", ($routeProvider) ->
                   <span ng-show="plunk.thumbed">Unstar</span>
                   <span ng-hide="plunk.thumbed">Star</span>
                 </button>
+              </li>
+              <li ng-switch="!!plunk.created_at">
+                <div ng-switch-when="true" class="addthis_default_style addthis_20x20_style" addthis-toolbox addthis-description="{{plunk.description}}" addthis-path="/{{plunk.id}}">
+                  <a target="_self" class="addthis_button_twitter"></a>
+                  <a target="_self" class="addthis_button_facebook"></a>
+                  <a target="_self" class="addthis_button_google_plusone_share"></a>
+                  <a target="_self" class="addthis_button_linkedin"></a>
+                  <a target="_self" class="addthis_button_compact"></a>
+                </div>
               </li>
             </ul>
             <div class="frame">

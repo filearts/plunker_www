@@ -4,11 +4,14 @@
 #= require ./../services/plunks
 #= require ./../services/url
 
+#= require ./../directives/addthis
 #= require ./../directives/gallery
 #= require ./../directives/overlay
 #= require ./../directives/pager
 
+
 module = angular.module "plunker.explore", [
+  "plunker.addthis"
   "plunker.gallery"
   "plunker.pager"
   "plunker.overlay"
@@ -128,6 +131,13 @@ module.run ["$templateCache", ($templateCache) ->
             <i class="icon-th"></i>
             Browse Plunks
           </a>
+          <span class="addthis_default_style addthis_20x20_style" addthis-toolbox addthis-description="Plunker is an online community for creating, collaborating on and sharing your web development ideas.">
+            <a target="_self" class="addthis_button_twitter"></a>
+            <a target="_self" class="addthis_button_facebook"></a>
+            <a target="_self" class="addthis_button_google_plusone_share"></a>
+            <a target="_self" class="addthis_button_linkedin"></a>
+            <a target="_self" class="addthis_button_compact"></a>
+          </span>
         </p>
       </div>
       <div class="row">

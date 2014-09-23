@@ -1,10 +1,12 @@
 #= require ./../../vendor/jquery-timeago/jquery.timeago
 
+#= require ./../directives/addthis
 #= require ./../directives/inlineuser
 #= require ./../directives/markdown
 
 
 module = angular.module "plunker.quickview", [
+  "plunker.addthis"
   "plunker.inlineuser"
   "plunker.plunkinfo"
 ]
@@ -22,10 +24,10 @@ module.directive "plunkerQuickView", [ "$timeout", ($timeout) ->
         <div class="about">
           <h3>{{plunk.description}} <small>({{plunk.id}})</small></h3>
 
-          <plunker-plunk-info plunk="plunk"></plunker-plunk-info>
-          
           <p><plunker-taglist tags="plunk.tags"></plunker-taglist></p>
 
+          <plunker-plunk-info plunk="plunk"></plunker-plunk-info>
+          
           <plunker-inline-user user="plunk.user"></plunker-inline-user>
           <abbr class="timeago updated_at" title="{{plunk.updated_at}}" ng-bind="plunk.updated_at | date:'medium'"></abbr>
           
@@ -49,6 +51,15 @@ module.directive "plunkerQuickView", [ "$timeout", ($timeout) ->
                 <i class="icon-play"></i>
                 View Details
               </a>
+            </li>
+            <li>
+              <div class="addthis_default_style addthis_20x20_style" addthis-toolbox addthis-description="{{plunk.description}}" addthis-path="/{{plunk.id}}">
+                <a target="_self" class="addthis_button_twitter"></a>
+                <a target="_self" class="addthis_button_facebook"></a>
+                <a target="_self" class="addthis_button_google_plusone_share"></a>
+                <a target="_self" class="addthis_button_linkedin"></a>
+                <a target="_self" class="addthis_button_compact"></a>
+              </div>
             </li>
           </ul>
           <div class="readme" ng-show="plunk.getReadme()" markdown="plunk.getReadme()"></div>

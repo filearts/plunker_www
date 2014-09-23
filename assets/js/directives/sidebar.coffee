@@ -12,6 +12,7 @@
 #= require ./../services/url
 #= require ./../services/visitor
 
+#= require ./../directives/addthis
 #= require ./../directives/inlineuser
 #= require ./../directives/plunkinfo
 #= require ./../directives/restorer
@@ -19,6 +20,7 @@
 
 
 module = angular.module "plunker.sidebar", [
+  "plunker.addthis"
   "plunker.session"
   "plunker.notifier"
   "plunker.inlineuser"
@@ -133,6 +135,15 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
   template: """
     <div class="plunker-sidebar">
       <plunker-restorer></plunker-restorer>
+        <div class="share" ng-switch="session.isSaved()">
+          <div ng-switch-when="true" addthis-toolbox class="addthis_default_style addthis_20x20_style" addthis-description="{{session.description}}">
+            <a target="_self" class="addthis_button_twitter"></a>
+            <a target="_self" class="addthis_button_facebook"></a>
+            <a target="_self" class="addthis_button_google_plusone_share"></a>
+            <a target="_self" class="addthis_button_linkedin"></a>
+            <a target="_self" class="addthis_button_compact"></a>
+          </div>
+        </div>
       <details open>
         <summary class="header">Files</summary>
         <ul class="plunker-filelist nav nav-list">
@@ -188,15 +199,6 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
               <abbr ng-show="session.plunk.private" tooltip-placement="right" tooltip="Only users who know the url of the plunk will be able to view it"><i class="icon-lock"></i> private plunk</abbr>
               <abbr ng-hide="session.plunk.private" tooltip-placement="right" tooltip="Everyone can see this plunk"><i class="icon-unlock"></i> public plunk</abbr>
             </div>
-            <div class="share" ng-show="session.isSaved()">
-              <div id="sidebar-share" class="addthis_toolbox addthis_default_style" ng-show="addthis">
-                <a class="addthis_button_preferred_1"></a>
-                <a class="addthis_button_preferred_2"></a>
-                <a class="addthis_button_preferred_3"></a>
-                <a class="addthis_button_compact"></a>
-                <a class="addthis_counter addthis_bubble_style"></a>
-              </div>
-            </div>
           </div>
         </form>
       </details>
@@ -222,33 +224,18 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
     $desc = $el.find("#plunk-description")
     $desc.autosize(append: "\n")
 
-    window.addthis_config =
-      data_track_clickback: false
-      data_ga_property: 'UA-28928507-1'
-      data_ga_social: true
-    
-    window.addthis_share =
-      title: "Check out what I made on Plunker"
+    #window.addthis_config =
+    #  data_track_clickback: false
+    #  data_ga_property: 'UA-28928507-5'
+    #  data_ga_social: true
 
     $scope.$watch "session.description", (description) ->
       $desc.trigger("autosize")
       
-      window.addthis_share.description = description
     $scope.$on "resize", -> $desc.trigger("autosize")
     
     $(".share").on "click", (e) ->
       e.stopPropagation()
       e.preventDefault()
     
-    
-    dereg = $scope.$watch "session.isSaved()", (saved) ->
-
-      
-      if saved
-        $script "//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-4f60c7714e5b5629", "addthis"
-        $script.ready "addthis", ->
-          $scope.$apply ->
-            $scope.addthis = true
-          
-          dereg()
 ]
