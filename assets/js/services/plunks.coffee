@@ -172,7 +172,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       
       options.cache ?= false
       
-      self.$$refreshing ||= $http.del("#{url.api}/plunks/#{@id}/freeze", options).then (res) ->
+      self.$$refreshing ||= $http.delete("#{url.api}/plunks/#{@id}/freeze", options).then (res) ->
         angular.copy(res.data, self)
         
         self.$$refreshing = null
