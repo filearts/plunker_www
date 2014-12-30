@@ -115,6 +115,7 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
             self.comments
           request.then(args...)
     
+    isFrozen: -> !!@id && !!@frozen_at
     isWritable: -> !@id or !!@token
     isSaved: -> !!@id
     
@@ -152,6 +153,26 @@ module.service "plunks", [ "$http", "$rootScope", "$q", "url", "visitor", "insta
       options.cache ?= false
       
       self.$$refreshing ||= $http.post("#{url.api}/plunks/#{@id}/freeze", {}, options).then (res) ->
+        angular.copy(res.data, self)
+        
+        self.$$refreshing = null
+        self.$$refreshed_at = new Date()
+        
+        self
+      , (err) ->
+        self.$$refreshing = null
+        
+        $q.reject("Freeze failed")
+    
+    unfreeze: (options = {}) ->
+      self = @
+      
+      options.params ||= {}
+      options.params.sessid = visitor.session.id
+      
+      options.cache ?= false
+      
+      self.$$refreshing ||= $http.del("#{url.api}/plunks/#{@id}/freeze", options).then (res) ->
         angular.copy(res.data, self)
         
         self.$$refreshing = null

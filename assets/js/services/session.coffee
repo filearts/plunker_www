@@ -455,6 +455,25 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
           """.trim()
 
           dfd.reject(err)
+
+    unfreeze: (options = {}) ->
+      unless @plunk?.isFrozen() then return notifier.warning """
+        Unfreeze cancelled: You cannot unfreeze a plunk that is not frozen.
+      """.trim()
+  
+      self = @
+      
+      $$asyncOp.call @, "unfreeze", (dfd) ->
+        self.plunk.unfreeze().then ->
+          notifier.success "Plunk unfrozen"
+  
+          dfd.resolve(self)
+        , (err) ->
+          notifier.error """
+            Unfreeze failed: #{err}
+          """.trim()
+
+          dfd.reject(err)
   
   
     addBuffer: (filename, content = "", options = {}) ->

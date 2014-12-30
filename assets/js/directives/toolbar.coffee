@@ -33,8 +33,11 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
         </button>
       </div>
       <div class="btn-group" ng-show="!session.isPlunkDirty() && (!session.plunk || session.plunk.isWritable())">
-        <button ng-disabled="session.plunk.frozen_version==session.plunk.history.length - 1 && !session.currentRevisionIndex" ng-click="session.freeze() | trackEvent:'Plunk':'Freeze':'Toolbar'" class="btn btn-default" tooltip-placement="bottom" tooltip="Set this version as the version other users will see. You can then keep saving new versions that only you can see.">
+        <button ng-hide="session.plunk.frozen_version==session.plunk.history.length - 1 && !session.currentRevisionIndex" ng-click="session.freeze() | trackEvent:'Plunk':'Freeze':'Toolbar'" class="btn btn-default" tooltip-placement="bottom" tooltip="Set this version as the version other users will see. You can then keep saving new versions that only you can see.">
           <i class="icon-lock"></i><span class="shrink"> Freeze</span>
+        </button>
+        <button ng-show="session.plunk.frozen_version==session.plunk.history.length - 1 && !session.currentRevisionIndex" ng-click="session.unfreeze() | trackEvent:'Plunk':'Unfreeze':'Toolbar'" class="btn btn-default" tooltip-placement="bottom" tooltip="Unfreeze this plunk so that no revisions are hidden from other users.">
+          <i class="icon-unlock"></i><span class="shrink"> Unfreeze</span>
         </button>
       </div>
       <div class="btn-group" ng-show="session.isSaved()">
