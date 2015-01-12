@@ -5,6 +5,7 @@ window.angular.module("plunker.addthis", [
 .directive("addthisToolbox", ["$document", "$location", "$timeout", "$window", function ($document, $location, $timeout, $window) {
   window.addthis_config = {
     data_track_clickback: false,
+    data_track_addressbar: false,
   }
   
   return {
@@ -18,6 +19,7 @@ window.angular.module("plunker.addthis", [
           var config = {
             ui_click: true,
             data_track_clickback: false,
+            data_track_addressbar: false,
           };
           var sharing = {
             url: ($attrs.addthisPath ? $location.protocol() + "://" + $location.host() + ($location.port() ? ":" + $location.port() : "") + $attrs.addthisPath : $attrs.addthisUrl) || $location.absUrl(),
