@@ -29,7 +29,7 @@ module = angular.module "plunker.editorPage", [
 
 
 module.config ["$locationProvider", ($locationProvider) ->
-  $locationProvider.html5Mode(true)
+  $locationProvider.html5Mode(true).hashPrefix("!")
 ]
 
 module.config ["$tooltipProvider", ($tooltipProvider) ->
