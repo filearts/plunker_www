@@ -135,15 +135,15 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
   template: """
     <div class="plunker-sidebar">
       <plunker-restorer></plunker-restorer>
-        <div class="share" ng-switch="session.isSaved()">
-          <div ng-switch-when="true" addthis-toolbox class="addthis_default_style addthis_20x20_style" addthis-description="{{session.description}}">
-            <a target="_self" class="addthis_button_twitter"></a>
-            <a target="_self" class="addthis_button_facebook"></a>
-            <a target="_self" class="addthis_button_google_plusone_share"></a>
-            <a target="_self" class="addthis_button_linkedin"></a>
-            <a target="_self" class="addthis_button_compact"></a>
-          </div>
+      <div class="share" ng-switch="session.isSaved()">
+        <div ng-switch-when="true" addthis-toolbox class="addthis_default_style addthis_20x20_style" addthis-description="{{session.description}}">
+          <a target="_self" class="addthis_button_twitter"></a>
+          <a target="_self" class="addthis_button_facebook"></a>
+          <a target="_self" class="addthis_button_google_plusone_share"></a>
+          <a target="_self" class="addthis_button_linkedin"></a>
+          <a target="_self" class="addthis_button_compact"></a>
         </div>
+      </div>
       <details open>
         <summary class="header">Files</summary>
         <ul class="plunker-filelist nav nav-list">
