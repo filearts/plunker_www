@@ -30,7 +30,10 @@ module.directive "plunkerGallery", ["$timeout", "$location", ($timeout, $locatio
 #     )()
     
     $gallery.masonry columnWidth: 300
-    $gallery.masonry "reload"
+    
+    
+    $scope.$watch "plunks.$$refreshed_at", ->
+      $timeout -> $gallery.masonry "reload"
     
     $scope.$on "$destroy", -> $timeout.cancel(nextRefresh)
 ]
