@@ -57,6 +57,7 @@ module.config ["$routeProvider", ($routeProvider) ->
       source: ["$route", "importer", "session", "notifier", ($route, importer, session, notifier) ->
         if source = $route.current.params.source
           console.log("EDITOR ", source)
+          debugger;
           unless source is session.getEditPath()
             importer.import(source).then (json) ->
               json.source = source
@@ -109,6 +110,7 @@ module.config ["$routeProvider", ($routeProvider) ->
       $rootScope.$on "$routeChangeError", (curr, prev) ->
         $route.current = lastValidRoute
         $location.$$parse lastValidUrl
+        
         $browser.url lastValidUrl, true
         
         window.history.back()

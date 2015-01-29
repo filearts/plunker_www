@@ -21,19 +21,16 @@ module.directive "plunkerGallery", ["$timeout", "$location", ($timeout, $locatio
     
     $gallery = $(".gallery", $el)
     
-    (refreshInterval = ->
-      if nextRefresh
-        $scope.plunks.refresh()  
-        $timeout.cancel(nextRefresh)
+#     (refreshInterval = ->
+#       if nextRefresh
+#         $scope.plunks.refresh()  
+#         $timeout.cancel(nextRefresh)
       
-      nextRefresh = $timeout refreshInterval, 60 * 1000
-    )()
+#       nextRefresh = $timeout refreshInterval, 60 * 1000
+#     )()
     
     $gallery.masonry columnWidth: 300
-    
-    
-    $scope.$watch "plunks.$$refreshed_at", ->
-      $timeout -> $gallery.masonry "reload"
+    $gallery.masonry "reload"
     
     $scope.$on "$destroy", -> $timeout.cancel(nextRefresh)
 ]
