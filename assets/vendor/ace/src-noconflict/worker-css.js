@@ -17,14 +17,22 @@ window.window = window;
 window.ace = window;
 
 window.onerror = function(message, file, line, col, err) {
-    console.error("Worker " + (err ? err.stack : message));
+    postMessage({type: "error", data: {
+        message: message,
+        file: file,
+        line: line, 
+        col: col,
+        stack: err.stack
+    }});
 };
 
 window.normalizeModule = function(parentId, moduleName) {
+    // normalize plugin requires
     if (moduleName.indexOf("!") !== -1) {
         var chunks = moduleName.split("!");
         return window.normalizeModule(parentId, chunks[0]) + "!" + window.normalizeModule(parentId, chunks[1]);
     }
+    // normalize relative requires
     if (moduleName.charAt(0) == ".") {
         var base = parentId.split("/").slice(0, -1).join("/");
         moduleName = (base ? base + "/" : "") + moduleName;
@@ -82,13 +90,20 @@ window.define = function(id, deps, factory) {
         deps = [];
         id = window.require.id;
     }
+    
+    if (typeof factory != "function") {
+        window.require.modules[id] = {
+            exports: factory,
+            initialized: true
+        };
+        return;
+    }
 
     if (!deps.length)
+        // If there is no dependencies, we inject 'require', 'exports' and
+        // 'module' as dependencies, to provide CommonJS compatibility.
         deps = ['require', 'exports', 'module'];
 
-    if (id.indexOf("text!") === 0) 
-        return;
-    
     var req = function(childId) {
         return window.require(id, childId);
     };
@@ -99,9 +114,13 @@ window.define = function(id, deps, factory) {
             var module = this;
             var returnExports = factory.apply(this, deps.map(function(dep) {
               switch(dep) {
+                  // Because 'require', 'exports' and 'module' aren't actual
+                  // dependencies, we must handle them seperately.
                   case 'require': return req;
                   case 'exports': return module.exports;
                   case 'module':  return module;
+                  // But for all other dependencies, we can just go ahead and
+                  // require them.
                   default:        return req(dep);
               }
             }));
@@ -173,76 +192,8 @@ window.onmessage = function(e) {
 };
 })(this);
 
-ace.define('ace/mode/css_worker', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/lib/lang', 'ace/worker/mirror', 'ace/mode/css/csslint'], function(require, exports, module) {
-
-
-var oop = require("../lib/oop");
-var lang = require("../lib/lang");
-var Mirror = require("../worker/mirror").Mirror;
-var CSSLint = require("./css/csslint").CSSLint;
-
-var Worker = exports.Worker = function(sender) {
-    Mirror.call(this, sender);
-    this.setTimeout(400);
-    this.ruleset = null;
-    this.setDisabledRules("ids");
-    this.setInfoRules("adjoining-classes|qualified-headings|zero-units|gradients|import|outline-none");
-};
-
-oop.inherits(Worker, Mirror);
-
-(function() {
-    this.setInfoRules = function(ruleNames) {
-        if (typeof ruleNames == "string")
-            ruleNames = ruleNames.split("|");
-        this.infoRules = lang.arrayToMap(ruleNames);
-        this.doc.getValue() && this.deferredUpdate.schedule(100);
-    };
-
-    this.setDisabledRules = function(ruleNames) {
-        if (!ruleNames) {
-            this.ruleset = null;
-        } else {
-            if (typeof ruleNames == "string")
-                ruleNames = ruleNames.split("|");
-            var all = {};
-
-            CSSLint.getRules().forEach(function(x){
-                all[x.id] = true;
-            });
-            ruleNames.forEach(function(x) {
-                delete all[x];
-            });
-            
-            this.ruleset = all;
-        }
-        this.doc.getValue() && this.deferredUpdate.schedule(100);
-    };
-
-    this.onUpdate = function() {
-        var value = this.doc.getValue();
-        if (!value)
-            return this.sender.emit("csslint", []);
-        var infoRules = this.infoRules;
-
-        var result = CSSLint.verify(value, this.ruleset);
-        this.sender.emit("csslint", result.messages.map(function(msg) {
-            return {
-                row: msg.line - 1,
-                column: msg.col - 1,
-                text: msg.message,
-                type: infoRules[msg.rule.id] ? "info" : msg.type,
-                rule: msg.rule.name
-            }
-        }));
-    };
-
-}).call(Worker.prototype);
-
-});
-
-ace.define('ace/lib/oop', ['require', 'exports', 'module' ], function(require, exports, module) {
-
+ace.define("ace/lib/oop",["require","exports","module"], function(require, exports, module) {
+"use strict";
 
 exports.inherits = function(ctor, superCtor) {
     ctor.super_ = superCtor;
@@ -269,8 +220,8 @@ exports.implement = function(proto, mixin) {
 
 });
 
-ace.define('ace/lib/lang', ['require', 'exports', 'module' ], function(require, exports, module) {
-
+ace.define("ace/lib/lang",["require","exports","module"], function(require, exports, module) {
+"use strict";
 
 exports.last = function(a) {
     return a[a.length - 1];
@@ -385,7 +336,6 @@ exports.getMatchOffsets = function(string, regExp) {
     return matches;
 };
 exports.deferredCall = function(fcn) {
-
     var timer = null;
     var callback = function() {
         timer = null;
@@ -456,705 +406,522 @@ exports.delayedCall = function(fcn, defaultTimeout) {
 };
 });
 
-ace.define('ace/lib/es5-shim', ['require', 'exports', 'module' ], function(require, exports, module) {
+ace.define("ace/lib/event_emitter",["require","exports","module"], function(require, exports, module) {
+"use strict";
 
-function Empty() {}
+var EventEmitter = {};
+var stopPropagation = function() { this.propagationStopped = true; };
+var preventDefault = function() { this.defaultPrevented = true; };
 
-if (!Function.prototype.bind) {
-    Function.prototype.bind = function bind(that) { // .length is 1
-        var target = this;
-        if (typeof target != "function") {
-            throw new TypeError("Function.prototype.bind called on incompatible " + target);
-        }
-        var args = slice.call(arguments, 1); // for normal call
-        var bound = function () {
+EventEmitter._emit =
+EventEmitter._dispatchEvent = function(eventName, e) {
+    this._eventRegistry || (this._eventRegistry = {});
+    this._defaultHandlers || (this._defaultHandlers = {});
 
-            if (this instanceof bound) {
+    var listeners = this._eventRegistry[eventName] || [];
+    var defaultHandler = this._defaultHandlers[eventName];
+    if (!listeners.length && !defaultHandler)
+        return;
 
-                var result = target.apply(
-                    this,
-                    args.concat(slice.call(arguments))
-                );
-                if (Object(result) === result) {
-                    return result;
-                }
-                return this;
+    if (typeof e != "object" || !e)
+        e = {};
 
-            } else {
-                return target.apply(
-                    that,
-                    args.concat(slice.call(arguments))
-                );
+    if (!e.type)
+        e.type = eventName;
+    if (!e.stopPropagation)
+        e.stopPropagation = stopPropagation;
+    if (!e.preventDefault)
+        e.preventDefault = preventDefault;
 
-            }
-
-        };
-        if(target.prototype) {
-            Empty.prototype = target.prototype;
-            bound.prototype = new Empty();
-            Empty.prototype = null;
-        }
-        return bound;
-    };
-}
-var call = Function.prototype.call;
-var prototypeOfArray = Array.prototype;
-var prototypeOfObject = Object.prototype;
-var slice = prototypeOfArray.slice;
-var _toString = call.bind(prototypeOfObject.toString);
-var owns = call.bind(prototypeOfObject.hasOwnProperty);
-var defineGetter;
-var defineSetter;
-var lookupGetter;
-var lookupSetter;
-var supportsAccessors;
-if ((supportsAccessors = owns(prototypeOfObject, "__defineGetter__"))) {
-    defineGetter = call.bind(prototypeOfObject.__defineGetter__);
-    defineSetter = call.bind(prototypeOfObject.__defineSetter__);
-    lookupGetter = call.bind(prototypeOfObject.__lookupGetter__);
-    lookupSetter = call.bind(prototypeOfObject.__lookupSetter__);
-}
-if ([1,2].splice(0).length != 2) {
-    if(function() { // test IE < 9 to splice bug - see issue #138
-        function makeArray(l) {
-            var a = new Array(l+2);
-            a[0] = a[1] = 0;
-            return a;
-        }
-        var array = [], lengthBefore;
-        
-        array.splice.apply(array, makeArray(20));
-        array.splice.apply(array, makeArray(26));
-
-        lengthBefore = array.length; //46
-        array.splice(5, 0, "XXX"); // add one element
-
-        lengthBefore + 1 == array.length
-
-        if (lengthBefore + 1 == array.length) {
-            return true;// has right splice implementation without bugs
-        }
-    }()) {//IE 6/7
-        var array_splice = Array.prototype.splice;
-        Array.prototype.splice = function(start, deleteCount) {
-            if (!arguments.length) {
-                return [];
-            } else {
-                return array_splice.apply(this, [
-                    start === void 0 ? 0 : start,
-                    deleteCount === void 0 ? (this.length - start) : deleteCount
-                ].concat(slice.call(arguments, 2)))
-            }
-        };
-    } else {//IE8
-        Array.prototype.splice = function(pos, removeCount){
-            var length = this.length;
-            if (pos > 0) {
-                if (pos > length)
-                    pos = length;
-            } else if (pos == void 0) {
-                pos = 0;
-            } else if (pos < 0) {
-                pos = Math.max(length + pos, 0);
-            }
-
-            if (!(pos+removeCount < length))
-                removeCount = length - pos;
-
-            var removed = this.slice(pos, pos+removeCount);
-            var insert = slice.call(arguments, 2);
-            var add = insert.length;            
-            if (pos === length) {
-                if (add) {
-                    this.push.apply(this, insert);
-                }
-            } else {
-                var remove = Math.min(removeCount, length - pos);
-                var tailOldPos = pos + remove;
-                var tailNewPos = tailOldPos + add - remove;
-                var tailCount = length - tailOldPos;
-                var lengthAfterRemove = length - remove;
-
-                if (tailNewPos < tailOldPos) { // case A
-                    for (var i = 0; i < tailCount; ++i) {
-                        this[tailNewPos+i] = this[tailOldPos+i];
-                    }
-                } else if (tailNewPos > tailOldPos) { // case B
-                    for (i = tailCount; i--; ) {
-                        this[tailNewPos+i] = this[tailOldPos+i];
-                    }
-                } // else, add == remove (nothing to do)
-
-                if (add && pos === lengthAfterRemove) {
-                    this.length = lengthAfterRemove; // truncate array
-                    this.push.apply(this, insert);
-                } else {
-                    this.length = lengthAfterRemove + add; // reserves space
-                    for (i = 0; i < add; ++i) {
-                        this[pos+i] = insert[i];
-                    }
-                }
-            }
-            return removed;
-        };
+    listeners = listeners.slice();
+    for (var i=0; i<listeners.length; i++) {
+        listeners[i](e, this);
+        if (e.propagationStopped)
+            break;
     }
-}
-if (!Array.isArray) {
-    Array.isArray = function isArray(obj) {
-        return _toString(obj) == "[object Array]";
+    
+    if (defaultHandler && !e.defaultPrevented)
+        return defaultHandler(e, this);
+};
+
+
+EventEmitter._signal = function(eventName, e) {
+    var listeners = (this._eventRegistry || {})[eventName];
+    if (!listeners)
+        return;
+    listeners = listeners.slice();
+    for (var i=0; i<listeners.length; i++)
+        listeners[i](e, this);
+};
+
+EventEmitter.once = function(eventName, callback) {
+    var _self = this;
+    callback && this.addEventListener(eventName, function newCallback() {
+        _self.removeEventListener(eventName, newCallback);
+        callback.apply(null, arguments);
+    });
+};
+
+
+EventEmitter.setDefaultHandler = function(eventName, callback) {
+    var handlers = this._defaultHandlers
+    if (!handlers)
+        handlers = this._defaultHandlers = {_disabled_: {}};
+    
+    if (handlers[eventName]) {
+        var old = handlers[eventName];
+        var disabled = handlers._disabled_[eventName];
+        if (!disabled)
+            handlers._disabled_[eventName] = disabled = [];
+        disabled.push(old);
+        var i = disabled.indexOf(callback);
+        if (i != -1) 
+            disabled.splice(i, 1);
+    }
+    handlers[eventName] = callback;
+};
+EventEmitter.removeDefaultHandler = function(eventName, callback) {
+    var handlers = this._defaultHandlers
+    if (!handlers)
+        return;
+    var disabled = handlers._disabled_[eventName];
+    
+    if (handlers[eventName] == callback) {
+        var old = handlers[eventName];
+        if (disabled)
+            this.setDefaultHandler(eventName, disabled.pop());
+    } else if (disabled) {
+        var i = disabled.indexOf(callback);
+        if (i != -1)
+            disabled.splice(i, 1);
+    }
+};
+
+EventEmitter.on =
+EventEmitter.addEventListener = function(eventName, callback, capturing) {
+    this._eventRegistry = this._eventRegistry || {};
+
+    var listeners = this._eventRegistry[eventName];
+    if (!listeners)
+        listeners = this._eventRegistry[eventName] = [];
+
+    if (listeners.indexOf(callback) == -1)
+        listeners[capturing ? "unshift" : "push"](callback);
+    return callback;
+};
+
+EventEmitter.off =
+EventEmitter.removeListener =
+EventEmitter.removeEventListener = function(eventName, callback) {
+    this._eventRegistry = this._eventRegistry || {};
+
+    var listeners = this._eventRegistry[eventName];
+    if (!listeners)
+        return;
+
+    var index = listeners.indexOf(callback);
+    if (index !== -1)
+        listeners.splice(index, 1);
+};
+
+EventEmitter.removeAllListeners = function(eventName) {
+    if (this._eventRegistry) this._eventRegistry[eventName] = [];
+};
+
+exports.EventEmitter = EventEmitter;
+
+});
+
+ace.define("ace/range",["require","exports","module"], function(require, exports, module) {
+"use strict";
+var comparePoints = function(p1, p2) {
+    return p1.row - p2.row || p1.column - p2.column;
+};
+var Range = function(startRow, startColumn, endRow, endColumn) {
+    this.start = {
+        row: startRow,
+        column: startColumn
     };
-}
-var boxedString = Object("a"),
-    splitString = boxedString[0] != "a" || !(0 in boxedString);
 
-if (!Array.prototype.forEach) {
-    Array.prototype.forEach = function forEach(fun /*, thisp*/) {
-        var object = toObject(this),
-            self = splitString && _toString(this) == "[object String]" ?
-                this.split("") :
-                object,
-            thisp = arguments[1],
-            i = -1,
-            length = self.length >>> 0;
-        if (_toString(fun) != "[object Function]") {
-            throw new TypeError(); // TODO message
-        }
+    this.end = {
+        row: endRow,
+        column: endColumn
+    };
+};
 
-        while (++i < length) {
-            if (i in self) {
-                fun.call(thisp, self[i], i, object);
+(function() {
+    this.isEqual = function(range) {
+        return this.start.row === range.start.row &&
+            this.end.row === range.end.row &&
+            this.start.column === range.start.column &&
+            this.end.column === range.end.column;
+    };
+    this.toString = function() {
+        return ("Range: [" + this.start.row + "/" + this.start.column +
+            "] -> [" + this.end.row + "/" + this.end.column + "]");
+    };
+
+    this.contains = function(row, column) {
+        return this.compare(row, column) == 0;
+    };
+    this.compareRange = function(range) {
+        var cmp,
+            end = range.end,
+            start = range.start;
+
+        cmp = this.compare(end.row, end.column);
+        if (cmp == 1) {
+            cmp = this.compare(start.row, start.column);
+            if (cmp == 1) {
+                return 2;
+            } else if (cmp == 0) {
+                return 1;
+            } else {
+                return 0;
+            }
+        } else if (cmp == -1) {
+            return -2;
+        } else {
+            cmp = this.compare(start.row, start.column);
+            if (cmp == -1) {
+                return -1;
+            } else if (cmp == 1) {
+                return 42;
+            } else {
+                return 0;
             }
         }
     };
-}
-if (!Array.prototype.map) {
-    Array.prototype.map = function map(fun /*, thisp*/) {
-        var object = toObject(this),
-            self = splitString && _toString(this) == "[object String]" ?
-                this.split("") :
-                object,
-            length = self.length >>> 0,
-            result = Array(length),
-            thisp = arguments[1];
-        if (_toString(fun) != "[object Function]") {
-            throw new TypeError(fun + " is not a function");
-        }
-
-        for (var i = 0; i < length; i++) {
-            if (i in self)
-                result[i] = fun.call(thisp, self[i], i, object);
-        }
-        return result;
+    this.comparePoint = function(p) {
+        return this.compare(p.row, p.column);
     };
-}
-if (!Array.prototype.filter) {
-    Array.prototype.filter = function filter(fun /*, thisp */) {
-        var object = toObject(this),
-            self = splitString && _toString(this) == "[object String]" ?
-                this.split("") :
-                    object,
-            length = self.length >>> 0,
-            result = [],
-            value,
-            thisp = arguments[1];
-        if (_toString(fun) != "[object Function]") {
-            throw new TypeError(fun + " is not a function");
-        }
-
-        for (var i = 0; i < length; i++) {
-            if (i in self) {
-                value = self[i];
-                if (fun.call(thisp, value, i, object)) {
-                    result.push(value);
-                }
-            }
-        }
-        return result;
+    this.containsRange = function(range) {
+        return this.comparePoint(range.start) == 0 && this.comparePoint(range.end) == 0;
     };
-}
-if (!Array.prototype.every) {
-    Array.prototype.every = function every(fun /*, thisp */) {
-        var object = toObject(this),
-            self = splitString && _toString(this) == "[object String]" ?
-                this.split("") :
-                object,
-            length = self.length >>> 0,
-            thisp = arguments[1];
-        if (_toString(fun) != "[object Function]") {
-            throw new TypeError(fun + " is not a function");
+    this.intersects = function(range) {
+        var cmp = this.compareRange(range);
+        return (cmp == -1 || cmp == 0 || cmp == 1);
+    };
+    this.isEnd = function(row, column) {
+        return this.end.row == row && this.end.column == column;
+    };
+    this.isStart = function(row, column) {
+        return this.start.row == row && this.start.column == column;
+    };
+    this.setStart = function(row, column) {
+        if (typeof row == "object") {
+            this.start.column = row.column;
+            this.start.row = row.row;
+        } else {
+            this.start.row = row;
+            this.start.column = column;
         }
-
-        for (var i = 0; i < length; i++) {
-            if (i in self && !fun.call(thisp, self[i], i, object)) {
+    };
+    this.setEnd = function(row, column) {
+        if (typeof row == "object") {
+            this.end.column = row.column;
+            this.end.row = row.row;
+        } else {
+            this.end.row = row;
+            this.end.column = column;
+        }
+    };
+    this.inside = function(row, column) {
+        if (this.compare(row, column) == 0) {
+            if (this.isEnd(row, column) || this.isStart(row, column)) {
                 return false;
-            }
-        }
-        return true;
-    };
-}
-if (!Array.prototype.some) {
-    Array.prototype.some = function some(fun /*, thisp */) {
-        var object = toObject(this),
-            self = splitString && _toString(this) == "[object String]" ?
-                this.split("") :
-                object,
-            length = self.length >>> 0,
-            thisp = arguments[1];
-        if (_toString(fun) != "[object Function]") {
-            throw new TypeError(fun + " is not a function");
-        }
-
-        for (var i = 0; i < length; i++) {
-            if (i in self && fun.call(thisp, self[i], i, object)) {
+            } else {
                 return true;
             }
         }
         return false;
     };
-}
-if (!Array.prototype.reduce) {
-    Array.prototype.reduce = function reduce(fun /*, initial*/) {
-        var object = toObject(this),
-            self = splitString && _toString(this) == "[object String]" ?
-                this.split("") :
-                object,
-            length = self.length >>> 0;
-        if (_toString(fun) != "[object Function]") {
-            throw new TypeError(fun + " is not a function");
-        }
-        if (!length && arguments.length == 1) {
-            throw new TypeError("reduce of empty array with no initial value");
-        }
-
-        var i = 0;
-        var result;
-        if (arguments.length >= 2) {
-            result = arguments[1];
-        } else {
-            do {
-                if (i in self) {
-                    result = self[i++];
-                    break;
-                }
-                if (++i >= length) {
-                    throw new TypeError("reduce of empty array with no initial value");
-                }
-            } while (true);
-        }
-
-        for (; i < length; i++) {
-            if (i in self) {
-                result = fun.call(void 0, result, self[i], i, object);
+    this.insideStart = function(row, column) {
+        if (this.compare(row, column) == 0) {
+            if (this.isEnd(row, column)) {
+                return false;
+            } else {
+                return true;
             }
         }
-
-        return result;
+        return false;
     };
-}
-if (!Array.prototype.reduceRight) {
-    Array.prototype.reduceRight = function reduceRight(fun /*, initial*/) {
-        var object = toObject(this),
-            self = splitString && _toString(this) == "[object String]" ?
-                this.split("") :
-                object,
-            length = self.length >>> 0;
-        if (_toString(fun) != "[object Function]") {
-            throw new TypeError(fun + " is not a function");
-        }
-        if (!length && arguments.length == 1) {
-            throw new TypeError("reduceRight of empty array with no initial value");
-        }
-
-        var result, i = length - 1;
-        if (arguments.length >= 2) {
-            result = arguments[1];
-        } else {
-            do {
-                if (i in self) {
-                    result = self[i--];
-                    break;
-                }
-                if (--i < 0) {
-                    throw new TypeError("reduceRight of empty array with no initial value");
-                }
-            } while (true);
-        }
-
-        do {
-            if (i in this) {
-                result = fun.call(void 0, result, self[i], i, object);
+    this.insideEnd = function(row, column) {
+        if (this.compare(row, column) == 0) {
+            if (this.isStart(row, column)) {
+                return false;
+            } else {
+                return true;
             }
-        } while (i--);
-
-        return result;
+        }
+        return false;
     };
-}
-if (!Array.prototype.indexOf || ([0, 1].indexOf(1, 2) != -1)) {
-    Array.prototype.indexOf = function indexOf(sought /*, fromIndex */ ) {
-        var self = splitString && _toString(this) == "[object String]" ?
-                this.split("") :
-                toObject(this),
-            length = self.length >>> 0;
+    this.compare = function(row, column) {
+        if (!this.isMultiLine()) {
+            if (row === this.start.row) {
+                return column < this.start.column ? -1 : (column > this.end.column ? 1 : 0);
+            };
+        }
 
-        if (!length) {
+        if (row < this.start.row)
             return -1;
-        }
 
-        var i = 0;
-        if (arguments.length > 1) {
-            i = toInteger(arguments[1]);
-        }
-        i = i >= 0 ? i : Math.max(0, length + i);
-        for (; i < length; i++) {
-            if (i in self && self[i] === sought) {
-                return i;
-            }
-        }
-        return -1;
+        if (row > this.end.row)
+            return 1;
+
+        if (this.start.row === row)
+            return column >= this.start.column ? 0 : -1;
+
+        if (this.end.row === row)
+            return column <= this.end.column ? 0 : 1;
+
+        return 0;
     };
-}
-if (!Array.prototype.lastIndexOf || ([0, 1].lastIndexOf(0, -3) != -1)) {
-    Array.prototype.lastIndexOf = function lastIndexOf(sought /*, fromIndex */) {
-        var self = splitString && _toString(this) == "[object String]" ?
-                this.split("") :
-                toObject(this),
-            length = self.length >>> 0;
-
-        if (!length) {
+    this.compareStart = function(row, column) {
+        if (this.start.row == row && this.start.column == column) {
             return -1;
+        } else {
+            return this.compare(row, column);
         }
-        var i = length - 1;
-        if (arguments.length > 1) {
-            i = Math.min(i, toInteger(arguments[1]));
-        }
-        i = i >= 0 ? i : length - Math.abs(i);
-        for (; i >= 0; i--) {
-            if (i in self && sought === self[i]) {
-                return i;
-            }
-        }
-        return -1;
     };
-}
-if (!Object.getPrototypeOf) {
-    Object.getPrototypeOf = function getPrototypeOf(object) {
-        return object.__proto__ || (
-            object.constructor ?
-            object.constructor.prototype :
-            prototypeOfObject
+    this.compareEnd = function(row, column) {
+        if (this.end.row == row && this.end.column == column) {
+            return 1;
+        } else {
+            return this.compare(row, column);
+        }
+    };
+    this.compareInside = function(row, column) {
+        if (this.end.row == row && this.end.column == column) {
+            return 1;
+        } else if (this.start.row == row && this.start.column == column) {
+            return -1;
+        } else {
+            return this.compare(row, column);
+        }
+    };
+    this.clipRows = function(firstRow, lastRow) {
+        if (this.end.row > lastRow)
+            var end = {row: lastRow + 1, column: 0};
+        else if (this.end.row < firstRow)
+            var end = {row: firstRow, column: 0};
+
+        if (this.start.row > lastRow)
+            var start = {row: lastRow + 1, column: 0};
+        else if (this.start.row < firstRow)
+            var start = {row: firstRow, column: 0};
+
+        return Range.fromPoints(start || this.start, end || this.end);
+    };
+    this.extend = function(row, column) {
+        var cmp = this.compare(row, column);
+
+        if (cmp == 0)
+            return this;
+        else if (cmp == -1)
+            var start = {row: row, column: column};
+        else
+            var end = {row: row, column: column};
+
+        return Range.fromPoints(start || this.start, end || this.end);
+    };
+
+    this.isEmpty = function() {
+        return (this.start.row === this.end.row && this.start.column === this.end.column);
+    };
+    this.isMultiLine = function() {
+        return (this.start.row !== this.end.row);
+    };
+    this.clone = function() {
+        return Range.fromPoints(this.start, this.end);
+    };
+    this.collapseRows = function() {
+        if (this.end.column == 0)
+            return new Range(this.start.row, 0, Math.max(this.start.row, this.end.row-1), 0)
+        else
+            return new Range(this.start.row, 0, this.end.row, 0)
+    };
+    this.toScreenRange = function(session) {
+        var screenPosStart = session.documentToScreenPosition(this.start);
+        var screenPosEnd = session.documentToScreenPosition(this.end);
+
+        return new Range(
+            screenPosStart.row, screenPosStart.column,
+            screenPosEnd.row, screenPosEnd.column
         );
     };
-}
-if (!Object.getOwnPropertyDescriptor) {
-    var ERR_NON_OBJECT = "Object.getOwnPropertyDescriptor called on a " +
-                         "non-object: ";
-    Object.getOwnPropertyDescriptor = function getOwnPropertyDescriptor(object, property) {
-        if ((typeof object != "object" && typeof object != "function") || object === null)
-            throw new TypeError(ERR_NON_OBJECT + object);
-        if (!owns(object, property))
+    this.moveBy = function(row, column) {
+        this.start.row += row;
+        this.start.column += column;
+        this.end.row += row;
+        this.end.column += column;
+    };
+
+}).call(Range.prototype);
+Range.fromPoints = function(start, end) {
+    return new Range(start.row, start.column, end.row, end.column);
+};
+Range.comparePoints = comparePoints;
+
+Range.comparePoints = function(p1, p2) {
+    return p1.row - p2.row || p1.column - p2.column;
+};
+
+
+exports.Range = Range;
+});
+
+ace.define("ace/anchor",["require","exports","module","ace/lib/oop","ace/lib/event_emitter"], function(require, exports, module) {
+"use strict";
+
+var oop = require("./lib/oop");
+var EventEmitter = require("./lib/event_emitter").EventEmitter;
+
+var Anchor = exports.Anchor = function(doc, row, column) {
+    this.$onChange = this.onChange.bind(this);
+    this.attach(doc);
+    
+    if (typeof column == "undefined")
+        this.setPosition(row.row, row.column);
+    else
+        this.setPosition(row, column);
+};
+
+(function() {
+
+    oop.implement(this, EventEmitter);
+    this.getPosition = function() {
+        return this.$clipPositionToDocument(this.row, this.column);
+    };
+    this.getDocument = function() {
+        return this.document;
+    };
+    this.$insertRight = false;
+    this.onChange = function(e) {
+        var delta = e.data;
+        var range = delta.range;
+
+        if (range.start.row == range.end.row && range.start.row != this.row)
             return;
 
-        var descriptor, getter, setter;
-        descriptor =  { enumerable: true, configurable: true };
-        if (supportsAccessors) {
-            var prototype = object.__proto__;
-            object.__proto__ = prototypeOfObject;
+        if (range.start.row > this.row)
+            return;
 
-            var getter = lookupGetter(object, property);
-            var setter = lookupSetter(object, property);
-            object.__proto__ = prototype;
+        if (range.start.row == this.row && range.start.column > this.column)
+            return;
 
-            if (getter || setter) {
-                if (getter) descriptor.get = getter;
-                if (setter) descriptor.set = setter;
-                return descriptor;
+        var row = this.row;
+        var column = this.column;
+        var start = range.start;
+        var end = range.end;
+
+        if (delta.action === "insertText") {
+            if (start.row === row && start.column <= column) {
+                if (start.column === column && this.$insertRight) {
+                } else if (start.row === end.row) {
+                    column += end.column - start.column;
+                } else {
+                    column -= start.column;
+                    row += end.row - start.row;
+                }
+            } else if (start.row !== end.row && start.row < row) {
+                row += end.row - start.row;
             }
-        }
-        descriptor.value = object[property];
-        return descriptor;
-    };
-}
-if (!Object.getOwnPropertyNames) {
-    Object.getOwnPropertyNames = function getOwnPropertyNames(object) {
-        return Object.keys(object);
-    };
-}
-if (!Object.create) {
-    var createEmpty;
-    if (Object.prototype.__proto__ === null) {
-        createEmpty = function () {
-            return { "__proto__": null };
-        };
-    } else {
-        createEmpty = function () {
-            var empty = {};
-            for (var i in empty)
-                empty[i] = null;
-            empty.constructor =
-            empty.hasOwnProperty =
-            empty.propertyIsEnumerable =
-            empty.isPrototypeOf =
-            empty.toLocaleString =
-            empty.toString =
-            empty.valueOf =
-            empty.__proto__ = null;
-            return empty;
-        }
-    }
-
-    Object.create = function create(prototype, properties) {
-        var object;
-        if (prototype === null) {
-            object = createEmpty();
-        } else {
-            if (typeof prototype != "object")
-                throw new TypeError("typeof prototype["+(typeof prototype)+"] != 'object'");
-            var Type = function () {};
-            Type.prototype = prototype;
-            object = new Type();
-            object.__proto__ = prototype;
-        }
-        if (properties !== void 0)
-            Object.defineProperties(object, properties);
-        return object;
-    };
-}
-
-function doesDefinePropertyWork(object) {
-    try {
-        Object.defineProperty(object, "sentinel", {});
-        return "sentinel" in object;
-    } catch (exception) {
-    }
-}
-if (Object.defineProperty) {
-    var definePropertyWorksOnObject = doesDefinePropertyWork({});
-    var definePropertyWorksOnDom = typeof document == "undefined" ||
-        doesDefinePropertyWork(document.createElement("div"));
-    if (!definePropertyWorksOnObject || !definePropertyWorksOnDom) {
-        var definePropertyFallback = Object.defineProperty;
-    }
-}
-
-if (!Object.defineProperty || definePropertyFallback) {
-    var ERR_NON_OBJECT_DESCRIPTOR = "Property description must be an object: ";
-    var ERR_NON_OBJECT_TARGET = "Object.defineProperty called on non-object: "
-    var ERR_ACCESSORS_NOT_SUPPORTED = "getters & setters can not be defined " +
-                                      "on this javascript engine";
-
-    Object.defineProperty = function defineProperty(object, property, descriptor) {
-        if ((typeof object != "object" && typeof object != "function") || object === null)
-            throw new TypeError(ERR_NON_OBJECT_TARGET + object);
-        if ((typeof descriptor != "object" && typeof descriptor != "function") || descriptor === null)
-            throw new TypeError(ERR_NON_OBJECT_DESCRIPTOR + descriptor);
-        if (definePropertyFallback) {
-            try {
-                return definePropertyFallback.call(Object, object, property, descriptor);
-            } catch (exception) {
+        } else if (delta.action === "insertLines") {
+            if (start.row === row && column === 0 && this.$insertRight) {
             }
-        }
-        if (owns(descriptor, "value")) {
-
-            if (supportsAccessors && (lookupGetter(object, property) ||
-                                      lookupSetter(object, property)))
-            {
-                var prototype = object.__proto__;
-                object.__proto__ = prototypeOfObject;
-                delete object[property];
-                object[property] = descriptor.value;
-                object.__proto__ = prototype;
-            } else {
-                object[property] = descriptor.value;
+            else if (start.row <= row) {
+                row += end.row - start.row;
             }
-        } else {
-            if (!supportsAccessors)
-                throw new TypeError(ERR_ACCESSORS_NOT_SUPPORTED);
-            if (owns(descriptor, "get"))
-                defineGetter(object, property, descriptor.get);
-            if (owns(descriptor, "set"))
-                defineSetter(object, property, descriptor.set);
-        }
+        } else if (delta.action === "removeText") {
+            if (start.row === row && start.column < column) {
+                if (end.column >= column)
+                    column = start.column;
+                else
+                    column = Math.max(0, column - (end.column - start.column));
 
-        return object;
-    };
-}
-if (!Object.defineProperties) {
-    Object.defineProperties = function defineProperties(object, properties) {
-        for (var property in properties) {
-            if (owns(properties, property))
-                Object.defineProperty(object, property, properties[property]);
-        }
-        return object;
-    };
-}
-if (!Object.seal) {
-    Object.seal = function seal(object) {
-        return object;
-    };
-}
-if (!Object.freeze) {
-    Object.freeze = function freeze(object) {
-        return object;
-    };
-}
-try {
-    Object.freeze(function () {});
-} catch (exception) {
-    Object.freeze = (function freeze(freezeObject) {
-        return function freeze(object) {
-            if (typeof object == "function") {
-                return object;
-            } else {
-                return freezeObject(object);
+            } else if (start.row !== end.row && start.row < row) {
+                if (end.row === row)
+                    column = Math.max(0, column - end.column) + start.column;
+                row -= (end.row - start.row);
+            } else if (end.row === row) {
+                row -= end.row - start.row;
+                column = Math.max(0, column - end.column) + start.column;
             }
-        };
-    })(Object.freeze);
-}
-if (!Object.preventExtensions) {
-    Object.preventExtensions = function preventExtensions(object) {
-        return object;
-    };
-}
-if (!Object.isSealed) {
-    Object.isSealed = function isSealed(object) {
-        return false;
-    };
-}
-if (!Object.isFrozen) {
-    Object.isFrozen = function isFrozen(object) {
-        return false;
-    };
-}
-if (!Object.isExtensible) {
-    Object.isExtensible = function isExtensible(object) {
-        if (Object(object) === object) {
-            throw new TypeError(); // TODO message
-        }
-        var name = '';
-        while (owns(object, name)) {
-            name += '?';
-        }
-        object[name] = true;
-        var returnValue = owns(object, name);
-        delete object[name];
-        return returnValue;
-    };
-}
-if (!Object.keys) {
-    var hasDontEnumBug = true,
-        dontEnums = [
-            "toString",
-            "toLocaleString",
-            "valueOf",
-            "hasOwnProperty",
-            "isPrototypeOf",
-            "propertyIsEnumerable",
-            "constructor"
-        ],
-        dontEnumsLength = dontEnums.length;
-
-    for (var key in {"toString": null}) {
-        hasDontEnumBug = false;
-    }
-
-    Object.keys = function keys(object) {
-
-        if (
-            (typeof object != "object" && typeof object != "function") ||
-            object === null
-        ) {
-            throw new TypeError("Object.keys called on a non-object");
-        }
-
-        var keys = [];
-        for (var name in object) {
-            if (owns(object, name)) {
-                keys.push(name);
-            }
-        }
-
-        if (hasDontEnumBug) {
-            for (var i = 0, ii = dontEnumsLength; i < ii; i++) {
-                var dontEnum = dontEnums[i];
-                if (owns(object, dontEnum)) {
-                    keys.push(dontEnum);
+        } else if (delta.action == "removeLines") {
+            if (start.row <= row) {
+                if (end.row <= row)
+                    row -= end.row - start.row;
+                else {
+                    row = start.row;
+                    column = 0;
                 }
             }
         }
-        return keys;
+
+        this.setPosition(row, column, true);
     };
-
-}
-if (!Date.now) {
-    Date.now = function now() {
-        return new Date().getTime();
-    };
-}
-var ws = "\x09\x0A\x0B\x0C\x0D\x20\xA0\u1680\u180E\u2000\u2001\u2002\u2003" +
-    "\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000\u2028" +
-    "\u2029\uFEFF";
-if (!String.prototype.trim || ws.trim()) {
-    ws = "[" + ws + "]";
-    var trimBeginRegexp = new RegExp("^" + ws + ws + "*"),
-        trimEndRegexp = new RegExp(ws + ws + "*$");
-    String.prototype.trim = function trim() {
-        return String(this).replace(trimBeginRegexp, "").replace(trimEndRegexp, "");
-    };
-}
-
-function toInteger(n) {
-    n = +n;
-    if (n !== n) { // isNaN
-        n = 0;
-    } else if (n !== 0 && n !== (1/0) && n !== -(1/0)) {
-        n = (n > 0 || -1) * Math.floor(Math.abs(n));
-    }
-    return n;
-}
-
-function isPrimitive(input) {
-    var type = typeof input;
-    return (
-        input === null ||
-        type === "undefined" ||
-        type === "boolean" ||
-        type === "number" ||
-        type === "string"
-    );
-}
-
-function toPrimitive(input) {
-    var val, valueOf, toString;
-    if (isPrimitive(input)) {
-        return input;
-    }
-    valueOf = input.valueOf;
-    if (typeof valueOf === "function") {
-        val = valueOf.call(input);
-        if (isPrimitive(val)) {
-            return val;
+    this.setPosition = function(row, column, noClip) {
+        var pos;
+        if (noClip) {
+            pos = {
+                row: row,
+                column: column
+            };
+        } else {
+            pos = this.$clipPositionToDocument(row, column);
         }
-    }
-    toString = input.toString;
-    if (typeof toString === "function") {
-        val = toString.call(input);
-        if (isPrimitive(val)) {
-            return val;
+
+        if (this.row == pos.row && this.column == pos.column)
+            return;
+
+        var old = {
+            row: this.row,
+            column: this.column
+        };
+
+        this.row = pos.row;
+        this.column = pos.column;
+        this._signal("change", {
+            old: old,
+            value: pos
+        });
+    };
+    this.detach = function() {
+        this.document.removeEventListener("change", this.$onChange);
+    };
+    this.attach = function(doc) {
+        this.document = doc || this.document;
+        this.document.on("change", this.$onChange);
+    };
+    this.$clipPositionToDocument = function(row, column) {
+        var pos = {};
+
+        if (row >= this.document.getLength()) {
+            pos.row = Math.max(0, this.document.getLength() - 1);
+            pos.column = this.document.getLine(pos.row).length;
         }
-    }
-    throw new TypeError();
-}
-var toObject = function (o) {
-    if (o == null) { // this matches both null and undefined
-        throw new TypeError("can't convert "+o+" to object");
-    }
-    return Object(o);
-};
+        else if (row < 0) {
+            pos.row = 0;
+            pos.column = 0;
+        }
+        else {
+            pos.row = row;
+            pos.column = Math.min(this.document.getLine(pos.row).length, Math.max(0, column));
+        }
+
+        if (column < 0)
+            pos.column = 0;
+
+        return pos;
+    };
+
+}).call(Anchor.prototype);
 
 });
 
-ace.define('ace/document', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/lib/event_emitter', 'ace/range', 'ace/anchor'], function(require, exports, module) {
-
+ace.define("ace/document",["require","exports","module","ace/lib/oop","ace/lib/event_emitter","ace/range","ace/anchor"], function(require, exports, module) {
+"use strict";
 
 var oop = require("./lib/oop");
 var EventEmitter = require("./lib/event_emitter").EventEmitter;
@@ -1512,520 +1279,56 @@ var Document = function(text) {
 exports.Document = Document;
 });
 
-ace.define('ace/lib/event_emitter', ['require', 'exports', 'module' ], function(require, exports, module) {
+ace.define("ace/worker/mirror",["require","exports","module","ace/document","ace/lib/lang"], function(require, exports, module) {
+"use strict";
 
-
-var EventEmitter = {};
-var stopPropagation = function() { this.propagationStopped = true; };
-var preventDefault = function() { this.defaultPrevented = true; };
-
-EventEmitter._emit =
-EventEmitter._dispatchEvent = function(eventName, e) {
-    this._eventRegistry || (this._eventRegistry = {});
-    this._defaultHandlers || (this._defaultHandlers = {});
-
-    var listeners = this._eventRegistry[eventName] || [];
-    var defaultHandler = this._defaultHandlers[eventName];
-    if (!listeners.length && !defaultHandler)
-        return;
-
-    if (typeof e != "object" || !e)
-        e = {};
-
-    if (!e.type)
-        e.type = eventName;
-    if (!e.stopPropagation)
-        e.stopPropagation = stopPropagation;
-    if (!e.preventDefault)
-        e.preventDefault = preventDefault;
-
-    listeners = listeners.slice();
-    for (var i=0; i<listeners.length; i++) {
-        listeners[i](e, this);
-        if (e.propagationStopped)
-            break;
-    }
+var Document = require("../document").Document;
+var lang = require("../lib/lang");
     
-    if (defaultHandler && !e.defaultPrevented)
-        return defaultHandler(e, this);
-};
-
-
-EventEmitter._signal = function(eventName, e) {
-    var listeners = (this._eventRegistry || {})[eventName];
-    if (!listeners)
-        return;
-    listeners = listeners.slice();
-    for (var i=0; i<listeners.length; i++)
-        listeners[i](e, this);
-};
-
-EventEmitter.once = function(eventName, callback) {
+var Mirror = exports.Mirror = function(sender) {
+    this.sender = sender;
+    var doc = this.doc = new Document("");
+    
+    var deferredUpdate = this.deferredUpdate = lang.delayedCall(this.onUpdate.bind(this));
+    
     var _self = this;
-    callback && this.addEventListener(eventName, function newCallback() {
-        _self.removeEventListener(eventName, newCallback);
-        callback.apply(null, arguments);
+    sender.on("change", function(e) {
+        doc.applyDeltas(e.data);
+        if (_self.$timeout)
+            return deferredUpdate.schedule(_self.$timeout);
+        _self.onUpdate();
     });
 };
 
-
-EventEmitter.setDefaultHandler = function(eventName, callback) {
-    var handlers = this._defaultHandlers
-    if (!handlers)
-        handlers = this._defaultHandlers = {_disabled_: {}};
-    
-    if (handlers[eventName]) {
-        var old = handlers[eventName];
-        var disabled = handlers._disabled_[eventName];
-        if (!disabled)
-            handlers._disabled_[eventName] = disabled = [];
-        disabled.push(old);
-        var i = disabled.indexOf(callback);
-        if (i != -1) 
-            disabled.splice(i, 1);
-    }
-    handlers[eventName] = callback;
-};
-EventEmitter.removeDefaultHandler = function(eventName, callback) {
-    var handlers = this._defaultHandlers
-    if (!handlers)
-        return;
-    var disabled = handlers._disabled_[eventName];
-    
-    if (handlers[eventName] == callback) {
-        var old = handlers[eventName];
-        if (disabled)
-            this.setDefaultHandler(eventName, disabled.pop());
-    } else if (disabled) {
-        var i = disabled.indexOf(callback);
-        if (i != -1)
-            disabled.splice(i, 1);
-    }
-};
-
-EventEmitter.on =
-EventEmitter.addEventListener = function(eventName, callback, capturing) {
-    this._eventRegistry = this._eventRegistry || {};
-
-    var listeners = this._eventRegistry[eventName];
-    if (!listeners)
-        listeners = this._eventRegistry[eventName] = [];
-
-    if (listeners.indexOf(callback) == -1)
-        listeners[capturing ? "unshift" : "push"](callback);
-    return callback;
-};
-
-EventEmitter.off =
-EventEmitter.removeListener =
-EventEmitter.removeEventListener = function(eventName, callback) {
-    this._eventRegistry = this._eventRegistry || {};
-
-    var listeners = this._eventRegistry[eventName];
-    if (!listeners)
-        return;
-
-    var index = listeners.indexOf(callback);
-    if (index !== -1)
-        listeners.splice(index, 1);
-};
-
-EventEmitter.removeAllListeners = function(eventName) {
-    if (this._eventRegistry) this._eventRegistry[eventName] = [];
-};
-
-exports.EventEmitter = EventEmitter;
-
-});
-
-ace.define('ace/range', ['require', 'exports', 'module' ], function(require, exports, module) {
-
-var comparePoints = function(p1, p2) {
-    return p1.row - p2.row || p1.column - p2.column;
-};
-var Range = function(startRow, startColumn, endRow, endColumn) {
-    this.start = {
-        row: startRow,
-        column: startColumn
-    };
-
-    this.end = {
-        row: endRow,
-        column: endColumn
-    };
-};
-
 (function() {
-    this.isEqual = function(range) {
-        return this.start.row === range.start.row &&
-            this.end.row === range.end.row &&
-            this.start.column === range.start.column &&
-            this.end.column === range.end.column;
-    };
-    this.toString = function() {
-        return ("Range: [" + this.start.row + "/" + this.start.column +
-            "] -> [" + this.end.row + "/" + this.end.column + "]");
-    };
-
-    this.contains = function(row, column) {
-        return this.compare(row, column) == 0;
-    };
-    this.compareRange = function(range) {
-        var cmp,
-            end = range.end,
-            start = range.start;
-
-        cmp = this.compare(end.row, end.column);
-        if (cmp == 1) {
-            cmp = this.compare(start.row, start.column);
-            if (cmp == 1) {
-                return 2;
-            } else if (cmp == 0) {
-                return 1;
-            } else {
-                return 0;
-            }
-        } else if (cmp == -1) {
-            return -2;
-        } else {
-            cmp = this.compare(start.row, start.column);
-            if (cmp == -1) {
-                return -1;
-            } else if (cmp == 1) {
-                return 42;
-            } else {
-                return 0;
-            }
-        }
-    };
-    this.comparePoint = function(p) {
-        return this.compare(p.row, p.column);
-    };
-    this.containsRange = function(range) {
-        return this.comparePoint(range.start) == 0 && this.comparePoint(range.end) == 0;
-    };
-    this.intersects = function(range) {
-        var cmp = this.compareRange(range);
-        return (cmp == -1 || cmp == 0 || cmp == 1);
-    };
-    this.isEnd = function(row, column) {
-        return this.end.row == row && this.end.column == column;
-    };
-    this.isStart = function(row, column) {
-        return this.start.row == row && this.start.column == column;
-    };
-    this.setStart = function(row, column) {
-        if (typeof row == "object") {
-            this.start.column = row.column;
-            this.start.row = row.row;
-        } else {
-            this.start.row = row;
-            this.start.column = column;
-        }
-    };
-    this.setEnd = function(row, column) {
-        if (typeof row == "object") {
-            this.end.column = row.column;
-            this.end.row = row.row;
-        } else {
-            this.end.row = row;
-            this.end.column = column;
-        }
-    };
-    this.inside = function(row, column) {
-        if (this.compare(row, column) == 0) {
-            if (this.isEnd(row, column) || this.isStart(row, column)) {
-                return false;
-            } else {
-                return true;
-            }
-        }
-        return false;
-    };
-    this.insideStart = function(row, column) {
-        if (this.compare(row, column) == 0) {
-            if (this.isEnd(row, column)) {
-                return false;
-            } else {
-                return true;
-            }
-        }
-        return false;
-    };
-    this.insideEnd = function(row, column) {
-        if (this.compare(row, column) == 0) {
-            if (this.isStart(row, column)) {
-                return false;
-            } else {
-                return true;
-            }
-        }
-        return false;
-    };
-    this.compare = function(row, column) {
-        if (!this.isMultiLine()) {
-            if (row === this.start.row) {
-                return column < this.start.column ? -1 : (column > this.end.column ? 1 : 0);
-            };
-        }
-
-        if (row < this.start.row)
-            return -1;
-
-        if (row > this.end.row)
-            return 1;
-
-        if (this.start.row === row)
-            return column >= this.start.column ? 0 : -1;
-
-        if (this.end.row === row)
-            return column <= this.end.column ? 0 : 1;
-
-        return 0;
-    };
-    this.compareStart = function(row, column) {
-        if (this.start.row == row && this.start.column == column) {
-            return -1;
-        } else {
-            return this.compare(row, column);
-        }
-    };
-    this.compareEnd = function(row, column) {
-        if (this.end.row == row && this.end.column == column) {
-            return 1;
-        } else {
-            return this.compare(row, column);
-        }
-    };
-    this.compareInside = function(row, column) {
-        if (this.end.row == row && this.end.column == column) {
-            return 1;
-        } else if (this.start.row == row && this.start.column == column) {
-            return -1;
-        } else {
-            return this.compare(row, column);
-        }
-    };
-    this.clipRows = function(firstRow, lastRow) {
-        if (this.end.row > lastRow)
-            var end = {row: lastRow + 1, column: 0};
-        else if (this.end.row < firstRow)
-            var end = {row: firstRow, column: 0};
-
-        if (this.start.row > lastRow)
-            var start = {row: lastRow + 1, column: 0};
-        else if (this.start.row < firstRow)
-            var start = {row: firstRow, column: 0};
-
-        return Range.fromPoints(start || this.start, end || this.end);
-    };
-    this.extend = function(row, column) {
-        var cmp = this.compare(row, column);
-
-        if (cmp == 0)
-            return this;
-        else if (cmp == -1)
-            var start = {row: row, column: column};
-        else
-            var end = {row: row, column: column};
-
-        return Range.fromPoints(start || this.start, end || this.end);
-    };
-
-    this.isEmpty = function() {
-        return (this.start.row === this.end.row && this.start.column === this.end.column);
-    };
-    this.isMultiLine = function() {
-        return (this.start.row !== this.end.row);
-    };
-    this.clone = function() {
-        return Range.fromPoints(this.start, this.end);
-    };
-    this.collapseRows = function() {
-        if (this.end.column == 0)
-            return new Range(this.start.row, 0, Math.max(this.start.row, this.end.row-1), 0)
-        else
-            return new Range(this.start.row, 0, this.end.row, 0)
-    };
-    this.toScreenRange = function(session) {
-        var screenPosStart = session.documentToScreenPosition(this.start);
-        var screenPosEnd = session.documentToScreenPosition(this.end);
-
-        return new Range(
-            screenPosStart.row, screenPosStart.column,
-            screenPosEnd.row, screenPosEnd.column
-        );
-    };
-    this.moveBy = function(row, column) {
-        this.start.row += row;
-        this.start.column += column;
-        this.end.row += row;
-        this.end.column += column;
-    };
-
-}).call(Range.prototype);
-Range.fromPoints = function(start, end) {
-    return new Range(start.row, start.column, end.row, end.column);
-};
-Range.comparePoints = comparePoints;
-
-Range.comparePoints = function(p1, p2) {
-    return p1.row - p2.row || p1.column - p2.column;
-};
-
-
-exports.Range = Range;
-});
-
-ace.define('ace/anchor', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/lib/event_emitter'], function(require, exports, module) {
-
-
-var oop = require("./lib/oop");
-var EventEmitter = require("./lib/event_emitter").EventEmitter;
-
-var Anchor = exports.Anchor = function(doc, row, column) {
-    this.$onChange = this.onChange.bind(this);
-    this.attach(doc);
     
-    if (typeof column == "undefined")
-        this.setPosition(row.row, row.column);
-    else
-        this.setPosition(row, column);
-};
-
-(function() {
-
-    oop.implement(this, EventEmitter);
-    this.getPosition = function() {
-        return this.$clipPositionToDocument(this.row, this.column);
+    this.$timeout = 500;
+    
+    this.setTimeout = function(timeout) {
+        this.$timeout = timeout;
     };
-    this.getDocument = function() {
-        return this.document;
+    
+    this.setValue = function(value) {
+        this.doc.setValue(value);
+        this.deferredUpdate.schedule(this.$timeout);
     };
-    this.$insertRight = false;
-    this.onChange = function(e) {
-        var delta = e.data;
-        var range = delta.range;
-
-        if (range.start.row == range.end.row && range.start.row != this.row)
-            return;
-
-        if (range.start.row > this.row)
-            return;
-
-        if (range.start.row == this.row && range.start.column > this.column)
-            return;
-
-        var row = this.row;
-        var column = this.column;
-        var start = range.start;
-        var end = range.end;
-
-        if (delta.action === "insertText") {
-            if (start.row === row && start.column <= column) {
-                if (start.column === column && this.$insertRight) {
-                } else if (start.row === end.row) {
-                    column += end.column - start.column;
-                } else {
-                    column -= start.column;
-                    row += end.row - start.row;
-                }
-            } else if (start.row !== end.row && start.row < row) {
-                row += end.row - start.row;
-            }
-        } else if (delta.action === "insertLines") {
-            if (start.row === row && column === 0 && this.$insertRight) {
-            }
-            else if (start.row <= row) {
-                row += end.row - start.row;
-            }
-        } else if (delta.action === "removeText") {
-            if (start.row === row && start.column < column) {
-                if (end.column >= column)
-                    column = start.column;
-                else
-                    column = Math.max(0, column - (end.column - start.column));
-
-            } else if (start.row !== end.row && start.row < row) {
-                if (end.row === row)
-                    column = Math.max(0, column - end.column) + start.column;
-                row -= (end.row - start.row);
-            } else if (end.row === row) {
-                row -= end.row - start.row;
-                column = Math.max(0, column - end.column) + start.column;
-            }
-        } else if (delta.action == "removeLines") {
-            if (start.row <= row) {
-                if (end.row <= row)
-                    row -= end.row - start.row;
-                else {
-                    row = start.row;
-                    column = 0;
-                }
-            }
-        }
-
-        this.setPosition(row, column, true);
+    
+    this.getValue = function(callbackId) {
+        this.sender.callback(this.doc.getValue(), callbackId);
     };
-    this.setPosition = function(row, column, noClip) {
-        var pos;
-        if (noClip) {
-            pos = {
-                row: row,
-                column: column
-            };
-        } else {
-            pos = this.$clipPositionToDocument(row, column);
-        }
-
-        if (this.row == pos.row && this.column == pos.column)
-            return;
-
-        var old = {
-            row: this.row,
-            column: this.column
-        };
-
-        this.row = pos.row;
-        this.column = pos.column;
-        this._signal("change", {
-            old: old,
-            value: pos
-        });
+    
+    this.onUpdate = function() {
     };
-    this.detach = function() {
-        this.document.removeEventListener("change", this.$onChange);
+    
+    this.isPending = function() {
+        return this.deferredUpdate.isPending();
     };
-    this.attach = function(doc) {
-        this.document = doc || this.document;
-        this.document.on("change", this.$onChange);
-    };
-    this.$clipPositionToDocument = function(row, column) {
-        var pos = {};
-
-        if (row >= this.document.getLength()) {
-            pos.row = Math.max(0, this.document.getLength() - 1);
-            pos.column = this.document.getLine(pos.row).length;
-        }
-        else if (row < 0) {
-            pos.row = 0;
-            pos.column = 0;
-        }
-        else {
-            pos.row = row;
-            pos.column = Math.min(this.document.getLine(pos.row).length, Math.max(0, column));
-        }
-
-        if (column < 0)
-            pos.column = 0;
-
-        return pos;
-    };
-
-}).call(Anchor.prototype);
+    
+}).call(Mirror.prototype);
 
 });
-ace.define('ace/mode/css/csslint', ['require', 'exports', 'module' ], function(require, exports, module) {
+
+ace.define("ace/mode/css/csslint",["require","exports","module"], function(require, exports, module) {
 var parserlib = {};
 (function(){
 function EventTarget(){
@@ -2207,7 +1510,7 @@ SyntaxUnit.fromToken = function(token){
 SyntaxUnit.prototype = {
     constructor: SyntaxUnit,
     valueOf: function(){
-        return this.toString();
+        return this.text;
     },
     toString: function(){
         return this.text;
@@ -2405,8 +1708,6 @@ TokenStreamBase.prototype = {
 };
 
 
-
-
 parserlib.util = {
 StringReader: StringReader,
 SyntaxError : SyntaxError,
@@ -2421,7 +1722,6 @@ TokenStreamBase = parserlib.util.TokenStreamBase,
 StringReader = parserlib.util.StringReader,
 SyntaxError = parserlib.util.SyntaxError,
 SyntaxUnit  = parserlib.util.SyntaxUnit;
-
 
 var Colors = {
     aliceblue       :"#f0f8ff",
@@ -2837,7 +2137,7 @@ Parser.prototype = function(){
                 this._readWhitespace();
 
                 tokenStream.mustMatch([Tokens.STRING, Tokens.URI]);
-                uri = tokenStream.token().value.replace(/(?:url\()?["']([^"']+)["']\)?/, "$1");
+                uri = tokenStream.token().value.replace(/^(?:url\()?["']?([^"']+?)["']?\)?$/, "$1");
 
                 this._readWhitespace();
 
@@ -2918,8 +2218,10 @@ Parser.prototype = function(){
                 while(true) {
                     if (tokenStream.peek() == Tokens.PAGE_SYM){
                         this._page();
-                    } else   if (tokenStream.peek() == Tokens.FONT_FACE_SYM){
+                    } else if (tokenStream.peek() == Tokens.FONT_FACE_SYM){
                         this._font_face();
+                    } else if (tokenStream.peek() == Tokens.VIEWPORT_SYM){
+                        this._viewport();
                     } else if (!this._ruleset()){
                         break;
                     }
@@ -3766,7 +3068,7 @@ Parser.prototype = function(){
                     value       = null,
                     operator    = null;
 
-                value = this._term();
+                value = this._term(inFunction);
                 if (value !== null){
 
                     values.push(value);
@@ -3780,7 +3082,7 @@ Parser.prototype = function(){
 							valueParts = [];
 						}*/
 
-                        value = this._term();
+                        value = this._term(inFunction);
 
                         if (value === null){
                             break;
@@ -3793,11 +3095,12 @@ Parser.prototype = function(){
                 return values.length > 0 ? new PropertyValue(values, values[0].line, values[0].col) : null;
             },
 
-            _term: function(){
+            _term: function(inFunction){
 
                 var tokenStream = this._tokenStream,
                     unary       = null,
                     value       = null,
+                    endChar     = null,
                     token,
                     line,
                     col;
@@ -3813,6 +3116,18 @@ Parser.prototype = function(){
                         line = tokenStream.token().startLine;
                         col = tokenStream.token().startCol;
                     }
+                } else if (inFunction && tokenStream.match([Tokens.LPAREN, Tokens.LBRACE, Tokens.LBRACKET])){
+
+                    token = tokenStream.token();
+                    endChar = token.endChar;
+                    value = token.value + this._expr(inFunction).text;
+                    if (unary === null){
+                        line = tokenStream.token().startLine;
+                        col = tokenStream.token().startCol;
+                    }
+                    tokenStream.mustMatch(Tokens.type(endChar));
+                    value += endChar;
+                    this._readWhitespace();
                 } else if (tokenStream.match([Tokens.NUMBER, Tokens.PERCENTAGE, Tokens.LENGTH,
                         Tokens.ANGLE, Tokens.TIME,
                         Tokens.FREQ, Tokens.STRING, Tokens.IDENT, Tokens.URI, Tokens.UNICODE_RANGE])){
@@ -4222,6 +3537,7 @@ var Properties = {
     "animation-delay"               : { multi: "<time>", comma: true },
     "animation-direction"           : { multi: "normal | alternate", comma: true },
     "animation-duration"            : { multi: "<time>", comma: true },
+    "animation-fill-mode"           : { multi: "none | forwards | backwards | both", comma: true },
     "animation-iteration-count"     : { multi: "<number> | infinite", comma: true },
     "animation-name"                : { multi: "none | <ident>", comma: true },
     "animation-play-state"          : { multi: "running | paused", comma: true },
@@ -4243,6 +3559,7 @@ var Properties = {
     "-webkit-animation-delay"               : { multi: "<time>", comma: true },
     "-webkit-animation-direction"           : { multi: "normal | alternate", comma: true },
     "-webkit-animation-duration"            : { multi: "<time>", comma: true },
+    "-webkit-animation-fill-mode"           : { multi: "none | forwards | backwards | both", comma: true },
     "-webkit-animation-iteration-count"     : { multi: "<number> | infinite", comma: true },
     "-webkit-animation-name"                : { multi: "none | <ident>", comma: true },
     "-webkit-animation-play-state"          : { multi: "running | paused", comma: true },
@@ -4479,23 +3796,23 @@ var Properties = {
     "filter"                        : 1,
     "fit"                           : "fill | hidden | meet | slice",
     "fit-position"                  : 1,
-    "flex"                          : "none | [ <flex-grow> <flex-shrink>? || <flex-basis>",
+    "flex"                          : "<flex>",
     "flex-basis"                    : "<width>",
     "flex-direction"                : "row | row-reverse | column | column-reverse",
     "flex-flow"                     : "<flex-direction> || <flex-wrap>",
     "flex-grow"                     : "<number>",
     "flex-shrink"                   : "<number>",
     "flex-wrap"                     : "nowrap | wrap | wrap-reverse",
-    "-webkit-flex"                  : "none | [ <flex-grow> <flex-shrink>? || <flex-basis>",
+    "-webkit-flex"                  : "<flex>",
     "-webkit-flex-basis"            : "<width>",
     "-webkit-flex-direction"        : "row | row-reverse | column | column-reverse",
     "-webkit-flex-flow"             : "<flex-direction> || <flex-wrap>",
     "-webkit-flex-grow"             : "<number>",
     "-webkit-flex-shrink"           : "<number>",
     "-webkit-flex-wrap"             : "nowrap | wrap | wrap-reverse",
-    "-ms-flex"                      : "[[ <number> <number>? ] || [ <length> || <percentage> || auto ] ] | none",
+    "-ms-flex"                      : "<flex>",
     "-ms-flex-align"                : "start | end | center | stretch | baseline",
-    "-ms-flex-direction"            : "row | column | row-reverse | column-reverse | inherit",
+    "-ms-flex-direction"            : "row | row-reverse | column | column-reverse | inherit",
     "-ms-flex-order"                : "<number>",
     "-ms-flex-pack"                 : "start | end | center | justify",
     "-ms-flex-wrap"                 : "nowrap | wrap | wrap-reverse",
@@ -4523,7 +3840,7 @@ var Properties = {
     "grid-row-span"                 : "<integer>",
     "grid-row-sizing"               : 1,
     "hanging-punctuation"           : 1,
-    "height"                        : "<margin-width> | inherit",
+    "height"                        : "<margin-width> | <content-sizing> | inherit",
     "hyphenate-after"               : "<integer> | auto",
     "hyphenate-before"              : "<integer> | auto",
     "hyphenate-character"           : "<string> | auto",
@@ -4562,10 +3879,10 @@ var Properties = {
     "marquee-play-count"            : 1,
     "marquee-speed"                 : 1,
     "marquee-style"                 : 1,
-    "max-height"                    : "<length> | <percentage> | none | inherit",
-    "max-width"                     : "<length> | <percentage> | none | inherit",
-    "min-height"                    : "<length> | <percentage> | inherit",
-    "min-width"                     : "<length> | <percentage> | inherit",
+    "max-height"                    : "<length> | <percentage> | <content-sizing> | none | inherit",
+    "max-width"                     : "<length> | <percentage> | <content-sizing> | none | inherit",
+    "min-height"                    : "<length> | <percentage> | <content-sizing> | contain-floats | -moz-contain-floats | -webkit-contain-floats | inherit",
+    "min-width"                     : "<length> | <percentage> | <content-sizing> | contain-floats | -moz-contain-floats | -webkit-contain-floats | inherit",
     "move-to"                       : 1,
     "nav-down"                      : 1,
     "nav-index"                     : 1,
@@ -4680,7 +3997,7 @@ var Properties = {
     "white-space"                   : "normal | pre | nowrap | pre-wrap | pre-line | inherit | -pre-wrap | -o-pre-wrap | -moz-pre-wrap | -hp-pre-wrap", //http://perishablepress.com/wrapping-content/
     "white-space-collapse"          : 1,
     "widows"                        : "<integer> | inherit",
-    "width"                         : "<length> | <percentage> | auto | inherit" ,
+    "width"                         : "<length> | <percentage> | <content-sizing> | auto | inherit",
     "word-break"                    : "normal | keep-all | break-all",
     "word-spacing"                  : "<length> | normal | inherit",
     "word-wrap"                     : "normal | break-word",
@@ -4766,7 +4083,8 @@ function PropertyValuePart(text, line, col){
             case "ch":
             case "vh":
             case "vw":
-            case "vm":
+            case "vmax":
+            case "vmin":
                 this.type = "length";
                 break;
 
@@ -4867,7 +4185,7 @@ function PropertyValuePart(text, line, col){
     } else if (/^[\,\/]$/.test(text)){
         this.type   = "operator";
         this.value  = text;
-    } else if (/^[a-z\-\u0080-\uFFFF][a-z0-9\-\u0080-\uFFFF]*$/i.test(text)){
+    } else if (/^[a-z\-_\u0080-\uFFFF][a-z0-9\-_\u0080-\uFFFF]*$/i.test(text)){
         this.type   = "identifier";
         this.value  = text;
     }
@@ -4879,7 +4197,6 @@ PropertyValuePart.prototype.constructor = PropertyValuePart;
 PropertyValuePart.fromToken = function(token){
     return new PropertyValuePart(token.value, token.startLine, token.startCol);
 };
-
 var Pseudos = {
     ":first-letter": 1,
     ":first-line":   1,
@@ -5169,6 +4486,7 @@ TokenStream.prototype = mix(new TokenStreamBase(), {
             value:      value,
             type:       tt,
             channel:    options.channel,
+            endChar:    options.endChar,
             hide:       options.hide || false,
             startLine:  startLine,
             startCol:   startCol,
@@ -5201,12 +4519,15 @@ TokenStream.prototype = mix(new TokenStreamBase(), {
     },
     charToken: function(c, startLine, startCol){
         var tt = Tokens.type(c);
+        var opts = {};
 
         if (tt == -1){
             tt = Tokens.CHAR;
+        } else {
+            opts.endChar = Tokens[tt].endChar;
         }
 
-        return this.createToken(tt, c, startLine, startCol);
+        return this.createToken(tt, c, startLine, startCol, opts);
     },
     commentToken: function(first, startLine, startCol){
         var reader  = this._reader,
@@ -5350,7 +4671,7 @@ TokenStream.prototype = mix(new TokenStreamBase(), {
             ident = this.readName(reader.read());
             value += ident;
 
-            if (/^em$|^ex$|^px$|^gd$|^rem$|^vw$|^vh$|^vm$|^ch$|^cm$|^mm$|^in$|^pt$|^pc$/i.test(ident)){
+            if (/^em$|^ex$|^px$|^gd$|^rem$|^vw$|^vh$|^vmax$|^vmin$|^ch$|^cm$|^mm$|^in$|^pt$|^pc$/i.test(ident)){
                 tt = Tokens.LENGTH;
             } else if (/^deg|^rad$|^grad$/i.test(ident)){
                 tt = Tokens.ANGLE;
@@ -5632,7 +4953,6 @@ TokenStream.prototype = mix(new TokenStreamBase(), {
     }
 });
 
-
 var Tokens  = [
     { name: "CDO"},
     { name: "CDC"},
@@ -5710,6 +5030,7 @@ var Tokens  = [
 
     {
         name: "LBRACE",
+        endChar: "}",
         text: "{"
     },
     {
@@ -5718,6 +5039,7 @@ var Tokens  = [
     },
     {
         name: "LBRACKET",
+        endChar: "]",
         text: "["
     },
     {
@@ -5739,6 +5061,7 @@ var Tokens  = [
 
     {
         name: "LPAREN",
+        endChar: ")",
         text: "("
     },
     {
@@ -6098,6 +5421,10 @@ var ValidationTypes = {
             return ValidationTypes.isLiteral(part, "none | hidden | dotted | dashed | solid | double | groove | ridge | inset | outset");
         },
 
+        "<content-sizing>": function(part){ // http://www.w3.org/TR/css3-sizing/#width-height-keywords
+            return ValidationTypes.isLiteral(part, "fill-available | -moz-available | -webkit-fill-available | max-content | -moz-max-content | -webkit-max-content | min-content | -moz-min-content | -webkit-min-content | fit-content | -moz-fit-content | -webkit-fit-content");
+        },
+
         "<margin-width>": function(part){
             return this["<length>"](part) || this["<percentage>"](part) || ValidationTypes.isLiteral(part, "auto");
         },
@@ -6112,6 +5439,30 @@ var ValidationTypes = {
 
         "<time>": function(part) {
             return part.type == "time";
+        },
+
+        "<flex-grow>": function(part){
+            return this["<number>"](part);
+        },
+
+        "<flex-shrink>": function(part){
+            return this["<number>"](part);
+        },
+
+        "<width>": function(part){
+            return this["<margin-width>"](part);
+        },
+
+        "<flex-basis>": function(part){
+            return this["<width>"](part);
+        },
+
+        "<flex-direction>": function(part){
+            return ValidationTypes.isLiteral(part, "row | row-reverse | column | column-reverse");
+        },
+
+        "<flex-wrap>": function(part){
+            return ValidationTypes.isLiteral(part, "nowrap | wrap | wrap-reverse");
         }
     },
 
@@ -6266,11 +5617,42 @@ var ValidationTypes = {
             }
 
             return result;
+        },
+
+        "<flex>": function(expression) {
+            var part,
+                result = false;
+            if (ValidationTypes.isAny(expression, "none | inherit")) {
+                result = true;
+            } else {
+                if (ValidationTypes.isType(expression, "<flex-grow>")) {
+                    if (expression.peek()) {
+                        if (ValidationTypes.isType(expression, "<flex-shrink>")) {
+                            if (expression.peek()) {
+                                result = ValidationTypes.isType(expression, "<flex-basis>");
+                            } else {
+                                result = true;
+                            }
+                        } else if (ValidationTypes.isType(expression, "<flex-basis>")) {
+                            result = expression.peek() === null;
+                        }
+                    } else {
+                        result = true;
+                    }
+                } else if (ValidationTypes.isType(expression, "<flex-basis>")) {
+                    result = true;
+                }
+            }
+
+            if (!result) {
+                part = expression.peek();
+                throw new ValidationError("Expected (none | [ <flex-grow> <flex-shrink>? || <flex-basis> ]) but found '" + expression.value.text + "'.", part.line, part.col);
+            }
+
+            return result;
         }
     }
 };
-
-
 
 parserlib.css = {
 Colors              :Colors,
@@ -6291,14 +5673,106 @@ ValidationError     :ValidationError
 };
 })();
 
-
-
-
 (function(){
 for(var prop in parserlib){
 exports[prop] = parserlib[prop];
 }
 })();
+
+
+function objectToString(o) {
+  return Object.prototype.toString.call(o);
+}
+var util = {
+  isArray: function (ar) {
+    return Array.isArray(ar) || (typeof ar === 'object' && objectToString(ar) === '[object Array]');
+  },
+  isDate: function (d) {
+    return typeof d === 'object' && objectToString(d) === '[object Date]';
+  },
+  isRegExp: function (re) {
+    return typeof re === 'object' && objectToString(re) === '[object RegExp]';
+  },
+  getRegExpFlags: function (re) {
+    var flags = '';
+    re.global && (flags += 'g');
+    re.ignoreCase && (flags += 'i');
+    re.multiline && (flags += 'm');
+    return flags;
+  }
+};
+
+
+if (typeof module === 'object')
+  module.exports = clone;
+
+function clone(parent, circular, depth, prototype) {
+  var allParents = [];
+  var allChildren = [];
+
+  var useBuffer = typeof Buffer != 'undefined';
+
+  if (typeof circular == 'undefined')
+    circular = true;
+
+  if (typeof depth == 'undefined')
+    depth = Infinity;
+  function _clone(parent, depth) {
+    if (parent === null)
+      return null;
+
+    if (depth == 0)
+      return parent;
+
+    var child;
+    if (typeof parent != 'object') {
+      return parent;
+    }
+
+    if (util.isArray(parent)) {
+      child = [];
+    } else if (util.isRegExp(parent)) {
+      child = new RegExp(parent.source, util.getRegExpFlags(parent));
+      if (parent.lastIndex) child.lastIndex = parent.lastIndex;
+    } else if (util.isDate(parent)) {
+      child = new Date(parent.getTime());
+    } else if (useBuffer && Buffer.isBuffer(parent)) {
+      child = new Buffer(parent.length);
+      parent.copy(child);
+      return child;
+    } else {
+      if (typeof prototype == 'undefined') child = Object.create(Object.getPrototypeOf(parent));
+      else child = Object.create(prototype);
+    }
+
+    if (circular) {
+      var index = allParents.indexOf(parent);
+
+      if (index != -1) {
+        return allChildren[index];
+      }
+      allParents.push(parent);
+      allChildren.push(child);
+    }
+
+    for (var i in parent) {
+      child[i] = _clone(parent[i], depth - 1);
+    }
+
+    return child;
+  }
+
+  return _clone(parent, depth);
+}
+clone.clonePrototype = function(parent) {
+  if (parent === null)
+    return null;
+
+  var c = function () {};
+  c.prototype = parent;
+  return new c();
+};
+
 var CSSLint = (function(){
 
     var rules           = [],
@@ -6380,20 +5854,20 @@ var CSSLint = (function(){
     };
     api.verify = function(text, ruleset){
 
-        var i       = 0,
-            len     = rules.length,
+        var i = 0,
             reporter,
             lines,
             report,
             parser = new parserlib.css.Parser({ starHack: true, ieFilters: true,
                                                 underscoreHack: true, strict: false });
-        lines = text.replace(/\n\r?/g, "$split$").split('$split$');
+        lines = text.replace(/\n\r?/g, "$split$").split("$split$");
 
         if (!ruleset){
             ruleset = this.getRuleset();
         }
 
         if (embeddedRuleset.test(text)){
+            ruleset = clone(ruleset);
             ruleset = applyEmbeddedRuleset(text, ruleset);
         }
 
@@ -6458,7 +5932,7 @@ Reporter.prototype = {
     },
     report: function(message, line, col, rule){
         this.messages.push({
-            type    : this.ruleset[rule.id] == 2 ? "error" : "warning",
+            type    : this.ruleset[rule.id] === 2 ? "error" : "warning",
             line    : line,
             col     : col,
             message : message,
@@ -6531,6 +6005,7 @@ CSSLint.Util = {
         }
     }
 };
+
 CSSLint.addRule({
     id: "adjoining-classes",
     name: "Disallow adjoining classes",
@@ -6550,11 +6025,11 @@ CSSLint.addRule({
                 selector = selectors[i];
                 for (j=0; j < selector.parts.length; j++){
                     part = selector.parts[j];
-                    if (part.type == parser.SELECTOR_PART_TYPE){
+                    if (part.type === parser.SELECTOR_PART_TYPE){
                         classCount = 0;
                         for (k=0; k < part.modifiers.length; k++){
                             modifier = part.modifiers[k];
-                            if (modifier.type == "class"){
+                            if (modifier.type === "class"){
                                 classCount++;
                             }
                             if (classCount > 1){
@@ -6601,13 +6076,13 @@ CSSLint.addRule({
 
         function endRule(){
             var prop, value;
-            
+
             if (!boxSizing) {
                 if (properties.height){
                     for (prop in heightProperties){
                         if (heightProperties.hasOwnProperty(prop) && properties[prop]){
                             value = properties[prop].value;
-                            if (!(prop == "padding" && value.parts.length === 2 && value.parts[0].value === 0)){
+                            if (!(prop === "padding" && value.parts.length === 2 && value.parts[0].value === 0)){
                                 reporter.report("Using height with " + prop + " can sometimes make elements larger than you expect.", properties[prop].line, properties[prop].col, rule);
                             }
                         }
@@ -6618,47 +6093,48 @@ CSSLint.addRule({
                     for (prop in widthProperties){
                         if (widthProperties.hasOwnProperty(prop) && properties[prop]){
                             value = properties[prop].value;
-                            
-                            if (!(prop == "padding" && value.parts.length === 2 && value.parts[1].value === 0)){
+
+                            if (!(prop === "padding" && value.parts.length === 2 && value.parts[1].value === 0)){
                                 reporter.report("Using width with " + prop + " can sometimes make elements larger than you expect.", properties[prop].line, properties[prop].col, rule);
                             }
                         }
                     }
-                }   
-            }     
+                }
+            }
         }
 
         parser.addListener("startrule", startRule);
         parser.addListener("startfontface", startRule);
         parser.addListener("startpage", startRule);
         parser.addListener("startpagemargin", startRule);
-        parser.addListener("startkeyframerule", startRule); 
+        parser.addListener("startkeyframerule", startRule);
 
         parser.addListener("property", function(event){
             var name = event.property.text.toLowerCase();
-            
+
             if (heightProperties[name] || widthProperties[name]){
-                if (!/^0\S*$/.test(event.value) && !(name == "border" && event.value == "none")){
+                if (!/^0\S*$/.test(event.value) && !(name === "border" && event.value.toString() === "none")){
                     properties[name] = { line: event.property.line, col: event.property.col, value: event.value };
                 }
             } else {
                 if (/^(width|height)/i.test(name) && /^(length|percentage)/.test(event.value.parts[0].type)){
                     properties[name] = 1;
-                } else if (name == "box-sizing") {
+                } else if (name === "box-sizing") {
                     boxSizing = true;
                 }
             }
-            
+
         });
 
         parser.addListener("endrule", endRule);
         parser.addListener("endfontface", endRule);
         parser.addListener("endpage", endRule);
         parser.addListener("endpagemargin", endRule);
-        parser.addListener("endkeyframerule", endRule);         
+        parser.addListener("endkeyframerule", endRule);
     }
 
 });
+
 CSSLint.addRule({
     id: "box-sizing",
     name: "Disallow use of box-sizing",
@@ -6670,14 +6146,15 @@ CSSLint.addRule({
 
         parser.addListener("property", function(event){
             var name = event.property.text.toLowerCase();
-   
-            if (name == "box-sizing"){
+
+            if (name === "box-sizing"){
                 reporter.report("The box-sizing property isn't supported in IE6 and IE7.", event.line, event.col, rule);
             }
-        });       
+        });
     }
 
 });
+
 CSSLint.addRule({
     id: "bulletproof-font-face",
     name: "Use the bulletproof @font-face syntax",
@@ -6685,12 +6162,11 @@ CSSLint.addRule({
     browsers: "All",
     init: function(parser, reporter){
         var rule = this,
-            count = 0,
             fontFaceRule = false,
             firstSrc     = true,
             ruleFailed    = false,
             line, col;
-        parser.addListener("startfontface", function(event){
+        parser.addListener("startfontface", function(){
             fontFaceRule = true;
         });
 
@@ -6703,7 +6179,7 @@ CSSLint.addRule({
                 value        = event.value.toString();
             line = event.line;
             col  = event.col;
-            if (propertyName === 'src') {
+            if (propertyName === "src") {
                 var regex = /^\s?url\(['"].+\.eot\?.*['"]\)\s*format\(['"]embedded-opentype['"]\).*$/i;
                 if (!value.match(regex) && firstSrc) {
                     ruleFailed = true;
@@ -6715,7 +6191,7 @@ CSSLint.addRule({
 
 
         });
-        parser.addListener("endfontface", function(event){
+        parser.addListener("endfontface", function(){
             fontFaceRule = false;
 
             if (ruleFailed) {
@@ -6723,7 +6199,8 @@ CSSLint.addRule({
             }
         });
     }
-}); 
+});
+
 CSSLint.addRule({
     id: "compatible-vendor-prefixes",
     name: "Require compatible vendor prefixes",
@@ -6805,15 +6282,15 @@ CSSLint.addRule({
         for (prop in compatiblePrefixes) {
             if (compatiblePrefixes.hasOwnProperty(prop)) {
                 variations = [];
-                prefixed = compatiblePrefixes[prop].split(' ');
+                prefixed = compatiblePrefixes[prop].split(" ");
                 for (i = 0, len = prefixed.length; i < len; i++) {
-                    variations.push('-' + prefixed[i] + '-' + prop);
+                    variations.push("-" + prefixed[i] + "-" + prop);
                 }
                 compatiblePrefixes[prop] = variations;
                 arrayPush.apply(applyTo, variations);
             }
         }
-                
+
         parser.addListener("startrule", function () {
             properties = [];
         });
@@ -6822,21 +6299,21 @@ CSSLint.addRule({
             inKeyFrame = event.prefix || true;
         });
 
-        parser.addListener("endkeyframes", function (event) {
+        parser.addListener("endkeyframes", function () {
             inKeyFrame = false;
         });
 
         parser.addListener("property", function (event) {
             var name = event.property;
             if (CSSLint.Util.indexOf(applyTo, name.text) > -1) {
-                if (!inKeyFrame || typeof inKeyFrame != "string" || 
+                if (!inKeyFrame || typeof inKeyFrame !== "string" ||
                         name.text.indexOf("-" + inKeyFrame + "-") !== 0) {
                     properties.push(name);
                 }
             }
         });
 
-        parser.addListener("endrule", function (event) {
+        parser.addListener("endrule", function () {
             if (!properties.length) {
                 return;
             }
@@ -6886,8 +6363,8 @@ CSSLint.addRule({
                         for (i = 0, len = full.length; i < len; i++) {
                             item = full[i];
                             if (CSSLint.Util.indexOf(actual, item) === -1) {
-                                propertiesSpecified = (actual.length === 1) ? actual[0] : (actual.length == 2) ? actual.join(" and ") : actual.join(", ");
-                                reporter.report("The property " + item + " is compatible with " + propertiesSpecified + " and should be included as well.", value.actualNodes[0].line, value.actualNodes[0].col, rule); 
+                                propertiesSpecified = (actual.length === 1) ? actual[0] : (actual.length === 2) ? actual.join(" and ") : actual.join(", ");
+                                reporter.report("The property " + item + " is compatible with " + propertiesSpecified + " and should be included as well.", value.actualNodes[0].line, value.actualNodes[0].col, rule);
                             }
                         }
 
@@ -6897,6 +6374,7 @@ CSSLint.addRule({
         });
     }
 });
+
 CSSLint.addRule({
     id: "display-property-grouping",
     name: "Require properties appropriate for display",
@@ -6926,12 +6404,12 @@ CSSLint.addRule({
 
         function reportProperty(name, display, msg){
             if (properties[name]){
-                if (typeof propertiesToCheck[name] != "string" || properties[name].value.toLowerCase() != propertiesToCheck[name]){
+                if (typeof propertiesToCheck[name] !== "string" || properties[name].value.toLowerCase() !== propertiesToCheck[name]){
                     reporter.report(msg || name + " can't be used with display: " + display + ".", properties[name].line, properties[name].col, rule);
                 }
             }
         }
-        
+
         function startRule(){
             properties = {};
         }
@@ -6947,7 +6425,7 @@ CSSLint.addRule({
                         reportProperty("width", display);
                         reportProperty("margin", display);
                         reportProperty("margin-top", display);
-                        reportProperty("margin-bottom", display);              
+                        reportProperty("margin-bottom", display);
                         reportProperty("float", display, "display:inline has no effect on floated elements (but may be used to fix the IE6 double-margin bug).");
                         break;
 
@@ -6970,7 +6448,7 @@ CSSLint.addRule({
                         }
                 }
             }
-          
+
         }
 
         parser.addListener("startrule", startRule);
@@ -6983,7 +6461,7 @@ CSSLint.addRule({
             var name = event.property.text.toLowerCase();
 
             if (propertiesToCheck[name]){
-                properties[name] = { value: event.value.text, line: event.property.line, col: event.property.col };                    
+                properties[name] = { value: event.value.text, line: event.property.line, col: event.property.col };
             }
         });
 
@@ -6996,6 +6474,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "duplicate-background-images",
     name: "Disallow duplicate background images",
@@ -7012,8 +6491,8 @@ CSSLint.addRule({
 
             if (name.match(/background/i)) {
                 for (i=0, len=value.parts.length; i < len; i++) {
-                    if (value.parts[i].type == 'uri') {
-                        if (typeof stack[value.parts[i].uri] === 'undefined') {
+                    if (value.parts[i].type === "uri") {
+                        if (typeof stack[value.parts[i].uri] === "undefined") {
                             stack[value.parts[i].uri] = event;
                         }
                         else {
@@ -7025,6 +6504,7 @@ CSSLint.addRule({
         });
     }
 });
+
 CSSLint.addRule({
     id: "duplicate-properties",
     name: "Disallow duplicate properties",
@@ -7033,35 +6513,36 @@ CSSLint.addRule({
     init: function(parser, reporter){
         var rule = this,
             properties,
-            lastProperty;            
-            
-        function startRule(event){
-            properties = {};        
+            lastProperty;
+
+        function startRule(){
+            properties = {};
         }
-        
+
         parser.addListener("startrule", startRule);
         parser.addListener("startfontface", startRule);
         parser.addListener("startpage", startRule);
         parser.addListener("startpagemargin", startRule);
-        parser.addListener("startkeyframerule", startRule);        
-        
+        parser.addListener("startkeyframerule", startRule);
+
         parser.addListener("property", function(event){
             var property = event.property,
                 name = property.text.toLowerCase();
-            
-            if (properties[name] && (lastProperty != name || properties[name] == event.value.text)){
+
+            if (properties[name] && (lastProperty !== name || properties[name] === event.value.text)){
                 reporter.report("Duplicate property '" + event.property + "' found.", event.line, event.col, rule);
             }
-            
+
             properties[name] = event.value.text;
             lastProperty = name;
-                        
+
         });
-            
-        
+
+
     }
 
 });
+
 CSSLint.addRule({
     id: "empty-rules",
     name: "Disallow empty rules",
@@ -7088,6 +6569,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "errors",
     name: "Parsing Errors",
@@ -7103,6 +6585,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "fallback-colors",
     name: "Require fallback colors",
@@ -7127,53 +6610,54 @@ CSSLint.addRule({
                 "background-color": 1
             },
             properties;
-        
-        function startRule(event){
-            properties = {};    
-            lastProperty = null;    
+
+        function startRule(){
+            properties = {};
+            lastProperty = null;
         }
-        
+
         parser.addListener("startrule", startRule);
         parser.addListener("startfontface", startRule);
         parser.addListener("startpage", startRule);
         parser.addListener("startpagemargin", startRule);
-        parser.addListener("startkeyframerule", startRule);        
-        
+        parser.addListener("startkeyframerule", startRule);
+
         parser.addListener("property", function(event){
             var property = event.property,
                 name = property.text.toLowerCase(),
                 parts = event.value.parts,
-                i = 0, 
+                i = 0,
                 colorType = "",
-                len = parts.length;                
-                        
+                len = parts.length;
+
             if(propertiesToCheck[name]){
                 while(i < len){
-                    if (parts[i].type == "color"){
+                    if (parts[i].type === "color"){
                         if ("alpha" in parts[i] || "hue" in parts[i]){
-                            
+
                             if (/([^\)]+)\(/.test(parts[i])){
                                 colorType = RegExp.$1.toUpperCase();
                             }
-                            
-                            if (!lastProperty || (lastProperty.property.text.toLowerCase() != name || lastProperty.colorType != "compat")){
+
+                            if (!lastProperty || (lastProperty.property.text.toLowerCase() !== name || lastProperty.colorType !== "compat")){
                                 reporter.report("Fallback " + name + " (hex or RGB) should precede " + colorType + " " + name + ".", event.line, event.col, rule);
                             }
                         } else {
                             event.colorType = "compat";
                         }
                     }
-                    
+
                     i++;
                 }
             }
 
             lastProperty = event;
-        });        
-         
+        });
+
     }
 
 });
+
 CSSLint.addRule({
     id: "floats",
     name: "Disallow too many floats",
@@ -7183,8 +6667,8 @@ CSSLint.addRule({
         var rule = this;
         var count = 0;
         parser.addListener("property", function(event){
-            if (event.property.text.toLowerCase() == "float" &&
-                    event.value.text.toLowerCase() != "none"){
+            if (event.property.text.toLowerCase() === "float" &&
+                    event.value.text.toLowerCase() !== "none"){
                 count++;
             }
         });
@@ -7197,6 +6681,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "font-faces",
     name: "Don't use too many web fonts",
@@ -7219,6 +6704,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "font-sizes",
     name: "Disallow too many font sizes",
@@ -7228,7 +6714,7 @@ CSSLint.addRule({
         var rule = this,
             count = 0;
         parser.addListener("property", function(event){
-            if (event.property == "font-size"){
+            if (event.property.toString() === "font-size"){
                 count++;
             }
         });
@@ -7241,6 +6727,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "gradients",
     name: "Require all gradient definitions",
@@ -7279,7 +6766,7 @@ CSSLint.addRule({
             if (!gradients.webkit){
                 missing.push("Webkit (Safari 5+, Chrome)");
             }
-            
+
             if (!gradients.oldWebkit){
                 missing.push("Old Webkit (Safari 4+, Chrome)");
             }
@@ -7288,8 +6775,8 @@ CSSLint.addRule({
                 missing.push("Opera 11.1+");
             }
 
-            if (missing.length && missing.length < 4){            
-                reporter.report("Missing vendor-prefixed CSS gradients for " + missing.join(", ") + ".", event.selectors[0].line, event.selectors[0].col, rule); 
+            if (missing.length && missing.length < 4){
+                reporter.report("Missing vendor-prefixed CSS gradients for " + missing.join(", ") + ".", event.selectors[0].line, event.selectors[0].col, rule);
             }
 
         });
@@ -7297,6 +6784,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "ids",
     name: "Disallow IDs in selectors",
@@ -7318,17 +6806,17 @@ CSSLint.addRule({
 
                 for (j=0; j < selector.parts.length; j++){
                     part = selector.parts[j];
-                    if (part.type == parser.SELECTOR_PART_TYPE){
+                    if (part.type === parser.SELECTOR_PART_TYPE){
                         for (k=0; k < part.modifiers.length; k++){
                             modifier = part.modifiers[k];
-                            if (modifier.type == "id"){
+                            if (modifier.type === "id"){
                                 idCount++;
                             }
                         }
                     }
                 }
 
-                if (idCount == 1){
+                if (idCount === 1){
                     reporter.report("Don't use IDs in selectors.", selector.line, selector.col, rule);
                 } else if (idCount > 1){
                     reporter.report(idCount + " IDs in the selector, really?", selector.line, selector.col, rule);
@@ -7339,6 +6827,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "import",
     name: "Disallow @import",
@@ -7346,14 +6835,15 @@ CSSLint.addRule({
     browsers: "All",
     init: function(parser, reporter){
         var rule = this;
-        
-        parser.addListener("import", function(event){        
+
+        parser.addListener("import", function(event){
             reporter.report("@import prevents parallel downloads, use <link> instead.", event.line, event.col, rule);
         });
 
     }
 
 });
+
 CSSLint.addRule({
     id: "important",
     name: "Disallow !important",
@@ -7377,6 +6867,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "known-properties",
     name: "Require use of known properties",
@@ -7386,7 +6877,6 @@ CSSLint.addRule({
         var rule = this;
 
         parser.addListener("property", function(event){
-            var name = event.property.text.toLowerCase();
             if (event.invalid) {
                 reporter.report(event.invalid.message, event.line, event.col, rule);
             }
@@ -7395,6 +6885,44 @@ CSSLint.addRule({
     }
 
 });
+CSSLint.addRule({
+    id: "order-alphabetical",
+    name: "Alphabetical order",
+    desc: "Assure properties are in alphabetical order",
+    browsers: "All",
+    init: function(parser, reporter){
+        var rule = this,
+            properties;
+
+        var startRule = function () {
+            properties = [];
+        };
+
+        parser.addListener("startrule", startRule);
+        parser.addListener("startfontface", startRule);
+        parser.addListener("startpage", startRule);
+        parser.addListener("startpagemargin", startRule);
+        parser.addListener("startkeyframerule", startRule);
+
+        parser.addListener("property", function(event){
+            var name = event.property.text,
+                lowerCasePrefixLessName = name.toLowerCase().replace(/^-.*?-/, "");
+
+            properties.push(lowerCasePrefixLessName);
+        });
+
+        parser.addListener("endrule", function(event){
+            var currentProperties = properties.join(","),
+                expectedProperties = properties.sort().join(",");
+
+            if (currentProperties !== expectedProperties){
+                reporter.report("Rule doesn't have all its properties in alphabetical ordered.", event.line, event.col, rule);
+            }
+        });
+    }
+
+});
+
 CSSLint.addRule({
     id: "outline-none",
     name: "Disallow outline: none",
@@ -7418,14 +6946,14 @@ CSSLint.addRule({
                 lastRule = null;
             }
         }
-        
-        function endRule(event){
+
+        function endRule(){
             if (lastRule){
                 if (lastRule.outline){
-                    if (lastRule.selectors.toString().toLowerCase().indexOf(":focus") == -1){
+                    if (lastRule.selectors.toString().toLowerCase().indexOf(":focus") === -1){
                         reporter.report("Outlines should only be modified using :focus.", lastRule.line, lastRule.col, rule);
-                    } else if (lastRule.propCount == 1) {
-                        reporter.report("Outlines shouldn't be hidden unless other visual changes are made.", lastRule.line, lastRule.col, rule);                        
+                    } else if (lastRule.propCount === 1) {
+                        reporter.report("Outlines shouldn't be hidden unless other visual changes are made.", lastRule.line, lastRule.col, rule);
                     }
                 }
             }
@@ -7435,30 +6963,31 @@ CSSLint.addRule({
         parser.addListener("startfontface", startRule);
         parser.addListener("startpage", startRule);
         parser.addListener("startpagemargin", startRule);
-        parser.addListener("startkeyframerule", startRule); 
+        parser.addListener("startkeyframerule", startRule);
 
         parser.addListener("property", function(event){
             var name = event.property.text.toLowerCase(),
-                value = event.value;                
-                
+                value = event.value;
+
             if (lastRule){
                 lastRule.propCount++;
-                if (name == "outline" && (value == "none" || value == "0")){
+                if (name === "outline" && (value.toString() === "none" || value.toString() === "0")){
                     lastRule.outline = true;
-                }            
+                }
             }
-            
+
         });
-        
+
         parser.addListener("endrule", endRule);
         parser.addListener("endfontface", endRule);
         parser.addListener("endpage", endRule);
         parser.addListener("endpagemargin", endRule);
-        parser.addListener("endkeyframerule", endRule); 
+        parser.addListener("endkeyframerule", endRule);
 
     }
 
 });
+
 CSSLint.addRule({
     id: "overqualified-elements",
     name: "Disallow overqualified elements",
@@ -7467,7 +6996,7 @@ CSSLint.addRule({
     init: function(parser, reporter){
         var rule = this,
             classes = {};
-            
+
         parser.addListener("startrule", function(event){
             var selectors = event.selectors,
                 selector,
@@ -7480,13 +7009,13 @@ CSSLint.addRule({
 
                 for (j=0; j < selector.parts.length; j++){
                     part = selector.parts[j];
-                    if (part.type == parser.SELECTOR_PART_TYPE){
+                    if (part.type === parser.SELECTOR_PART_TYPE){
                         for (k=0; k < part.modifiers.length; k++){
                             modifier = part.modifiers[k];
-                            if (part.elementName && modifier.type == "id"){
+                            if (part.elementName && modifier.type === "id"){
                                 reporter.report("Element (" + part + ") is overqualified, just use " + modifier + " without element name.", part.line, part.col, rule);
-                            } else if (modifier.type == "class"){
-                                
+                            } else if (modifier.type === "class"){
+
                                 if (!classes[modifier]){
                                     classes[modifier] = [];
                                 }
@@ -7497,21 +7026,22 @@ CSSLint.addRule({
                 }
             }
         });
-        
+
         parser.addListener("endstylesheet", function(){
-        
+
             var prop;
             for (prop in classes){
                 if (classes.hasOwnProperty(prop)){
-                    if (classes[prop].length == 1 && classes[prop][0].part.elementName){
+                    if (classes[prop].length === 1 && classes[prop][0].part.elementName){
                         reporter.report("Element (" + classes[prop][0].part + ") is overqualified, just use " + classes[prop][0].modifier + " without element name.", classes[prop][0].part.line, classes[prop][0].part.col, rule);
                     }
                 }
-            }        
+            }
         });
     }
 
 });
+
 CSSLint.addRule({
     id: "qualified-headings",
     name: "Disallow qualified headings",
@@ -7531,7 +7061,7 @@ CSSLint.addRule({
 
                 for (j=0; j < selector.parts.length; j++){
                     part = selector.parts[j];
-                    if (part.type == parser.SELECTOR_PART_TYPE){
+                    if (part.type === parser.SELECTOR_PART_TYPE){
                         if (part.elementName && /h[1-6]/.test(part.elementName.toString()) && j > 0){
                             reporter.report("Heading (" + part.elementName + ") should not be qualified.", part.line, part.col, rule);
                         }
@@ -7542,6 +7072,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "regex-selectors",
     name: "Disallow selectors that look like regexs",
@@ -7561,10 +7092,10 @@ CSSLint.addRule({
                 selector = selectors[i];
                 for (j=0; j < selector.parts.length; j++){
                     part = selector.parts[j];
-                    if (part.type == parser.SELECTOR_PART_TYPE){
+                    if (part.type === parser.SELECTOR_PART_TYPE){
                         for (k=0; k < part.modifiers.length; k++){
                             modifier = part.modifiers[k];
-                            if (modifier.type == "attribute"){
+                            if (modifier.type === "attribute"){
                                 if (/([\~\|\^\$\*]=)/.test(modifier)){
                                     reporter.report("Attribute selectors with " + RegExp.$1 + " are slow!", modifier.line, modifier.col, rule);
                                 }
@@ -7578,14 +7109,14 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "rules-count",
     name: "Rules Count",
     desc: "Track how many rules there are.",
     browsers: "All",
     init: function(parser, reporter){
-        var rule = this,
-            count = 0;
+        var count = 0;
         parser.addListener("startrule", function(){
             count++;
         });
@@ -7596,6 +7127,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "selector-max-approaching",
     name: "Warn when approaching the 4095 selector limit for IE",
@@ -7604,18 +7136,19 @@ CSSLint.addRule({
     init: function(parser, reporter) {
         var rule = this, count = 0;
 
-        parser.addListener('startrule', function(event) {
+        parser.addListener("startrule", function(event) {
             count += event.selectors.length;
         });
 
         parser.addListener("endstylesheet", function() {
             if (count >= 3800) {
-                reporter.report("You have " + count + " selectors. Internet Explorer supports a maximum of 4095 selectors per stylesheet. Consider refactoring.",0,0,rule); 
+                reporter.report("You have " + count + " selectors. Internet Explorer supports a maximum of 4095 selectors per stylesheet. Consider refactoring.",0,0,rule);
             }
         });
     }
 
 });
+
 CSSLint.addRule({
     id: "selector-max",
     name: "Error when past the 4095 selector limit for IE",
@@ -7624,18 +7157,55 @@ CSSLint.addRule({
     init: function(parser, reporter){
         var rule = this, count = 0;
 
-        parser.addListener('startrule',function(event) {
+        parser.addListener("startrule", function(event) {
             count += event.selectors.length;
         });
 
         parser.addListener("endstylesheet", function() {
             if (count > 4095) {
-                reporter.report("You have " + count + " selectors. Internet Explorer supports a maximum of 4095 selectors per stylesheet. Consider refactoring.",0,0,rule); 
+                reporter.report("You have " + count + " selectors. Internet Explorer supports a maximum of 4095 selectors per stylesheet. Consider refactoring.",0,0,rule);
             }
         });
     }
 
 });
+
+CSSLint.addRule({
+    id: "selector-newline",
+    name: "Disallow new-line characters in selectors",
+    desc: "New-line characters in selectors are usually a forgotten comma and not a descendant combinator.",
+    browsers: "All",
+    init: function(parser, reporter) {
+        var rule = this;
+
+        function startRule(event) {
+            var i, len, selector, p, n, pLen, part, part2, type, currentLine, nextLine,
+                selectors = event.selectors;
+
+            for (i = 0, len = selectors.length; i < len; i++) {
+                selector = selectors[i];
+                for (p = 0, pLen = selector.parts.length; p < pLen; p++) {
+                    for (n = p + 1; n < pLen; n++) {
+                        part = selector.parts[p];
+                        part2 = selector.parts[n];
+                        type = part.type;
+                        currentLine = part.line;
+                        nextLine = part2.line;
+
+                        if (type === "descendant" && nextLine > currentLine) {
+                            reporter.report("newline character found in selector (forgot a comma?)", currentLine, selectors[i].parts[0].col, rule);
+                        }
+                    }
+                }
+
+            }
+        }
+
+        parser.addListener("startrule", startRule);
+
+    }
+});
+
 CSSLint.addRule({
     id: "shorthand",
     name: "Require shorthand properties",
@@ -7658,7 +7228,7 @@ CSSLint.addRule({
                     "padding-bottom",
                     "padding-left",
                     "padding-right"
-                ]              
+                ]
             };
         for (prop in mapping){
             if (mapping.hasOwnProperty(prop)){
@@ -7667,33 +7237,32 @@ CSSLint.addRule({
                 }
             }
         }
-            
-        function startRule(event){
+
+        function startRule(){
             properties = {};
         }
         function endRule(event){
-            
+
             var prop, i, len, total;
             for (prop in mapping){
                 if (mapping.hasOwnProperty(prop)){
                     total=0;
-                    
+
                     for (i=0, len=mapping[prop].length; i < len; i++){
                         total += properties[mapping[prop][i]] ? 1 : 0;
                     }
-                    
-                    if (total == mapping[prop].length){
+
+                    if (total === mapping[prop].length){
                         reporter.report("The properties " + mapping[prop].join(", ") + " can be replaced by " + prop + ".", event.line, event.col, rule);
                     }
                 }
             }
-        }        
-        
+        }
+
         parser.addListener("startrule", startRule);
         parser.addListener("startfontface", startRule);
         parser.addListener("property", function(event){
-            var name = event.property.toString().toLowerCase(),
-                value = event.value.parts[0].value;
+            var name = event.property.toString().toLowerCase();
 
             if (propertiesToCheck[name]){
                 properties[name] = 1;
@@ -7701,11 +7270,12 @@ CSSLint.addRule({
         });
 
         parser.addListener("endrule", endRule);
-        parser.addListener("endfontface", endRule);     
+        parser.addListener("endfontface", endRule);
 
     }
 
 });
+
 CSSLint.addRule({
     id: "star-property-hack",
     name: "Disallow properties with a star prefix",
@@ -7716,12 +7286,13 @@ CSSLint.addRule({
         parser.addListener("property", function(event){
             var property = event.property;
 
-            if (property.hack == "*") {
+            if (property.hack === "*") {
                 reporter.report("Property with star prefix found.", event.property.line, event.property.col, rule);
             }
         });
     }
 });
+
 CSSLint.addRule({
     id: "text-indent",
     name: "Disallow negative text-indent",
@@ -7733,12 +7304,12 @@ CSSLint.addRule({
             direction;
 
 
-        function startRule(event){
+        function startRule(){
             textIndent = false;
             direction = "inherit";
         }
-        function endRule(event){
-            if (textIndent && direction != "ltr"){
+        function endRule(){
+            if (textIndent && direction !== "ltr"){
                 reporter.report("Negative text-indent doesn't work well with RTL. If you use text-indent for image replacement explicitly set direction for that item to ltr.", textIndent.line, textIndent.col, rule);
             }
         }
@@ -7749,9 +7320,9 @@ CSSLint.addRule({
             var name = event.property.toString().toLowerCase(),
                 value = event.value;
 
-            if (name == "text-indent" && value.parts[0].value < -99){
+            if (name === "text-indent" && value.parts[0].value < -99){
                 textIndent = event.property;
-            } else if (name == "direction" && value == "ltr"){
+            } else if (name === "direction" && value.toString() === "ltr"){
                 direction = "ltr";
             }
         });
@@ -7762,6 +7333,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "underscore-property-hack",
     name: "Disallow properties with an underscore prefix",
@@ -7772,12 +7344,13 @@ CSSLint.addRule({
         parser.addListener("property", function(event){
             var property = event.property;
 
-            if (property.hack == "_") {
+            if (property.hack === "_") {
                 reporter.report("Property with underscore prefix found.", event.property.line, event.property.col, rule);
             }
         });
     }
 });
+
 CSSLint.addRule({
     id: "unique-headings",
     name: "Headings should only be defined once",
@@ -7786,7 +7359,7 @@ CSSLint.addRule({
     init: function(parser, reporter){
         var rule = this;
 
-        var headings =  {
+        var headings = {
                 h1: 0,
                 h2: 0,
                 h3: 0,
@@ -7807,14 +7380,14 @@ CSSLint.addRule({
                 part = selector.parts[selector.parts.length-1];
 
                 if (part.elementName && /(h[1-6])/i.test(part.elementName.toString())){
-                    
+
                     for (j=0; j < part.modifiers.length; j++){
-                        if (part.modifiers[j].type == "pseudo"){
+                        if (part.modifiers[j].type === "pseudo"){
                             pseudo = true;
                             break;
                         }
                     }
-                
+
                     if (!pseudo){
                         headings[RegExp.$1]++;
                         if (headings[RegExp.$1] > 1) {
@@ -7824,11 +7397,11 @@ CSSLint.addRule({
                 }
             }
         });
-        
-        parser.addListener("endstylesheet", function(event){
+
+        parser.addListener("endstylesheet", function(){
             var prop,
                 messages = [];
-                
+
             for (prop in headings){
                 if (headings.hasOwnProperty(prop)){
                     if (headings[prop] > 1){
@@ -7836,14 +7409,15 @@ CSSLint.addRule({
                     }
                 }
             }
-            
+
             if (messages.length){
                 reporter.rollupWarn("You have " + messages.join(", ") + " defined in this stylesheet.", rule);
             }
-        });        
+        });
     }
 
 });
+
 CSSLint.addRule({
     id: "universal-selector",
     name: "Disallow universal selector",
@@ -7856,14 +7430,13 @@ CSSLint.addRule({
             var selectors = event.selectors,
                 selector,
                 part,
-                modifier,
-                i, j, k;
+                i;
 
             for (i=0; i < selectors.length; i++){
                 selector = selectors[i];
-                
+
                 part = selector.parts[selector.parts.length-1];
-                if (part.elementName == "*"){
+                if (part.elementName === "*"){
                     reporter.report(rule.desc, part.line, part.col, rule);
                 }
             }
@@ -7871,6 +7444,7 @@ CSSLint.addRule({
     }
 
 });
+
 CSSLint.addRule({
     id: "unqualified-attributes",
     name: "Disallow unqualified attribute selectors",
@@ -7880,31 +7454,32 @@ CSSLint.addRule({
         var rule = this;
 
         parser.addListener("startrule", function(event){
-            
+
             var selectors = event.selectors,
                 selector,
                 part,
                 modifier,
-                i, j, k;
+                i, k;
 
             for (i=0; i < selectors.length; i++){
                 selector = selectors[i];
-                
+
                 part = selector.parts[selector.parts.length-1];
-                if (part.type == parser.SELECTOR_PART_TYPE){
+                if (part.type === parser.SELECTOR_PART_TYPE){
                     for (k=0; k < part.modifiers.length; k++){
                         modifier = part.modifiers[k];
-                        if (modifier.type == "attribute" && (!part.elementName || part.elementName == "*")){
-                            reporter.report(rule.desc, part.line, part.col, rule);                               
+                        if (modifier.type === "attribute" && (!part.elementName || part.elementName === "*")){
+                            reporter.report(rule.desc, part.line, part.col, rule);
                         }
                     }
                 }
-                
-            }            
+
+            }
         });
     }
 
 });
+
 CSSLint.addRule({
     id: "vendor-prefix",
     name: "Require standard property with vendor prefix",
@@ -7920,71 +7495,67 @@ CSSLint.addRule({
                 "-webkit-border-top-right-radius": "border-top-right-radius",
                 "-webkit-border-bottom-left-radius": "border-bottom-left-radius",
                 "-webkit-border-bottom-right-radius": "border-bottom-right-radius",
-                
+
                 "-o-border-radius": "border-radius",
                 "-o-border-top-left-radius": "border-top-left-radius",
                 "-o-border-top-right-radius": "border-top-right-radius",
                 "-o-border-bottom-left-radius": "border-bottom-left-radius",
                 "-o-border-bottom-right-radius": "border-bottom-right-radius",
-                
+
                 "-moz-border-radius": "border-radius",
                 "-moz-border-radius-topleft": "border-top-left-radius",
                 "-moz-border-radius-topright": "border-top-right-radius",
                 "-moz-border-radius-bottomleft": "border-bottom-left-radius",
-                "-moz-border-radius-bottomright": "border-bottom-right-radius",                
-                
+                "-moz-border-radius-bottomright": "border-bottom-right-radius",
+
                 "-moz-column-count": "column-count",
                 "-webkit-column-count": "column-count",
-                
+
                 "-moz-column-gap": "column-gap",
                 "-webkit-column-gap": "column-gap",
-                
+
                 "-moz-column-rule": "column-rule",
                 "-webkit-column-rule": "column-rule",
-                
+
                 "-moz-column-rule-style": "column-rule-style",
                 "-webkit-column-rule-style": "column-rule-style",
-                
+
                 "-moz-column-rule-color": "column-rule-color",
                 "-webkit-column-rule-color": "column-rule-color",
-                
+
                 "-moz-column-rule-width": "column-rule-width",
                 "-webkit-column-rule-width": "column-rule-width",
-                
+
                 "-moz-column-width": "column-width",
                 "-webkit-column-width": "column-width",
-                
+
                 "-webkit-column-span": "column-span",
                 "-webkit-columns": "columns",
-                
+
                 "-moz-box-shadow": "box-shadow",
                 "-webkit-box-shadow": "box-shadow",
-                
+
                 "-moz-transform" : "transform",
                 "-webkit-transform" : "transform",
                 "-o-transform" : "transform",
                 "-ms-transform" : "transform",
-                
+
                 "-moz-transform-origin" : "transform-origin",
                 "-webkit-transform-origin" : "transform-origin",
                 "-o-transform-origin" : "transform-origin",
                 "-ms-transform-origin" : "transform-origin",
-                
+
                 "-moz-box-sizing" : "box-sizing",
-                "-webkit-box-sizing" : "box-sizing",
-                
-                "-moz-user-select" : "user-select",
-                "-khtml-user-select" : "user-select",
-                "-webkit-user-select" : "user-select"                
+                "-webkit-box-sizing" : "box-sizing"
             };
         function startRule(){
             properties = {};
-            num=1;        
+            num = 1;
         }
-        function endRule(event){
+        function endRule(){
             var prop,
-                i, len,
-                standard,
+                i,
+                len,
                 needed,
                 actual,
                 needsStandard = [];
@@ -7999,7 +7570,7 @@ CSSLint.addRule({
                 needed = needsStandard[i].needed;
                 actual = needsStandard[i].actual;
 
-                if (!properties[needed]){               
+                if (!properties[needed]){
                     reporter.report("Missing standard property '" + needed + "' to go along with '" + actual + "'.", properties[actual][0].name.line, properties[actual][0].name.col, rule);
                 } else {
                     if (properties[needed][0].pos < properties[actual][0].pos){
@@ -8008,13 +7579,13 @@ CSSLint.addRule({
                 }
             }
 
-        }        
-        
+        }
+
         parser.addListener("startrule", startRule);
         parser.addListener("startfontface", startRule);
         parser.addListener("startpage", startRule);
         parser.addListener("startpagemargin", startRule);
-        parser.addListener("startkeyframerule", startRule);         
+        parser.addListener("startkeyframerule", startRule);
 
         parser.addListener("property", function(event){
             var name = event.property.text.toLowerCase();
@@ -8030,10 +7601,11 @@ CSSLint.addRule({
         parser.addListener("endfontface", endRule);
         parser.addListener("endpage", endRule);
         parser.addListener("endpagemargin", endRule);
-        parser.addListener("endkeyframerule", endRule);         
+        parser.addListener("endkeyframerule", endRule);
     }
 
 });
+
 CSSLint.addRule({
     id: "zero-units",
     name: "Disallow units for 0 values",
@@ -8043,11 +7615,11 @@ CSSLint.addRule({
         var rule = this;
         parser.addListener("property", function(event){
             var parts = event.value.parts,
-                i = 0, 
+                i = 0,
                 len = parts.length;
 
             while(i < len){
-                if ((parts[i].units || parts[i].type == "percentage") && parts[i].value === 0 && parts[i].type != "time"){
+                if ((parts[i].units || parts[i].type === "percentage") && parts[i].value === 0 && parts[i].type !== "time"){
                     reporter.report("Values of 0 shouldn't have units specified.", parts[i].line, parts[i].col, rule);
                 }
                 i++;
@@ -8058,12 +7630,13 @@ CSSLint.addRule({
     }
 
 });
+
 (function() {
     var xmlEscape = function(str) {
         if (!str || str.constructor !== String) {
             return "";
         }
-        
+
         return str.replace(/[\"&><]/g, function(match) {
             switch (match) {
                 case "\"":
@@ -8073,7 +7646,7 @@ CSSLint.addRule({
                 case "<":
                     return "&lt;";
                 case ">":
-                    return "&gt;";            
+                    return "&gt;";
             }
         });
     };
@@ -8090,23 +7663,23 @@ CSSLint.addRule({
         readError: function(filename, message) {
             return "<file name=\"" + xmlEscape(filename) + "\"><error line=\"0\" column=\"0\" severty=\"error\" message=\"" + xmlEscape(message) + "\"></error></file>";
         },
-        formatResults: function(results, filename, options) {
+        formatResults: function(results, filename/*, options*/) {
             var messages = results.messages,
                 output = [];
             var generateSource = function(rule) {
-                if (!rule || !('name' in rule)) {
+                if (!rule || !("name" in rule)) {
                     return "";
                 }
-                return 'net.csslint.' + rule.name.replace(/\s/g,'');
+                return "net.csslint." + rule.name.replace(/\s/g,"");
             };
 
 
 
             if (messages.length > 0) {
                 output.push("<file name=\""+filename+"\">");
-                CSSLint.Util.forEach(messages, function (message, i) {
+                CSSLint.Util.forEach(messages, function (message) {
                     if (!message.rollup) {
-                      output.push("<error line=\"" + message.line + "\" column=\"" + message.col + "\" severity=\"" + message.type + "\"" +
+                        output.push("<error line=\"" + message.line + "\" column=\"" + message.col + "\" severity=\"" + message.type + "\"" +
                           " message=\"" + xmlEscape(message.message) + "\" source=\"" + generateSource(message.rule) +"\"/>");
                     }
                 });
@@ -8118,6 +7691,7 @@ CSSLint.addRule({
     });
 
 }());
+
 CSSLint.addFormatter({
     id: "compact",
     name: "Compact, 'porcelain' format",
@@ -8136,21 +7710,22 @@ CSSLint.addFormatter({
         };
 
         if (messages.length === 0) {
-            return options.quiet ? "" : filename + ": Lint Free!";
+              return options.quiet ? "" : filename + ": Lint Free!";
         }
 
-        CSSLint.Util.forEach(messages, function(message, i) {
+        CSSLint.Util.forEach(messages, function(message) {
             if (message.rollup) {
                 output += filename + ": " + capitalize(message.type) + " - " + message.message + "\n";
             } else {
-                output += filename + ": " + "line " + message.line + 
+                output += filename + ": " + "line " + message.line +
                     ", col " + message.col + ", " + capitalize(message.type) + " - " + message.message + " (" + message.rule.id + ")\n";
             }
         });
-    
+
         return output;
     }
 });
+
 CSSLint.addFormatter({
     id: "csslint-xml",
     name: "CSSLint XML format",
@@ -8160,7 +7735,7 @@ CSSLint.addFormatter({
     endFormat: function(){
         return "</csslint>";
     },
-    formatResults: function(results, filename, options) {
+    formatResults: function(results, filename/*, options*/) {
         var messages = results.messages,
             output = [];
         var escapeSpecialCharacters = function(str) {
@@ -8172,7 +7747,7 @@ CSSLint.addFormatter({
 
         if (messages.length > 0) {
             output.push("<file name=\""+filename+"\">");
-            CSSLint.Util.forEach(messages, function (message, i) {
+            CSSLint.Util.forEach(messages, function (message) {
                 if (message.rollup) {
                     output.push("<issue severity=\"" + message.type + "\" reason=\"" + escapeSpecialCharacters(message.message) + "\" evidence=\"" + escapeSpecialCharacters(message.evidence) + "\"/>");
                 } else {
@@ -8186,6 +7761,7 @@ CSSLint.addFormatter({
         return output.join("");
     }
 });
+
 CSSLint.addFormatter({
     id: "junit-xml",
     name: "JUNIT XML format",
@@ -8195,19 +7771,19 @@ CSSLint.addFormatter({
     endFormat: function() {
         return "</testsuites>";
     },
-    formatResults: function(results, filename, options) {
+    formatResults: function(results, filename/*, options*/) {
 
         var messages = results.messages,
             output = [],
             tests = {
-                'error': 0,
-                'failure': 0
+                "error": 0,
+                "failure": 0
             };
         var generateSource = function(rule) {
-            if (!rule || !('name' in rule)) {
+            if (!rule || !("name" in rule)) {
                 return "";
             }
-            return 'net.csslint.' + rule.name.replace(/\s/g,'');
+            return "net.csslint." + rule.name.replace(/\s/g,"");
         };
         var escapeSpecialCharacters = function(str) {
 
@@ -8221,11 +7797,11 @@ CSSLint.addFormatter({
 
         if (messages.length > 0) {
 
-            messages.forEach(function (message, i) {
-                var type = message.type === 'warning' ? 'error' : message.type;
+            messages.forEach(function (message) {
+                var type = message.type === "warning" ? "error" : message.type;
                 if (!message.rollup) {
                     output.push("<testcase time=\"0\" name=\"" + generateSource(message.rule) + "\">");
-                    output.push("<" + type + " message=\"" + escapeSpecialCharacters(message.message) + "\"><![CDATA[" + message.line + ':' + message.col + ':' + escapeSpecialCharacters(message.evidence)  + "]]></" + type + ">");
+                    output.push("<" + type + " message=\"" + escapeSpecialCharacters(message.message) + "\"><![CDATA[" + message.line + ":" + message.col + ":" + escapeSpecialCharacters(message.evidence)  + "]]></" + type + ">");
                     output.push("</testcase>");
 
                     tests[type] += 1;
@@ -8243,6 +7819,7 @@ CSSLint.addFormatter({
 
     }
 });
+
 CSSLint.addFormatter({
     id: "lint-xml",
     name: "Lint XML format",
@@ -8252,7 +7829,7 @@ CSSLint.addFormatter({
     endFormat: function(){
         return "</lint>";
     },
-    formatResults: function(results, filename, options) {
+    formatResults: function(results, filename/*, options*/) {
         var messages = results.messages,
             output = [];
         var escapeSpecialCharacters = function(str) {
@@ -8263,9 +7840,9 @@ CSSLint.addFormatter({
         };
 
         if (messages.length > 0) {
-        
+
             output.push("<file name=\""+filename+"\">");
-            CSSLint.Util.forEach(messages, function (message, i) {
+            CSSLint.Util.forEach(messages, function (message) {
                 if (message.rollup) {
                     output.push("<issue severity=\"" + message.type + "\" reason=\"" + escapeSpecialCharacters(message.message) + "\" evidence=\"" + escapeSpecialCharacters(message.evidence) + "\"/>");
                 } else {
@@ -8279,6 +7856,7 @@ CSSLint.addFormatter({
         return output.join("");
     }
 });
+
 CSSLint.addFormatter({
     id: "text",
     name: "Plain Text",
@@ -8297,12 +7875,19 @@ CSSLint.addFormatter({
             return options.quiet ? "" : "\n\ncsslint: No errors in " + filename + ".";
         }
 
-        output = "\n\ncsslint: There are " + messages.length  +  " problems in " + filename + ".";
+        output = "\n\ncsslint: There ";
+        if (messages.length === 1) {
+            output += "is 1 problem";
+        } else {
+            output += "are " + messages.length  +  " problems";
+        }
+        output += " in " + filename + ".";
+
         var pos = filename.lastIndexOf("/"),
             shortFilename = filename;
 
         if (pos === -1){
-            pos = filename.lastIndexOf("\\");       
+            pos = filename.lastIndexOf("\\");
         }
         if (pos > -1){
             shortFilename = filename.substring(pos+1);
@@ -8319,58 +7904,779 @@ CSSLint.addFormatter({
                 output += "\n" + message.evidence;
             }
         });
-    
+
         return output;
     }
 });
 
-exports.CSSLint = CSSLint;
+module.exports.CSSLint = CSSLint;
 
-});ace.define('ace/worker/mirror', ['require', 'exports', 'module' , 'ace/document', 'ace/lib/lang'], function(require, exports, module) {
+});
 
+ace.define("ace/mode/css_worker",["require","exports","module","ace/lib/oop","ace/lib/lang","ace/worker/mirror","ace/mode/css/csslint"], function(require, exports, module) {
+"use strict";
 
-var Document = require("../document").Document;
+var oop = require("../lib/oop");
 var lang = require("../lib/lang");
-    
-var Mirror = exports.Mirror = function(sender) {
-    this.sender = sender;
-    var doc = this.doc = new Document("");
-    
-    var deferredUpdate = this.deferredUpdate = lang.delayedCall(this.onUpdate.bind(this));
-    
-    var _self = this;
-    sender.on("change", function(e) {
-        doc.applyDeltas(e.data);
-        if (_self.$timeout)
-            return deferredUpdate.schedule(_self.$timeout);
-        _self.onUpdate();
-    });
+var Mirror = require("../worker/mirror").Mirror;
+var CSSLint = require("./css/csslint").CSSLint;
+
+var Worker = exports.Worker = function(sender) {
+    Mirror.call(this, sender);
+    this.setTimeout(400);
+    this.ruleset = null;
+    this.setDisabledRules("ids|order-alphabetical");
+    this.setInfoRules(
+      "adjoining-classes|qualified-headings|zero-units|gradients|" +
+      "import|outline-none|vendor-prefix"
+    );
 };
 
+oop.inherits(Worker, Mirror);
+
 (function() {
-    
-    this.$timeout = 500;
-    
-    this.setTimeout = function(timeout) {
-        this.$timeout = timeout;
+    this.setInfoRules = function(ruleNames) {
+        if (typeof ruleNames == "string")
+            ruleNames = ruleNames.split("|");
+        this.infoRules = lang.arrayToMap(ruleNames);
+        this.doc.getValue() && this.deferredUpdate.schedule(100);
     };
-    
-    this.setValue = function(value) {
-        this.doc.setValue(value);
-        this.deferredUpdate.schedule(this.$timeout);
+
+    this.setDisabledRules = function(ruleNames) {
+        if (!ruleNames) {
+            this.ruleset = null;
+        } else {
+            if (typeof ruleNames == "string")
+                ruleNames = ruleNames.split("|");
+            var all = {};
+
+            CSSLint.getRules().forEach(function(x){
+                all[x.id] = true;
+            });
+            ruleNames.forEach(function(x) {
+                delete all[x];
+            });
+            
+            this.ruleset = all;
+        }
+        this.doc.getValue() && this.deferredUpdate.schedule(100);
     };
-    
-    this.getValue = function(callbackId) {
-        this.sender.callback(this.doc.getValue(), callbackId);
-    };
-    
+
     this.onUpdate = function() {
+        var value = this.doc.getValue();
+        if (!value)
+            return this.sender.emit("csslint", []);
+        var infoRules = this.infoRules;
+
+        var result = CSSLint.verify(value, this.ruleset);
+        this.sender.emit("csslint", result.messages.map(function(msg) {
+            return {
+                row: msg.line - 1,
+                column: msg.col - 1,
+                text: msg.message,
+                type: infoRules[msg.rule.id] ? "info" : msg.type,
+                rule: msg.rule.name
+            }
+        }));
     };
-    
-    this.isPending = function() {
-        return this.deferredUpdate.isPending();
+
+}).call(Worker.prototype);
+
+});
+
+ace.define("ace/lib/es5-shim",["require","exports","module"], function(require, exports, module) {
+
+function Empty() {}
+
+if (!Function.prototype.bind) {
+    Function.prototype.bind = function bind(that) { // .length is 1
+        var target = this;
+        if (typeof target != "function") {
+            throw new TypeError("Function.prototype.bind called on incompatible " + target);
+        }
+        var args = slice.call(arguments, 1); // for normal call
+        var bound = function () {
+
+            if (this instanceof bound) {
+
+                var result = target.apply(
+                    this,
+                    args.concat(slice.call(arguments))
+                );
+                if (Object(result) === result) {
+                    return result;
+                }
+                return this;
+
+            } else {
+                return target.apply(
+                    that,
+                    args.concat(slice.call(arguments))
+                );
+
+            }
+
+        };
+        if(target.prototype) {
+            Empty.prototype = target.prototype;
+            bound.prototype = new Empty();
+            Empty.prototype = null;
+        }
+        return bound;
     };
-    
-}).call(Mirror.prototype);
+}
+var call = Function.prototype.call;
+var prototypeOfArray = Array.prototype;
+var prototypeOfObject = Object.prototype;
+var slice = prototypeOfArray.slice;
+var _toString = call.bind(prototypeOfObject.toString);
+var owns = call.bind(prototypeOfObject.hasOwnProperty);
+var defineGetter;
+var defineSetter;
+var lookupGetter;
+var lookupSetter;
+var supportsAccessors;
+if ((supportsAccessors = owns(prototypeOfObject, "__defineGetter__"))) {
+    defineGetter = call.bind(prototypeOfObject.__defineGetter__);
+    defineSetter = call.bind(prototypeOfObject.__defineSetter__);
+    lookupGetter = call.bind(prototypeOfObject.__lookupGetter__);
+    lookupSetter = call.bind(prototypeOfObject.__lookupSetter__);
+}
+if ([1,2].splice(0).length != 2) {
+    if(function() { // test IE < 9 to splice bug - see issue #138
+        function makeArray(l) {
+            var a = new Array(l+2);
+            a[0] = a[1] = 0;
+            return a;
+        }
+        var array = [], lengthBefore;
+        
+        array.splice.apply(array, makeArray(20));
+        array.splice.apply(array, makeArray(26));
+
+        lengthBefore = array.length; //46
+        array.splice(5, 0, "XXX"); // add one element
+
+        lengthBefore + 1 == array.length
+
+        if (lengthBefore + 1 == array.length) {
+            return true;// has right splice implementation without bugs
+        }
+    }()) {//IE 6/7
+        var array_splice = Array.prototype.splice;
+        Array.prototype.splice = function(start, deleteCount) {
+            if (!arguments.length) {
+                return [];
+            } else {
+                return array_splice.apply(this, [
+                    start === void 0 ? 0 : start,
+                    deleteCount === void 0 ? (this.length - start) : deleteCount
+                ].concat(slice.call(arguments, 2)))
+            }
+        };
+    } else {//IE8
+        Array.prototype.splice = function(pos, removeCount){
+            var length = this.length;
+            if (pos > 0) {
+                if (pos > length)
+                    pos = length;
+            } else if (pos == void 0) {
+                pos = 0;
+            } else if (pos < 0) {
+                pos = Math.max(length + pos, 0);
+            }
+
+            if (!(pos+removeCount < length))
+                removeCount = length - pos;
+
+            var removed = this.slice(pos, pos+removeCount);
+            var insert = slice.call(arguments, 2);
+            var add = insert.length;            
+            if (pos === length) {
+                if (add) {
+                    this.push.apply(this, insert);
+                }
+            } else {
+                var remove = Math.min(removeCount, length - pos);
+                var tailOldPos = pos + remove;
+                var tailNewPos = tailOldPos + add - remove;
+                var tailCount = length - tailOldPos;
+                var lengthAfterRemove = length - remove;
+
+                if (tailNewPos < tailOldPos) { // case A
+                    for (var i = 0; i < tailCount; ++i) {
+                        this[tailNewPos+i] = this[tailOldPos+i];
+                    }
+                } else if (tailNewPos > tailOldPos) { // case B
+                    for (i = tailCount; i--; ) {
+                        this[tailNewPos+i] = this[tailOldPos+i];
+                    }
+                } // else, add == remove (nothing to do)
+
+                if (add && pos === lengthAfterRemove) {
+                    this.length = lengthAfterRemove; // truncate array
+                    this.push.apply(this, insert);
+                } else {
+                    this.length = lengthAfterRemove + add; // reserves space
+                    for (i = 0; i < add; ++i) {
+                        this[pos+i] = insert[i];
+                    }
+                }
+            }
+            return removed;
+        };
+    }
+}
+if (!Array.isArray) {
+    Array.isArray = function isArray(obj) {
+        return _toString(obj) == "[object Array]";
+    };
+}
+var boxedString = Object("a"),
+    splitString = boxedString[0] != "a" || !(0 in boxedString);
+
+if (!Array.prototype.forEach) {
+    Array.prototype.forEach = function forEach(fun /*, thisp*/) {
+        var object = toObject(this),
+            self = splitString && _toString(this) == "[object String]" ?
+                this.split("") :
+                object,
+            thisp = arguments[1],
+            i = -1,
+            length = self.length >>> 0;
+        if (_toString(fun) != "[object Function]") {
+            throw new TypeError(); // TODO message
+        }
+
+        while (++i < length) {
+            if (i in self) {
+                fun.call(thisp, self[i], i, object);
+            }
+        }
+    };
+}
+if (!Array.prototype.map) {
+    Array.prototype.map = function map(fun /*, thisp*/) {
+        var object = toObject(this),
+            self = splitString && _toString(this) == "[object String]" ?
+                this.split("") :
+                object,
+            length = self.length >>> 0,
+            result = Array(length),
+            thisp = arguments[1];
+        if (_toString(fun) != "[object Function]") {
+            throw new TypeError(fun + " is not a function");
+        }
+
+        for (var i = 0; i < length; i++) {
+            if (i in self)
+                result[i] = fun.call(thisp, self[i], i, object);
+        }
+        return result;
+    };
+}
+if (!Array.prototype.filter) {
+    Array.prototype.filter = function filter(fun /*, thisp */) {
+        var object = toObject(this),
+            self = splitString && _toString(this) == "[object String]" ?
+                this.split("") :
+                    object,
+            length = self.length >>> 0,
+            result = [],
+            value,
+            thisp = arguments[1];
+        if (_toString(fun) != "[object Function]") {
+            throw new TypeError(fun + " is not a function");
+        }
+
+        for (var i = 0; i < length; i++) {
+            if (i in self) {
+                value = self[i];
+                if (fun.call(thisp, value, i, object)) {
+                    result.push(value);
+                }
+            }
+        }
+        return result;
+    };
+}
+if (!Array.prototype.every) {
+    Array.prototype.every = function every(fun /*, thisp */) {
+        var object = toObject(this),
+            self = splitString && _toString(this) == "[object String]" ?
+                this.split("") :
+                object,
+            length = self.length >>> 0,
+            thisp = arguments[1];
+        if (_toString(fun) != "[object Function]") {
+            throw new TypeError(fun + " is not a function");
+        }
+
+        for (var i = 0; i < length; i++) {
+            if (i in self && !fun.call(thisp, self[i], i, object)) {
+                return false;
+            }
+        }
+        return true;
+    };
+}
+if (!Array.prototype.some) {
+    Array.prototype.some = function some(fun /*, thisp */) {
+        var object = toObject(this),
+            self = splitString && _toString(this) == "[object String]" ?
+                this.split("") :
+                object,
+            length = self.length >>> 0,
+            thisp = arguments[1];
+        if (_toString(fun) != "[object Function]") {
+            throw new TypeError(fun + " is not a function");
+        }
+
+        for (var i = 0; i < length; i++) {
+            if (i in self && fun.call(thisp, self[i], i, object)) {
+                return true;
+            }
+        }
+        return false;
+    };
+}
+if (!Array.prototype.reduce) {
+    Array.prototype.reduce = function reduce(fun /*, initial*/) {
+        var object = toObject(this),
+            self = splitString && _toString(this) == "[object String]" ?
+                this.split("") :
+                object,
+            length = self.length >>> 0;
+        if (_toString(fun) != "[object Function]") {
+            throw new TypeError(fun + " is not a function");
+        }
+        if (!length && arguments.length == 1) {
+            throw new TypeError("reduce of empty array with no initial value");
+        }
+
+        var i = 0;
+        var result;
+        if (arguments.length >= 2) {
+            result = arguments[1];
+        } else {
+            do {
+                if (i in self) {
+                    result = self[i++];
+                    break;
+                }
+                if (++i >= length) {
+                    throw new TypeError("reduce of empty array with no initial value");
+                }
+            } while (true);
+        }
+
+        for (; i < length; i++) {
+            if (i in self) {
+                result = fun.call(void 0, result, self[i], i, object);
+            }
+        }
+
+        return result;
+    };
+}
+if (!Array.prototype.reduceRight) {
+    Array.prototype.reduceRight = function reduceRight(fun /*, initial*/) {
+        var object = toObject(this),
+            self = splitString && _toString(this) == "[object String]" ?
+                this.split("") :
+                object,
+            length = self.length >>> 0;
+        if (_toString(fun) != "[object Function]") {
+            throw new TypeError(fun + " is not a function");
+        }
+        if (!length && arguments.length == 1) {
+            throw new TypeError("reduceRight of empty array with no initial value");
+        }
+
+        var result, i = length - 1;
+        if (arguments.length >= 2) {
+            result = arguments[1];
+        } else {
+            do {
+                if (i in self) {
+                    result = self[i--];
+                    break;
+                }
+                if (--i < 0) {
+                    throw new TypeError("reduceRight of empty array with no initial value");
+                }
+            } while (true);
+        }
+
+        do {
+            if (i in this) {
+                result = fun.call(void 0, result, self[i], i, object);
+            }
+        } while (i--);
+
+        return result;
+    };
+}
+if (!Array.prototype.indexOf || ([0, 1].indexOf(1, 2) != -1)) {
+    Array.prototype.indexOf = function indexOf(sought /*, fromIndex */ ) {
+        var self = splitString && _toString(this) == "[object String]" ?
+                this.split("") :
+                toObject(this),
+            length = self.length >>> 0;
+
+        if (!length) {
+            return -1;
+        }
+
+        var i = 0;
+        if (arguments.length > 1) {
+            i = toInteger(arguments[1]);
+        }
+        i = i >= 0 ? i : Math.max(0, length + i);
+        for (; i < length; i++) {
+            if (i in self && self[i] === sought) {
+                return i;
+            }
+        }
+        return -1;
+    };
+}
+if (!Array.prototype.lastIndexOf || ([0, 1].lastIndexOf(0, -3) != -1)) {
+    Array.prototype.lastIndexOf = function lastIndexOf(sought /*, fromIndex */) {
+        var self = splitString && _toString(this) == "[object String]" ?
+                this.split("") :
+                toObject(this),
+            length = self.length >>> 0;
+
+        if (!length) {
+            return -1;
+        }
+        var i = length - 1;
+        if (arguments.length > 1) {
+            i = Math.min(i, toInteger(arguments[1]));
+        }
+        i = i >= 0 ? i : length - Math.abs(i);
+        for (; i >= 0; i--) {
+            if (i in self && sought === self[i]) {
+                return i;
+            }
+        }
+        return -1;
+    };
+}
+if (!Object.getPrototypeOf) {
+    Object.getPrototypeOf = function getPrototypeOf(object) {
+        return object.__proto__ || (
+            object.constructor ?
+            object.constructor.prototype :
+            prototypeOfObject
+        );
+    };
+}
+if (!Object.getOwnPropertyDescriptor) {
+    var ERR_NON_OBJECT = "Object.getOwnPropertyDescriptor called on a " +
+                         "non-object: ";
+    Object.getOwnPropertyDescriptor = function getOwnPropertyDescriptor(object, property) {
+        if ((typeof object != "object" && typeof object != "function") || object === null)
+            throw new TypeError(ERR_NON_OBJECT + object);
+        if (!owns(object, property))
+            return;
+
+        var descriptor, getter, setter;
+        descriptor =  { enumerable: true, configurable: true };
+        if (supportsAccessors) {
+            var prototype = object.__proto__;
+            object.__proto__ = prototypeOfObject;
+
+            var getter = lookupGetter(object, property);
+            var setter = lookupSetter(object, property);
+            object.__proto__ = prototype;
+
+            if (getter || setter) {
+                if (getter) descriptor.get = getter;
+                if (setter) descriptor.set = setter;
+                return descriptor;
+            }
+        }
+        descriptor.value = object[property];
+        return descriptor;
+    };
+}
+if (!Object.getOwnPropertyNames) {
+    Object.getOwnPropertyNames = function getOwnPropertyNames(object) {
+        return Object.keys(object);
+    };
+}
+if (!Object.create) {
+    var createEmpty;
+    if (Object.prototype.__proto__ === null) {
+        createEmpty = function () {
+            return { "__proto__": null };
+        };
+    } else {
+        createEmpty = function () {
+            var empty = {};
+            for (var i in empty)
+                empty[i] = null;
+            empty.constructor =
+            empty.hasOwnProperty =
+            empty.propertyIsEnumerable =
+            empty.isPrototypeOf =
+            empty.toLocaleString =
+            empty.toString =
+            empty.valueOf =
+            empty.__proto__ = null;
+            return empty;
+        }
+    }
+
+    Object.create = function create(prototype, properties) {
+        var object;
+        if (prototype === null) {
+            object = createEmpty();
+        } else {
+            if (typeof prototype != "object")
+                throw new TypeError("typeof prototype["+(typeof prototype)+"] != 'object'");
+            var Type = function () {};
+            Type.prototype = prototype;
+            object = new Type();
+            object.__proto__ = prototype;
+        }
+        if (properties !== void 0)
+            Object.defineProperties(object, properties);
+        return object;
+    };
+}
+
+function doesDefinePropertyWork(object) {
+    try {
+        Object.defineProperty(object, "sentinel", {});
+        return "sentinel" in object;
+    } catch (exception) {
+    }
+}
+if (Object.defineProperty) {
+    var definePropertyWorksOnObject = doesDefinePropertyWork({});
+    var definePropertyWorksOnDom = typeof document == "undefined" ||
+        doesDefinePropertyWork(document.createElement("div"));
+    if (!definePropertyWorksOnObject || !definePropertyWorksOnDom) {
+        var definePropertyFallback = Object.defineProperty;
+    }
+}
+
+if (!Object.defineProperty || definePropertyFallback) {
+    var ERR_NON_OBJECT_DESCRIPTOR = "Property description must be an object: ";
+    var ERR_NON_OBJECT_TARGET = "Object.defineProperty called on non-object: "
+    var ERR_ACCESSORS_NOT_SUPPORTED = "getters & setters can not be defined " +
+                                      "on this javascript engine";
+
+    Object.defineProperty = function defineProperty(object, property, descriptor) {
+        if ((typeof object != "object" && typeof object != "function") || object === null)
+            throw new TypeError(ERR_NON_OBJECT_TARGET + object);
+        if ((typeof descriptor != "object" && typeof descriptor != "function") || descriptor === null)
+            throw new TypeError(ERR_NON_OBJECT_DESCRIPTOR + descriptor);
+        if (definePropertyFallback) {
+            try {
+                return definePropertyFallback.call(Object, object, property, descriptor);
+            } catch (exception) {
+            }
+        }
+        if (owns(descriptor, "value")) {
+
+            if (supportsAccessors && (lookupGetter(object, property) ||
+                                      lookupSetter(object, property)))
+            {
+                var prototype = object.__proto__;
+                object.__proto__ = prototypeOfObject;
+                delete object[property];
+                object[property] = descriptor.value;
+                object.__proto__ = prototype;
+            } else {
+                object[property] = descriptor.value;
+            }
+        } else {
+            if (!supportsAccessors)
+                throw new TypeError(ERR_ACCESSORS_NOT_SUPPORTED);
+            if (owns(descriptor, "get"))
+                defineGetter(object, property, descriptor.get);
+            if (owns(descriptor, "set"))
+                defineSetter(object, property, descriptor.set);
+        }
+
+        return object;
+    };
+}
+if (!Object.defineProperties) {
+    Object.defineProperties = function defineProperties(object, properties) {
+        for (var property in properties) {
+            if (owns(properties, property))
+                Object.defineProperty(object, property, properties[property]);
+        }
+        return object;
+    };
+}
+if (!Object.seal) {
+    Object.seal = function seal(object) {
+        return object;
+    };
+}
+if (!Object.freeze) {
+    Object.freeze = function freeze(object) {
+        return object;
+    };
+}
+try {
+    Object.freeze(function () {});
+} catch (exception) {
+    Object.freeze = (function freeze(freezeObject) {
+        return function freeze(object) {
+            if (typeof object == "function") {
+                return object;
+            } else {
+                return freezeObject(object);
+            }
+        };
+    })(Object.freeze);
+}
+if (!Object.preventExtensions) {
+    Object.preventExtensions = function preventExtensions(object) {
+        return object;
+    };
+}
+if (!Object.isSealed) {
+    Object.isSealed = function isSealed(object) {
+        return false;
+    };
+}
+if (!Object.isFrozen) {
+    Object.isFrozen = function isFrozen(object) {
+        return false;
+    };
+}
+if (!Object.isExtensible) {
+    Object.isExtensible = function isExtensible(object) {
+        if (Object(object) === object) {
+            throw new TypeError(); // TODO message
+        }
+        var name = '';
+        while (owns(object, name)) {
+            name += '?';
+        }
+        object[name] = true;
+        var returnValue = owns(object, name);
+        delete object[name];
+        return returnValue;
+    };
+}
+if (!Object.keys) {
+    var hasDontEnumBug = true,
+        dontEnums = [
+            "toString",
+            "toLocaleString",
+            "valueOf",
+            "hasOwnProperty",
+            "isPrototypeOf",
+            "propertyIsEnumerable",
+            "constructor"
+        ],
+        dontEnumsLength = dontEnums.length;
+
+    for (var key in {"toString": null}) {
+        hasDontEnumBug = false;
+    }
+
+    Object.keys = function keys(object) {
+
+        if (
+            (typeof object != "object" && typeof object != "function") ||
+            object === null
+        ) {
+            throw new TypeError("Object.keys called on a non-object");
+        }
+
+        var keys = [];
+        for (var name in object) {
+            if (owns(object, name)) {
+                keys.push(name);
+            }
+        }
+
+        if (hasDontEnumBug) {
+            for (var i = 0, ii = dontEnumsLength; i < ii; i++) {
+                var dontEnum = dontEnums[i];
+                if (owns(object, dontEnum)) {
+                    keys.push(dontEnum);
+                }
+            }
+        }
+        return keys;
+    };
+
+}
+if (!Date.now) {
+    Date.now = function now() {
+        return new Date().getTime();
+    };
+}
+var ws = "\x09\x0A\x0B\x0C\x0D\x20\xA0\u1680\u180E\u2000\u2001\u2002\u2003" +
+    "\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000\u2028" +
+    "\u2029\uFEFF";
+if (!String.prototype.trim || ws.trim()) {
+    ws = "[" + ws + "]";
+    var trimBeginRegexp = new RegExp("^" + ws + ws + "*"),
+        trimEndRegexp = new RegExp(ws + ws + "*$");
+    String.prototype.trim = function trim() {
+        return String(this).replace(trimBeginRegexp, "").replace(trimEndRegexp, "");
+    };
+}
+
+function toInteger(n) {
+    n = +n;
+    if (n !== n) { // isNaN
+        n = 0;
+    } else if (n !== 0 && n !== (1/0) && n !== -(1/0)) {
+        n = (n > 0 || -1) * Math.floor(Math.abs(n));
+    }
+    return n;
+}
+
+function isPrimitive(input) {
+    var type = typeof input;
+    return (
+        input === null ||
+        type === "undefined" ||
+        type === "boolean" ||
+        type === "number" ||
+        type === "string"
+    );
+}
+
+function toPrimitive(input) {
+    var val, valueOf, toString;
+    if (isPrimitive(input)) {
+        return input;
+    }
+    valueOf = input.valueOf;
+    if (typeof valueOf === "function") {
+        val = valueOf.call(input);
+        if (isPrimitive(val)) {
+            return val;
+        }
+    }
+    toString = input.toString;
+    if (typeof toString === "function") {
+        val = toString.call(input);
+        if (isPrimitive(val)) {
+            return val;
+        }
+    }
+    throw new TypeError();
+}
+var toObject = function (o) {
+    if (o == null) { // this matches both null and undefined
+        throw new TypeError("can't convert "+o+" to object");
+    }
+    return Object(o);
+};
 
 });

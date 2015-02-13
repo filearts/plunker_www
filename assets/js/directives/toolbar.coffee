@@ -78,6 +78,14 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
             </ul>
           </li>
           <li class="divider"></li>
+          <li class="dropdown-submenu">
+            <a tabindex="-1" href="#">React.js</a>
+            <ul class="dropdown-menu">
+              <li><a href="/edit/tpl:a3vkhunC1Na5BG6GY2Gf">React.js</a></li>
+              <li><a href="/edit/tpl:wxQVHKHmyJVjcBJQsk6q">React.js with addons</a></li>
+            </ul>
+          </li>
+          <li class="divider"></li>
           <li><a href="/edit/gist:2016721">Bootstrap<a href="/edit/gist:2016721" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
           <li class="divider"></li>
           <li><a href="/edit/gist:2050713">Backbone.js<a href="/edit/gist:2050746" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>

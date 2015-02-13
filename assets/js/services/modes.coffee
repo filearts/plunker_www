@@ -48,6 +48,9 @@ module.service "modes", -> new class Modes
       json:
         title: "JSON"
         extensions: ["json"]
+      jsx:
+        title: "jsx"
+        extensions: ["jsx"]
       latex:
         title: "LaTeX"
         extensions: ["tex"]
