@@ -1,7 +1,7 @@
 require "../../vendor/angular-1.2"
 require "../../vendor/ui-router/ui-router"
 #require "../../vendor/marked.js"
-require "../../vendor/angularytics/angularytics"
+require "../../vendor/angularytics/dist/angularytics"
 
 require "../services/modes.coffee"
 require "../directives/markdown.coffee"

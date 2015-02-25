@@ -1,6 +1,6 @@
 #= require ./../../vendor/angular-1.0
 #= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
-#= require ./../../vendor/angularytics/angularytics
+#= require ./../../vendor/angularytics/dist/angularytics
 
 #= require ./../controllers/explore
 #= require ./../controllers/members
