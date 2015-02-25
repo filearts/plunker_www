@@ -54,7 +54,7 @@ module.exports = (grunt) ->
             '<%=build.src%>/vendor/angular-1.2.3.js'
             '<%=build.src%>/vendor/ui-router/ui-router.js'
             '<%=build.src%>/vendor/marked.js'
-            '<%=build.src%>/vendor/angularytics/angularytics.js'
+            '<%=build.src%>/vendor/angularytics/dist/angularytics.js'
           ]
       production:
         files:
@@ -66,7 +66,7 @@ module.exports = (grunt) ->
             '<%=build.src%>/vendor/angular-1.2.3.js'
             '<%=build.src%>/vendor/ui-router/ui-router.js'
             '<%=build.src%>/vendor/marked.js'
-            '<%=build.src%>/vendor/angularytics/angularytics.js'
+            '<%=build.src%>/vendor/angularytics/dist/angularytics.js'
           ]
 
     uglify:

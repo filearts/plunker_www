@@ -1,5 +1,5 @@
 #= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
-#= require ./../../vendor/angularytics/angularytics
+#= require ./../../vendor/angularytics/dist/angularytics
 
 #= require ./../services/visitor
 #= require ./../services/session
