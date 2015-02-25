@@ -56,7 +56,7 @@ app.set "view engine", "jade"
 app.set "view options", layout: false
 app.engine "html", hbs.__express
 
-app.use morgan("short")
+#app.use morgan("short")
 app.use require("./middleware/redirect").middleware(nconf.get("redirect"))
 #app.use express.logger() unless process.env.NODE_ENV is "PRODUCTION"
 app.use require("./middleware/vary").middleware()
@@ -227,20 +227,20 @@ app.get "/group", addSession, (req, res) -> res.render "landing"
 app.get "/tags", addSession, (req, res) -> res.render "landing"
 app.get "/tags/:tagname", addSession, (req, res) -> res.render "landing"
 
-app.get "/:id", addSession, (req, res) ->
-  request.get "#{apiUrl}/plunks/#{req.params.id}", (err, response, body) ->
-    return res.status(500).end() if err
-    return res.status(response.statusCode).end() if response.statusCode >= 400
-    
-    try
-      plunk = JSON.parse(body)
-    catch e
-      return res.render "landing"
-    
-    res.locals.bootstrap =
-      plunks: [plunk]
-      page_title: plunk.description
-    res.render "landing"
+#app.get "/:id", addSession, (req, res) ->
+  #request.get "#{apiUrl}/plunks/#{req.params.id}", (err, response, body) ->
+    #return res.status(500).end() if err
+    #return res.status(response.statusCode).end() if response.statusCode >= 400
+    #
+    #try
+      #plunk = JSON.parse(body)
+    #catch e
+      #return res.render "landing"
+    #
+    #res.locals.bootstrap =
+      #plunks: [plunk]
+      #page_title: plunk.description
+    #res.render "landing"
 
 app.get "/*", addSession, (req, res) ->
   res.render "landing"
