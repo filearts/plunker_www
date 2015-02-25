@@ -166,7 +166,7 @@ module.run ["$templateCache", ($templateCache) ->
             <li>Live previewing of code changes</li>
             <li>As-you-type code linting</li>
             <li>Forking, commenting and sharing of Plunks</li>
-            <li>Fully open-source on Github under the MIT license</li>
+            <li>Fully open-source on GitHub under the MIT license</li>
             <li>And many more to come...</li>
           </ul>
         </div>
