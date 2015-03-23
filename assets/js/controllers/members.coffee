@@ -149,7 +149,7 @@ module.config ["$routeProvider", ($routeProvider) ->
   
   $routeProvider.when "/users/:login", plunksHandler
   $routeProvider.when "/users/:login/plunks", plunksHandler
-  $routeProvider.when "/users/:login/plunks/:filter", plunksHandler
+  $routeProvider.when "/users/:login/plunks/tagged/:tag", plunksHandler
   $routeProvider.when "/users/:login/favorites", favoritesHandler
   $routeProvider.when "/users/:login/favorites/:filter", favoritesHandler
 
