@@ -106,7 +106,7 @@ createProfileHandler = (pane = "plunks") ->
       unless user.$$refreshed_at then user.refresh() else user
     ]
     
-  controller: ["$rootScope", "$scope", "$location", "visitor", "user", "menu", "url", ($rootScope, $scope, $location, visitor, user, menu, url) ->
+  controller: ["$rootScope", "$routeParams", "$scope", "$location", "visitor", "user", "menu", "url", ($rootScope, $routeParams, $scope, $location, visitor, user, menu, url) ->
     $rootScope.page_title = user.login
     
     $script(url.carbonadsV) if url.carbonadsV
@@ -132,7 +132,10 @@ createProfileHandler = (pane = "plunks") ->
       pp: 9
       files: 'yes'
     
-    $scope.plunks = user.getPlunks(params: angular.extend(defaultParams, $location.search()))
+    if $routeParams.tag
+      $scope.plunks = user.getTaggedPlunks($routeParams.tag, params: angular.extend(defaultParams, $location.search()))
+    else
+      $scope.plunks = user.getPlunks(params: angular.extend(defaultParams, $location.search()))
     
     $scope.favorites = user.getFavorites(params: $location.search())
     

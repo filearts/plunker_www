@@ -24,6 +24,10 @@ module.config ["apiProvider", (apiProvider) ->
         options.url ||= "#{url.api}/users/#{@login}/plunks"
         plunks.query(options)
         
+      @getTaggedPlunks = (tag, options = {}) ->
+        options.url ||= "#{url.api}/users/#{@login}/plunks/tagged/#{tag}"
+        plunks.query(options)
+        
       @getFavorites = (options = {}) ->
         options.url ||= "#{url.api}/users/#{@login}/thumbed"
         plunks.query(options)

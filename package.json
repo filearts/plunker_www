@@ -23,7 +23,7 @@
     "bluebird": "^2.2.2",
     "bluebird-lru-cache": "^0.1.0",
     "body-parser": "^1.5.2",
-    "coffee-script": "^1.6.3",
+    "coffee-script": "1.6.3",
     "compression": "^1.0.9",
     "concat-stream": "^1.4.6",
     "connect-assets": "https://github.com/filearts/connect-assets/tarball/master",
