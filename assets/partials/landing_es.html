@@ -1,0 +1,83 @@
+<div class="container plunker-landing">
+  <div class="hero-unit">
+    <h1>
+      Plunker
+      <small>Ayudando a los desarrolladores a contruir la Web</small>  
+    </h1>
+    <p class="description">
+      Plunker es una comunidad online orientada a la creación, colaboración y compartición de sus ideas de desarrollo web.
+    </p>
+    <p class="actions">
+      <a href="/edit/" class="btn btn-primary">
+        <i class="icon-edit"></i>
+        Lanzar el Editor
+      </a>
+      <a href="/plunks" class="btn btn-success">
+        <i class="icon-th"></i>
+        Buscar Plunks
+      </a>
+    </p>
+  </div>
+  
+  <div class="row">
+    <div class="span4">
+      <h4>Design goals</h4>
+      <ul>
+        <li><strong>Velocodad</strong>: A pesar de su complejidad, el editor de Plunker est&aacute; dise&ntilde;ado para cargar en menos de 2 segundos.</li>
+        <li><strong>Facilidad de uso</strong>: Las caracter&iiacute;sticas de Plunker deber&iacute;an funcionar y no  requerir ecplicaci&ooacute; adicional.</li>
+        <li><strong>Colaboraci&oacute;n</strong>: Desde la cloaboraci&oacute;n en tiempo real al forking y cmentarios, Plunker busca alentar a lso usuarios a trabajar en conjunto en su c&oacute;digo.</li>
+      </ul>
+    </div>
+    <div class="span4">
+      <h4>Caracter&iacute;sticas</h4>
+      <ul>
+        <li>coaboraci&oacute;n de c&oacute;digo en tiempo real</li>
+        <li>Editor de sintaxis personalizable totalmente lleno de caracter&iacute;sticas</li>
+        <li>Live previewing of c&oacute;digo changes</li>
+        <li>As-you-type c&oacute;digo linting</li>
+        <li>Forking, comentarios y compartici&oacute; de Plunks</li>
+        <li>Totalmente open-source en Github bajo la licencia MIT</li>
+        <li>Y muchas m&aacute; por venir...</li>
+      </ul>
+    </div>
+    <div class="span4">
+      <h4>Thanks</h4>
+      <p><a href="http://nodejitsu.com" title="NodeJitsu"><img src="/img/Nodejitsu.png" /></a>
+      es the what has allowed Plunker to be on the Internet. If you use Node.js and want
+      zero-downtime, command-line deploys, check them out.
+      </p>
+      <p><a href="http://mongolab.com" title="MongoLab"><img src="/img/Mongolab.png" /></a>
+      has generously provided the back-end storage for Plunker. If you are looking for
+      good service and easy set-up, check them out.
+      </p>
+    </div>
+
+  </div>
+  
+  <div class="page-header">
+    <h1>See what users have been creating</h1>
+    <div class="alert alert-block">
+      <h4>Plunker *no* est&aacute; shutting down</h4>
+      <p>
+        The free website thumbnail service provided by the amazing folk at <a href="http://immediatenet.com/">Immediatenet</a> es shutting down.
+        This means that Plunker needs to find (or build) a new screenshotting service. Please contact filearts on gmail if you have ideas.
+      </p>
+    </div>
+  </div>
+  
+  <plunker-pager class="pull-right" path="/plunks/" collection="plunks"></plunker-pager>
+  
+  <ul class="nav nav-pills pull-left">
+    <li ng-repeat="(name, filter) in filters | orderBy:'text':true" ng-class="{active: filter == activeFilter}">
+      <a ng-href="{{filter.href}}" ng-bind="filter.text"></a>
+    </li>
+  </ul>
+
+  <div class="row">
+    <div class="span12">
+      <plunker-gallery plunks="plunks"></plunker-gallery>
+    </div>
+  </div>
+
+  <plunker-pager class="pagination-right" path="/plunks/" collection="plunks"></plunker-pager>
+</div>
