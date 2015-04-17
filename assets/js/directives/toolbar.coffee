@@ -77,6 +77,9 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
               <li><a href="/edit/tpl:rfqcl9AHEoJZEEJxyNn2">1.3.x<a href="/edit/tpl:RJc8D4Z6KMf74ffWOTn5" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
               <li class="divider"></li>
               <li><a href="/edit/tpl:8rFfZljYNl3z1A4LKSL2">1.4.x<a href="/edit/tpl:zxQbqlOd9vSmkCLQm5ke" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
+              <li class="divider"></li>
+              <li><a href="/edit/tpl:BrUl7z1vvZBGWBfSGS8D">2.0.x (ES6)</a></li>
+              <li><a href="/edit/tpl:XmZkHzl407z93R5Kf0pv">2.0.x (ES5)</a></li>
             </ul>
           </li>
           <li class="divider"></li>
