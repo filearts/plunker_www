@@ -80,14 +80,14 @@ html#ng-app(ng-app="plunker.landing", lang="en", class="ng-app:plunker.landingPa
         div.row
           div.span4
             p
-              a(href="https://modulus.io/",title="Modulus.io"): img(src="/img/modulus.png")
-              | &nbsp;provides node.js hosting for Plunker. If you want low-latency, high-availability
-              | and easy to use hosting for Node.js, we strongly suggest considering Modulus.io.
+              a(href="https://www.runscope.com/",title="Runscope",target="_blank"): img(src="/img/logo-runscope-color.png")
+              | &nbsp;helps developers solve API problems fast, providing powerful API performance
+              | monitoring, automated testing and debugging tools.
           div.span4
             p
-              a(href="http://mongolab.com",title="MongoLab"): img(src="/img/Mongolab.png")
-              | &nbsp;has generously provided the back-end storage for Plunker. If you are looking for
-              | good service and easy set-up, check them out.
+              a(href="https://modulus.io/",title="Modulus.io",target="_blank"): img(src="/img/modulus.png")
+              | &nbsp;provides node.js hosting for Plunker. If you want low-latency, high-availability
+              | and easy to use hosting for Node.js, we strongly suggest considering Modulus.io.
   
           div.span2
             strong Contact
@@ -101,3 +101,11 @@ html#ng-app(ng-app="plunker.landing", lang="en", class="ng-app:plunker.landingPa
               li: a(href="https://github.com/filearts/plunker_www", title="Website front-end") Website
               li: a(href="https://github.com/filearts/plunker_api", title="Backend API") API Server
               li: a(href="https://github.com/filearts/plunker_run", title="Plunk runner") Plunk runner
+    script(type="text/javascript")
+      (function() {
+        window._pa = window._pa || {};
+        _pa.productId = "plunker";
+        var pa = document.createElement('script'); pa.type = 'text/javascript'; pa.async = true;
+        pa.src = ('https:' == document.location.protocol ? 'https:' : 'http:') + "//tag.perfectaudience.com/serve/5226171f87bc6890da0000a0.js";
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(pa, s);
+      })();
