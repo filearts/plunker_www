@@ -126,7 +126,7 @@ module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings
         for filename, file of session.toJSON().files
           field = document.createElement("input")
           field.setAttribute "type", "hidden"
-          field.setAttribute "name", "files[#{filename}][content]"
+          field.setAttribute "name", "files['#{filename}'][content]"
           field.setAttribute "value", file.content
           
           form.appendChild(field)
