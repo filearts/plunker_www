@@ -13,20 +13,18 @@ exports.$detectIndentation = function(lines, fallback) {
         if (!/^\s*[^*+\-\s]/.test(line))
             continue;
 
-        if (line[0] == "\t") {
+        if (line[0] == "\t")
             tabIndents++;
-            prevSpaces = -Number.MAX_VALUE;
-        } else {
-            var spaces = line.match(/^ */)[0].length;
-            if (spaces && line[spaces] != "\t") {
-                var diff = spaces - prevSpaces;
-                if (diff > 0 && !(prevSpaces%diff) && !(spaces%diff))
-                    changes[diff] = (changes[diff] || 0) + 1;
-    
-                stats[spaces] = (stats[spaces] || 0) + 1;
-            }
-            prevSpaces = spaces;
+
+        var spaces = line.match(/^ */)[0].length;
+        if (spaces && line[spaces] != "\t") {
+            var diff = spaces - prevSpaces;
+            if (diff > 0 && !(prevSpaces%diff) && !(spaces%diff))
+                changes[diff] = (changes[diff] || 0) + 1;
+
+            stats[spaces] = (stats[spaces] || 0) + 1;
         }
+        prevSpaces = spaces;
         while (i < max && line[line.length - 1] == "\\")
             line = lines[i++];
     }
@@ -48,7 +46,7 @@ exports.$detectIndentation = function(lines, fallback) {
             spaceIndents = score;
             score = stats[1] ? 0.9 : 0.8;
             if (!stats.length)
-                score = 0;
+                score = 0
         } else
             score /= spaceIndents;
 
@@ -62,11 +60,9 @@ exports.$detectIndentation = function(lines, fallback) {
     if (first.score && first.score > 1.4)
         var tabLength = first.length;
 
-    if (tabIndents > spaceIndents + 1) {
-        if (tabLength == 1 || spaceIndents < tabIndents / 4 || first.score < 1.8)
-            tabLength = undefined;
+    if (tabIndents > spaceIndents + 1)
         return {ch: "\t", length: tabLength};
-    }
+
     if (spaceIndents > tabIndents + 1)
         return {ch: " ", length: tabLength};
 };

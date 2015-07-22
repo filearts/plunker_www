@@ -100,7 +100,6 @@ define("ace/keyboard/vim",["require","exports","module","ace/range","ace/lib/eve
   CodeMirror.on = event.addListener;
   CodeMirror.off = event.removeListener;
   CodeMirror.isWordChar = function(ch) {
-    if (ch < "\x7f") return /^\w$/.test(ch);
     TextModeTokenRe.lastIndex = 0;
     return TextModeTokenRe.test(ch);
   };
@@ -118,6 +117,13 @@ define("ace/keyboard/vim",["require","exports","module","ace/range","ace/lib/eve
     return this.ace.inVirtualSelectionMode && this.ace.selection.index;
   };
   this.onChange = function(delta) {
+    var oldDelta = delta.data;
+    delta = {
+      start: oldDelta.range.start,
+      end: oldDelta.range.end,
+      action: oldDelta.action,
+      lines: oldDelta.lines || [oldDelta.text]
+    };// v1.2 api compatibility
     if (delta.action[0] == 'i') {
       var change = { text: delta.lines };
       var curOp = this.curOp = this.curOp || {};
@@ -197,7 +203,6 @@ define("ace/keyboard/vim",["require","exports","module","ace/range","ace/lib/eve
     }
     if (!this.ace.inVirtualSelectionMode)
       this.ace.exitMultiSelectMode();
-    this.ace.session.unfold({row: line, column: ch});
     this.ace.selection.moveTo(line, ch);
   };
   this.getCursor = function(p) {
@@ -466,9 +471,7 @@ define("ace/keyboard/vim",["require","exports","module","ace/range","ace/lib/eve
   var optMap = {
     indentWithTabs: "useSoftTabs",
     indentUnit: "tabSize",
-    tabSize: "tabSize",
-    firstLineNumber: "firstLineNumber",
-    readOnly: "readOnly"
+    firstLineNumber: "firstLineNumber"
   };
   this.setOption = function(name, val) {
     this.state[name] = val;
@@ -511,6 +514,7 @@ define("ace/keyboard/vim",["require","exports","module","ace/range","ace/lib/eve
         highlight.session = null;
       };
       highlight.updateOnChange = function(delta) {
+        delta = delta.data.range;// v1.2 api compatibility
         var row = delta.start.row;
         if (row == delta.end.row) highlight.cache[row] = undefined;
         else highlight.cache.splice(row, highlight.cache.length);
@@ -587,9 +591,6 @@ define("ace/keyboard/vim",["require","exports","module","ace/range","ace/lib/eve
   this.refresh = function() {
     return this.ace.resize(true);
   };
-  this.getMode = function() {
-    return { name : this.getOption("mode") };
-  }
 }).call(CodeMirror.prototype);
   function toAcePos(cmPos) {
     return {row: cmPos.line, column: cmPos.ch};
@@ -668,14 +669,10 @@ CodeMirror.defineExtension = function(name, fn) {
   CodeMirror.prototype[name] = fn;
 };
 dom.importCssString(".normal-mode .ace_cursor{\
-  border: 1px solid red;\
+  border: 0!important;\
   background-color: red;\
   opacity: 0.5;\
-}\
-.normal-mode .ace_hidden-cursors .ace_cursor{\
-  background-color: transparent;\
-}\
-.ace_dialog {\
+}.ace_dialog {\
   position: absolute;\
   left: 0; right: 0;\
   background: white;\
@@ -956,27 +953,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
     { keys: 'g#', type: 'search', searchArgs: { forward: false, querySrc: 'wordUnderCursor', toJumplist: true }},
     { keys: ':', type: 'ex' }
   ];
-  var defaultExCommandMap = [
-    { name: 'colorscheme', shortName: 'colo' },
-    { name: 'map' },
-    { name: 'imap', shortName: 'im' },
-    { name: 'nmap', shortName: 'nm' },
-    { name: 'vmap', shortName: 'vm' },
-    { name: 'unmap' },
-    { name: 'write', shortName: 'w' },
-    { name: 'undo', shortName: 'u' },
-    { name: 'redo', shortName: 'red' },
-    { name: 'set', shortName: 'se' },
-    { name: 'set', shortName: 'se' },
-    { name: 'setlocal', shortName: 'setl' },
-    { name: 'setglobal', shortName: 'setg' },
-    { name: 'sort', shortName: 'sor' },
-    { name: 'substitute', shortName: 's', possiblyAsync: true },
-    { name: 'nohlsearch', shortName: 'noh' },
-    { name: 'delmarks', shortName: 'delm' },
-    { name: 'registers', shortName: 'reg', excludeFromCommandHistory: true },
-    { name: 'global', shortName: 'g' }
-  ];
 
   var Pos = CodeMirror.Pos;
 
@@ -1123,30 +1099,18 @@ dom.importCssString(".normal-mode .ace_cursor{\
     }
 
     var options = {};
-    function defineOption(name, defaultValue, type, aliases, callback) {
-      if (defaultValue === undefined && !callback) {
-        throw Error('defaultValue is required unless callback is provided');
-      }
+    function defineOption(name, defaultValue, type) {
+      if (defaultValue === undefined) { throw Error('defaultValue is required'); }
       if (!type) { type = 'string'; }
       options[name] = {
         type: type,
-        defaultValue: defaultValue,
-        callback: callback
+        defaultValue: defaultValue
       };
-      if (aliases) {
-        for (var i = 0; i < aliases.length; i++) {
-          options[aliases[i]] = options[name];
-        }
-      }
-      if (defaultValue) {
-        setOption(name, defaultValue);
-      }
+      setOption(name, defaultValue);
     }
 
-    function setOption(name, value, cm, cfg) {
+    function setOption(name, value, cm) {
       var option = options[name];
-      cfg = cfg || {};
-      var scope = cfg.scope;
       if (!option) {
         throw Error('Unknown option: ' + name);
       }
@@ -1157,57 +1121,16 @@ dom.importCssString(".normal-mode .ace_cursor{\
           value = true;
         }
       }
-      if (option.callback) {
-        if (scope !== 'local') {
-          option.callback(value, undefined);
-        }
-        if (scope !== 'global' && cm) {
-          option.callback(value, cm);
-        }
-      } else {
-        if (scope !== 'local') {
-          option.value = option.type == 'boolean' ? !!value : value;
-        }
-        if (scope !== 'global' && cm) {
-          cm.state.vim.options[name] = {value: value};
-        }
-      }
+      option.value = option.type == 'boolean' ? !!value : value;
     }
 
-    function getOption(name, cm, cfg) {
+    function getOption(name) {
       var option = options[name];
-      cfg = cfg || {};
-      var scope = cfg.scope;
       if (!option) {
         throw Error('Unknown option: ' + name);
       }
-      if (option.callback) {
-        var local = cm && option.callback(undefined, cm);
-        if (scope !== 'global' && local !== undefined) {
-          return local;
-        }
-        if (scope !== 'local') {
-          return option.callback();
-        }
-        return;
-      } else {
-        var local = (scope !== 'global') && (cm && cm.state.vim.options[name]);
-        return (local || (scope !== 'local') && option || {}).value;
-      }
+      return option.value;
     }
-
-    defineOption('filetype', undefined, 'string', ['ft'], function(name, cm) {
-      if (cm === undefined) {
-        return;
-      }
-      if (name === undefined) {
-        var mode = cm.getOption('mode');
-        return mode == 'null' ? '' : mode;
-      } else {
-        var mode = name == '' ? 'null' : name;
-        cm.setOption('mode', mode);
-      }
-    });
 
     var createCircularJumpList = function() {
       var size = 100;
@@ -1334,8 +1257,8 @@ dom.importCssString(".normal-mode .ace_cursor{\
           visualBlock: false,
           lastSelection: null,
           lastPastedText: null,
-          sel: {},
-          options: {}
+          sel: {
+          }
         };
       }
       return cm.state.vim;
@@ -1379,15 +1302,13 @@ dom.importCssString(".normal-mode .ace_cursor{\
         exCommandDispatcher.map(lhs, rhs, ctx);
       },
       unmap: function(lhs, ctx) {
-        exCommandDispatcher.unmap(lhs, ctx || "normal");
+        exCommandDispatcher.unmap(lhs, ctx);
       },
       setOption: setOption,
       getOption: getOption,
       defineOption: defineOption,
       defineEx: function(name, prefix, func){
-        if (!prefix) {
-          prefix = name;
-        } else if (name.indexOf(prefix) !== 0) {
+        if (name.indexOf(prefix) !== 0) {
           throw new Error('(Vim.defineEx) "'+prefix+'" is not a prefix of "'+name+'", command not registered');
         }
         exCommands[name]=func;
@@ -1494,8 +1415,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
           return function() {};
         } else {
           return function() {
-            if ((command.operator || command.isEdit) && cm.getOption('readOnly'))
-              return; // ace_patch
             return cm.operation(function() {
               cm.curOp.isVimOp = true;
               try {
@@ -1526,8 +1445,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
       defineOperator: defineOperator,
       mapCommand: mapCommand,
       _mapCommand: _mapCommand,
-
-      defineRegister: defineRegister,
 
       exitVisualMode: exitVisualMode,
       exitInsertMode: exitInsertMode
@@ -1607,14 +1524,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
         return this.keyBuffer.join('');
       }
     };
-    function defineRegister(name, register) {
-      var registers = vimGlobalState.registerController.registers[name];
-      if (!name || name.length != 1) {
-        throw Error('Register name must be 1 character');
-      }
-      registers[name] = register;
-      validRegisters.push(name);
-    }
     function RegisterController(registers) {
       this.registers = registers;
       this.unnamedRegister = registers['"'] = new Register();
@@ -1881,8 +1790,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
         }
         function onPromptKeyDown(e, query, close) {
           var keyName = CodeMirror.keyName(e);
-          if (keyName == 'Esc' || keyName == 'Ctrl-C' || keyName == 'Ctrl-[' ||
-              (keyName == 'Backspace' && query == '')) {
+          if (keyName == 'Esc' || keyName == 'Ctrl-C' || keyName == 'Ctrl-[') {
             vimGlobalState.searchHistoryController.pushInput(query);
             vimGlobalState.searchHistoryController.reset();
             updateSearchQuery(cm, originalQuery);
@@ -1892,9 +1800,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
             clearInputState(cm);
             close();
             cm.focus();
-          } else if (keyName == 'Ctrl-U') {
-            CodeMirror.e_stop(e);
-            close('');
           }
         }
         switch (command.searchArgs.querySrc) {
@@ -1949,8 +1854,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
         }
         function onPromptKeyDown(e, input, close) {
           var keyName = CodeMirror.keyName(e), up;
-          if (keyName == 'Esc' || keyName == 'Ctrl-C' || keyName == 'Ctrl-[' ||
-              (keyName == 'Backspace' && input == '')) {
+          if (keyName == 'Esc' || keyName == 'Ctrl-C' || keyName == 'Ctrl-[') {
             vimGlobalState.exCommandHistoryController.pushInput(input);
             vimGlobalState.exCommandHistoryController.reset();
             CodeMirror.e_stop(e);
@@ -1962,9 +1866,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
             up = keyName == 'Up' ? true : false;
             input = vimGlobalState.exCommandHistoryController.nextMatch(input, up) || '';
             close(input);
-          } else if (keyName == 'Ctrl-U') {
-            CodeMirror.e_stop(e);
-            close('');
           } else {
             if ( keyName != 'Left' && keyName != 'Right' && keyName != 'Ctrl' && keyName != 'Alt' && keyName != 'Shift')
               vimGlobalState.exCommandHistoryController.reset();
@@ -1975,7 +1876,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
         } else {
           if (vim.visualMode) {
             showPrompt(cm, { onClose: onPromptClose, prefix: ':', value: '\'<,\'>',
-                onKeyDown: onPromptKeyDown});
+                onKeyDown: onPromptKeyDown, select: false});
           } else {
             showPrompt(cm, { onClose: onPromptClose, prefix: ':',
                 onKeyDown: onPromptKeyDown});
@@ -1990,8 +1891,8 @@ dom.importCssString(".normal-mode .ace_cursor{\
         var operatorArgs = inputState.operatorArgs || {};
         var registerName = inputState.registerName;
         var sel = vim.sel;
-        var origHead = copyCursor(vim.visualMode ? clipCursorToContent(cm, sel.head): cm.getCursor('head'));
-        var origAnchor = copyCursor(vim.visualMode ? clipCursorToContent(cm, sel.anchor) : cm.getCursor('anchor'));
+        var origHead = copyCursor(vim.visualMode ? sel.head: cm.getCursor('head'));
+        var origAnchor = copyCursor(vim.visualMode ? sel.anchor : cm.getCursor('anchor'));
         var oldHead = copyCursor(origHead);
         var oldAnchor = copyCursor(origAnchor);
         var newHead, newAnchor;
@@ -2024,8 +1925,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
             return;
           }
           if (motionArgs.toJumplist) {
-            if (!operator)
-              cm.ace.curOp.command.scrollIntoView = "center-animate"; // ace_patch
             var jumpList = vimGlobalState.jumpList;
             var cachedCursor = jumpList.cachedCursor;
             if (cachedCursor) {
@@ -2505,10 +2404,9 @@ dom.importCssString(".normal-mode .ace_cursor{\
           var anchor = ranges[0].anchor,
               head = ranges[0].head;
           text = cm.getRange(anchor, head);
-          var lastState = vim.lastEditInputState || {};
-          if (lastState.motion == "moveByWords" && !isWhiteSpaceString(text)) {
+          if (!isWhiteSpaceString(text)) {
             var match = (/\s+$/).exec(text);
-            if (match && lastState.motionArgs && lastState.motionArgs.forward) {
+            if (match) {
               head = offsetCursor(head, 0, - match[0].length);
               text = text.slice(0, - match[0].length);
             }
@@ -2642,7 +2540,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
         var markPos = mark ? mark.find() : undefined;
         markPos = markPos ? markPos : cm.getCursor();
         cm.setCursor(markPos);
-        cm.ace.curOp.command.scrollIntoView = "center-animate"; // ace_patch
       },
       scroll: function(cm, actionArgs, vim) {
         if (vim.visualMode) {
@@ -2920,7 +2817,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
         }
         var linewise = register.linewise;
         var blockwise = register.blockwise;
-        if (linewise && !blockwise) {
+        if (linewise) {
           if(vim.visualMode) {
             text = vim.visualLine ? text.slice(0, -1) : '\n' + text.slice(0, text.length - 1) + '\n';
           } else if (actionArgs.after) {
@@ -3810,7 +3707,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
       var min = cm.firstLine();
       var max = cm.lastLine();
       var start, end, i = line;
-      function isEmpty(i) { return !/\S/.test(cm.getLine(i)); } // ace_patch
+      function isEmpty(i) { return !/\S/.test(cm.getLine(i)); }
       function isBoundary(i, dir, any) {
         if (any) { return isEmpty(i) != isEmpty(i + dir); }
         return !isEmpty(i) && isEmpty(i + dir);
@@ -3966,8 +3863,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
     function dialog(cm, template, shortText, onClose, options) {
       if (cm.openDialog) {
         cm.openDialog(template, onClose, { bottom: true, value: options.value,
-            onKeyDown: options.onKeyDown, onKeyUp: options.onKeyUp,
-            selectValueOnOpen: false});
+            onKeyDown: options.onKeyDown, onKeyUp: options.onKeyUp, select: options.select });
       }
       else {
         onClose(prompt(shortText, ''));
@@ -4030,17 +3926,13 @@ dom.importCssString(".normal-mode .ace_cursor{\
       }
       return out.join('');
     }
-    var charUnescapes = {'\\n': '\n', '\\r': '\r', '\\t': '\t'};
     function translateRegexReplace(str) {
       var escapeNextChar = false;
       var out = [];
       for (var i = -1; i < str.length; i++) {
         var c = str.charAt(i) || '';
         var n = str.charAt(i+1) || '';
-        if (charUnescapes[c + n]) {
-          out.push(charUnescapes[c+n]);
-          i++;
-        } else if (escapeNextChar) {
+        if (escapeNextChar) {
           out.push(c);
           escapeNextChar = false;
         } else {
@@ -4064,7 +3956,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
       }
       return out.join('');
     }
-    var unescapes = {'\\/': '/', '\\\\': '\\', '\\n': '\n', '\\r': '\r', '\\t': '\t'};
     function unescapeRegexReplace(str) {
       var stream = new CodeMirror.StringStream(str);
       var output = [];
@@ -4072,15 +3963,11 @@ dom.importCssString(".normal-mode .ace_cursor{\
         while (stream.peek() && stream.peek() != '\\') {
           output.push(stream.next());
         }
-        var matched = false;
-        for (var matcher in unescapes) {
-          if (stream.match(matcher, true)) {
-            matched = true;
-            output.push(unescapes[matcher]);
-            break;
-          }
-        }
-        if (!matched) {
+        if (stream.match('\\/', true)) {
+          output.push('/');
+        } else if (stream.match('\\\\', true)) {
+          output.push('\\');
+        } else {
           output.push(stream.next());
         }
       }
@@ -4271,19 +4158,28 @@ dom.importCssString(".normal-mode .ace_cursor{\
         bottom: renderer.getLastFullyVisibleRow()
       }
     }
-
+    var defaultExCommandMap = [
+      { name: 'map' },
+      { name: 'imap', shortName: 'im' },
+      { name: 'nmap', shortName: 'nm' },
+      { name: 'vmap', shortName: 'vm' },
+      { name: 'unmap' },
+      { name: 'write', shortName: 'w' },
+      { name: 'undo', shortName: 'u' },
+      { name: 'redo', shortName: 'red' },
+      { name: 'set', shortName: 'set' },
+      { name: 'sort', shortName: 'sor' },
+      { name: 'substitute', shortName: 's', possiblyAsync: true },
+      { name: 'nohlsearch', shortName: 'noh' },
+      { name: 'delmarks', shortName: 'delm' },
+      { name: 'registers', shortName: 'reg', excludeFromCommandHistory: true },
+      { name: 'global', shortName: 'g' }
+    ];
     var ExCommandDispatcher = function() {
       this.buildCommandMap_();
     };
     ExCommandDispatcher.prototype = {
       processCommand: function(cm, input, opt_params) {
-        var that = this;
-        cm.operation(function () {
-          cm.curOp.isVimOp = true;
-          that._processCommand(cm, input, opt_params);
-        });
-      },
-      _processCommand: function(cm, input, opt_params) {
         var vim = cm.state.vim;
         var commandHistoryRegister = vimGlobalState.registerController.getRegister(':');
         var previousCommand = commandHistoryRegister.toString();
@@ -4475,13 +4371,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
     };
 
     var exCommands = {
-      colorscheme: function(cm, params) {
-        if (!params.args || params.args.length < 1) {
-          showConfirm(cm, cm.getOption('theme'));
-          return;
-        }
-        cm.setOption('theme', params.args[0]);
-      },
       map: function(cm, params, ctx) {
         var mapArgs = params.args;
         if (!mapArgs || mapArgs.length < 2) {
@@ -4515,7 +4404,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
       },
       set: function(cm, params) {
         var setArgs = params.args;
-        var setCfg = params.setCfg || {};
         if (!setArgs || setArgs.length < 1) {
           if (cm) {
             showConfirm(cm, 'Invalid mapping: ' + params.input);
@@ -4536,31 +4424,22 @@ dom.importCssString(".normal-mode .ace_cursor{\
           optionName = optionName.substring(2);
           value = false;
         }
-
         var optionIsBoolean = options[optionName] && options[optionName].type == 'boolean';
         if (optionIsBoolean && value == undefined) {
           value = true;
         }
-        if (!optionIsBoolean && value === undefined || forceGet) {
-          var oldValue = getOption(optionName, cm, setCfg);
+        if (!optionIsBoolean && !value || forceGet) {
+          var oldValue = getOption(optionName);
           if (oldValue === true || oldValue === false) {
             showConfirm(cm, ' ' + (oldValue ? '' : 'no') + optionName);
           } else {
             showConfirm(cm, '  ' + optionName + '=' + oldValue);
           }
         } else {
-          setOption(optionName, value, cm, setCfg);
+          setOption(optionName, value, cm);
         }
       },
-      setlocal: function (cm, params) {
-        params.setCfg = {scope: 'local'};
-        this.set(cm, params);
-      },
-      setglobal: function (cm, params) {
-        params.setCfg = {scope: 'global'};
-        this.set(cm, params);
-      },
-      registers: function(cm, params) {
+      registers: function(cm,params) {
         var regArgs = params.args;
         var registers = vimGlobalState.registerController.registers;
         var regInfo = '----------Registers----------<br><br>';
@@ -4770,9 +4649,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
         var query = state.getQuery();
         var lineStart = (params.line !== undefined) ? params.line : cm.getCursor().line;
         var lineEnd = params.lineEnd || lineStart;
-        if (lineStart == cm.firstLine() && lineEnd == cm.lastLine()) {
-          lineEnd = Infinity;
-        }
         if (count) {
           lineStart = lineEnd;
           lineEnd = lineStart + count - 1;
@@ -4863,7 +4739,8 @@ dom.importCssString(".normal-mode .ace_cursor{\
         searchCursor.replace(newText);
       }
       function next() {
-        while(searchCursor.findNext() &&
+        var found;
+        while(found = searchCursor.findNext() &&
               isInRange(searchCursor.from(), lineStart, lineEnd)) {
           if (!global && lastPos && searchCursor.from().line == lastPos.line) {
             continue;
@@ -4978,7 +4855,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
     }
 
     function _mapCommand(command) {
-      defaultKeymap.unshift(command);
+      defaultKeymap.push(command);
     }
 
     function mapCommand(keys, type, name, args, extra) {
@@ -5015,13 +4892,6 @@ dom.importCssString(".normal-mode .ace_cursor{\
 
     function executeMacroRegister(cm, vim, macroModeState, registerName) {
       var register = vimGlobalState.registerController.getRegister(registerName);
-      if (registerName == ':') {
-        if (register.keyBuffer[0]) {
-          exCommandDispatcher.processCommand(cm, register.keyBuffer[0]);
-        }
-        macroModeState.isPlaying = false;
-        return;
-      }
       var keyBuffer = register.keyBuffer;
       var imc = 0;
       macroModeState.isPlaying = true;
@@ -5059,7 +4929,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
       if (macroModeState.isPlaying) { return; }
       var registerName = macroModeState.latestRegister;
       var register = vimGlobalState.registerController.getRegister(registerName);
-      if (register && register.pushInsertModeChanges) {
+      if (register) {
         register.pushInsertModeChanges(macroModeState.lastInsertModeChanges);
       }
     }
@@ -5068,7 +4938,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
       if (macroModeState.isPlaying) { return; }
       var registerName = macroModeState.latestRegister;
       var register = vimGlobalState.registerController.getRegister(registerName);
-      if (register && register.pushSearchQuery) {
+      if (register) {
         register.pushSearchQuery(query);
       }
     }
@@ -5107,7 +4977,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
     }
     function updateFakeCursor(cm) {
       var vim = cm.state.vim;
-      var from = clipCursorToContent(cm, copyCursor(vim.sel.head));
+      var from = copyCursor(vim.sel.head);
       var to = offsetCursor(from, 0, 1);
       if (vim.fakeCursor) {
         vim.fakeCursor.clear();
@@ -5117,7 +4987,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
     function handleExternalSelection(cm, vim) {
       var anchor = cm.getCursor('anchor');
       var head = cm.getCursor('head');
-      if (vim.visualMode && !cm.somethingSelected()) {
+      if (vim.visualMode && cursorEqual(head, anchor) && lineLength(cm, head.line) > head.ch) {
         exitVisualMode(cm, false);
       } else if (!vim.visualMode && !vim.insertMode && cm.somethingSelected()) {
         vim.visualMode = true;
@@ -5318,7 +5188,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
       }, true);
     }
     return isHandled;
-  }
+  };
   exports.CodeMirror = CodeMirror;
   var getVim = Vim.maybeInitVimState_;
   exports.handler = {
@@ -5332,9 +5202,9 @@ dom.importCssString(".normal-mode .ace_cursor{\
       if (!vim.insertMode) {
         var isbackwards = !sel.cursor 
             ? session.selection.isBackwards() || session.selection.isEmpty()
-            : Range.comparePoints(sel.cursor, sel.start) <= 0;
+            : Range.comparePoints(sel.cursor, sel.start) <= 0
         if (!isbackwards && left > w)
-          left -= w;
+          left -= w
       }     
       if (!vim.insertMode && vim.status) {
         h = h / 2;
@@ -5490,13 +5360,13 @@ dom.importCssString(".normal-mode .ace_cursor{\
   };
   var renderVirtualNumbers = {
     getText: function(session, row) {
-      return (Math.abs(session.selection.lead.row - row)  || (row + 1 + (row < 9? "\xb7" : "" ))) + "";
+      return (Math.abs(session.selection.lead.row - row)  || (row + 1 + (row < 9? "\xb7" : "" ))) + ""
     },
     getWidth: function(session, lastLineNumber, config) {
       return session.getLength().toString().length * config.characterWidth;
     },
     update: function(e, editor) {
-      editor.renderer.$loop.schedule(editor.renderer.CHANGE_GUTTER);
+      editor.renderer.$loop.schedule(editor.renderer.CHANGE_GUTTER)
     },
     attach: function(editor) {
       editor.renderer.$gutterLayer.$renderer = this;
@@ -5541,7 +5411,7 @@ dom.importCssString(".normal-mode .ace_cursor{\
     if (cm.ace.inVirtualSelectionMode)
       cm.ace.on("beforeEndOperation", delayedExecAceCommand);
     else
-      delayedExecAceCommand(null, cm.ace);
+      delayedExecAceCommand(null, cm.ace)
   };
   function delayedExecAceCommand(op, ace) {
     ace.off("beforeEndOperation", delayedExecAceCommand);
@@ -5560,5 +5430,5 @@ dom.importCssString(".normal-mode .ace_cursor{\
   exports.handler.actions = actions;
   exports.Vim = Vim;
   
-  Vim.map("Y", "yy", "normal");
+  Vim.map("Y", "yy");
 });

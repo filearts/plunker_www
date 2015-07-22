@@ -287,13 +287,14 @@ var onSelectionChange = function(evt) {
     cvox.Api.speak('unselected');
   }
 };
-var onChange = function(delta) {
+var onChange = function(evt) {
+  var data = evt.data;
   switch (data.action) {
-  case 'remove':
+  case 'removeText':
     cvox.Api.speak(data.text, 0, DELETED_PROP);
     changed = true;
     break;
-  case 'insert':
+  case 'insertText':
     cvox.Api.speak(data.text, 0);
     changed = true;
     break;

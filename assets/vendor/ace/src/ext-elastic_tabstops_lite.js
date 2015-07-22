@@ -14,12 +14,13 @@ var ElasticTabstopsLite = function(editor) {
     this.onExec = function() {
         recordChanges = true;
     };
-    this.onChange = function(delta) {
+    this.onChange = function(e) {
+        var range = e.data.range
         if (recordChanges) {
-            if (changedRows.indexOf(delta.start.row) == -1)
-                changedRows.push(delta.start.row);
-            if (delta.end.row != delta.start.row)
-                changedRows.push(delta.end.row);
+            if (changedRows.indexOf(range.start.row) == -1)
+                changedRows.push(range.start.row);
+            if (range.end.row != range.start.row)
+                changedRows.push(range.end.row);
         }
     };
 };

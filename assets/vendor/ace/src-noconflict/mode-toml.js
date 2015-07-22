@@ -24,10 +24,6 @@ var TomlHighlightRules = function() {
         },
         {
             token: ["variable.keygroup.toml"],
-            regex: "(?:^\\s*)(\\[\\[([^\\]]+)\\]\\])"
-        },
-        {
-            token: ["variable.keygroup.toml"],
             regex: "(?:^\\s*)(\\[([^\\]]+)\\])"
         },
         {

@@ -22,6 +22,7 @@ background: #494949\
 }\
 .ace-merbivore-soft.ace_multiselect .ace_selection.ace_start {\
 box-shadow: 0 0 3px 0px #1C1C1C;\
+border-radius: 2px\
 }\
 .ace-merbivore-soft .ace_marker-layer .ace_step {\
 background: rgb(102, 82, 0)\

@@ -98,6 +98,7 @@ background: rgb(181, 213, 255);\
 }\
 .ace-tm.ace_multiselect .ace_selection.ace_start {\
 box-shadow: 0 0 3px 0px white;\
+border-radius: 2px;\
 }\
 .ace-tm .ace_marker-layer .ace_step {\
 background: rgb(252, 255, 0);\
@@ -167,7 +168,7 @@ exports.edit = function(el) {
         value = oldNode.value;
         el = dom.createElement("pre");
         oldNode.parentNode.replaceChild(el, oldNode);
-    } else if (el) {
+    } else {
         value = dom.getInnerText(el);
         el.innerHTML = '';
     }

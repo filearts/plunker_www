@@ -22,6 +22,7 @@ background: #49483E\
 }\
 .ace-monokai.ace_multiselect .ace_selection.ace_start {\
 box-shadow: 0 0 3px 0px #272822;\
+border-radius: 2px\
 }\
 .ace-monokai .ace_marker-layer .ace_step {\
 background: rgb(102, 82, 0)\
