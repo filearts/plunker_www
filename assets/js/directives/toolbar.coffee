@@ -80,6 +80,7 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
               <li class="divider"></li>
               <li><a href="/edit/tpl:BrUl7z1vvZBGWBfSGS8D">2.0.x (ES6)</a></li>
               <li><a href="/edit/tpl:XmZkHzl407z93R5Kf0pv">2.0.x (ES5)</a></li>
+              <li><a href="/edit/tpl:AvJOMERrnz94ekVua0u5">2.0.x (TS)</a></li>
             </ul>
           </li>
           <li class="divider"></li>
