@@ -51,6 +51,10 @@ assetOptions =
     return path.join dir, "#{base}-#{pkginfo.version}#{ext}"
   helperContext: app.locals
 
+apiUrl = nconf.get("url:api")
+runUrl = nconf.get("url:run")
+wwwUrl = nconf.get("url:www")
+
 app.set "views", "#{__dirname}/views"
 app.set "view engine", "jade"
 app.set "view options", layout: false
@@ -87,11 +91,17 @@ app.use (req, res, next) ->
 app.use require("./middleware/subdomain").middleware()
 
 addSession = require("./middleware/session").middleware()
-
+maybeLoadPlunk = require('./middleware/maybeLoadPlunk').middleware({
+  apiUrl: apiUrl,
+})
 
 
 app.get "/partials/:partial", (req, res, next) ->
   res.render "partials/#{req.params.partial}"
+  
+app.get "/edit/:plunkId", addSession, maybeLoadPlunk, (req, res, next) ->
+  res.locals.plunk = req.plunk
+  res.render "editor"
 
 app.get "/edit/*", addSession, (req, res, next) ->
   res.render "editor"
@@ -147,10 +157,6 @@ authom.on "error", (req, res, auth) ->
   
 # /////////////////////////////////
 
-apiUrl = nconf.get("url:api")
-runUrl = nconf.get("url:run")
-wwwUrl = nconf.get("url:www")
-
 localsMiddleware = (req, res, next) ->
   res.locals.timestamp = ""
   res.locals.suffix = "-min"
@@ -188,8 +194,6 @@ app.get "/sitemap.xml", (req, res) ->
   plunks.on "end", complete
   
 
-apiUrl = nconf.get("url:api")
-
 app.get "/catalogue", addSession, (req, res) -> res.render "packages"
 app.get "/catalogue/*", addSession, (req, res) -> res.render "packages"
 
@@ -199,18 +203,11 @@ secureFilters = require("secure-filters")
 
 hbs.registerHelper "jsObj", (obj) -> new hbs.SafeString(secureFilters.jsObj(obj))
 
-app.get "/embed/:plunkId*", localsMiddleware, (req, res) ->
-  options = 
-    url: "#{apiUrl}/plunks/#{req.params.plunkId}"
-    json: true
-    qs: { v: req.query.v }
-
-  request options, (err, subRes, body) ->
-    if err then res.send(404)
-    else if subRes.statusCode >= 400 then res.send(404)
-    else
-      res.locals.plunk = body
-      res.render "embed.html"
+app.get "/embed/:plunkId*", localsMiddleware, maybeLoadPlunk, (req, res) ->
+  if !req.plunk then res.send(404)
+  else
+    res.locals.plunk = req.plunk
+    res.render "embed.html"
 
 
 app.get "/plunks", addSession, (req, res) -> res.render "landing"
