@@ -34,6 +34,9 @@ module.run [ "$q", "$timeout", "panes", ($q, $timeout, panes) ->
       linked = true
       loaded = false
       
+      document.querySelector('.gitter-chat-embed').addEventListener 'gitter-chat-toggle', (e) ->
+        if !e.detail.state then panes.close(pane)
+      
       $scope.$watch ( -> pane.active), (active) ->
         if active
           if !loaded
