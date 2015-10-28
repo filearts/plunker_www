@@ -6,7 +6,7 @@ html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editor
     meta(name="description",content="Plunker is an online community for creating, collaborating on and sharing your web development ideas.")
     meta(name="keywords",content="jquery,angular.js,editor,online,jsfiddle,codepen,pastebin,testing,javascript testing,css testing,javascript,css,coffeescript,preview,live preview")
     meta(name="fragment", content="!")
-    if plunk
+    if typeof(plunk) !== 'undefined'
       meta(name="twitter:card",content="summary_large_image")
       meta(name="twitter:site",content="@plnkrco")
       meta(name="twitter:title",content="#{plunk.description}")
