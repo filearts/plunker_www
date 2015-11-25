@@ -197,11 +197,24 @@ app.get "/sitemap.xml", (req, res) ->
 app.get "/catalogue", addSession, (req, res) -> res.render "packages"
 app.get "/catalogue/*", addSession, (req, res) -> res.render "packages"
 
+require("amd-loader")
 
 secureFilters = require("secure-filters")
-
+Morph = require('morph')
+modelist = require("ace/lib/ace/ext/modelist");
+highlighter = require("ace/lib/ace/ext/static_highlight");
+theme = require("ace/lib/ace/theme/textmate");
 
 hbs.registerHelper "jsObj", (obj) -> new hbs.SafeString(secureFilters.jsObj(obj))
+hbs.registerHelper "toSnake", (obj) -> Morph.toSnake(obj)
+hbs.registerHelper "syntaxHilightCode", () ->
+  syntaxMode = modelist.getModeForPath(this.filename)
+  syntaxMode = if syntaxMode then syntaxMode.mode else 'ace/mode/text'
+  Mode = require('ace/lib/' + syntaxMode).Mode
+  
+  rendered = highlighter.renderSync this.content, new Mode, theme
+  
+  return new hbs.SafeString(rendered.html)
 
 app.get "/embed/:plunkId*", localsMiddleware, maybeLoadPlunk, (req, res) ->
   if !req.plunk then res.send(404)
