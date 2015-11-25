@@ -55,6 +55,8 @@ body, html {
     background-color: @toolbar-bg-color;
     color: @toolbar-fg-color;
     overflow: hidden;
+    box-shadow: #999 0 2px 4px;
+    z-index: 1;
     
     & > .toolbar-left {
         flex: 1 1 1px;
@@ -208,10 +210,23 @@ body, html {
     .ace_static_highlight {
         font-family: 'Roboto Mono', 'Monaco','Menlo','Ubuntu Mono','Consolas','source-code-pro','Droid Sans Mono',monospace;
         font-size: 13px;
-        
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+    
         & > .ace_line {
             white-space: pre;
         }
+    }
+    
+    & > .filename {
+        position: absolute;
+        top: 1em;
+        right: 1em;
+        color: #666;
+        z-index: 1;
+        text-shadow: #aaa 0 2px 4px;
     }
 }
 
