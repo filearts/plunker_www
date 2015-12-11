@@ -8,12 +8,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "build": "coffee build.coffee"
+    "build": "coffee build.coffee",
+    "release": "grunt release"
   },
   "engines": {
     "node": "0.10.x"
   },
-  "version": "0.8.9",
+  "version": "0.8.10",
   "private": true,
   "description": "The code powering the public facing component of http://plnkr.co",
   "main": "server.js",
@@ -56,6 +57,7 @@
     "grunt": "~0.4.2",
     "grunt-browserify": "~1.2.11",
     "grunt-bump": "0.0.11",
+    "grunt-cli": "^0.1.13",
     "grunt-contrib-less": "^1.1.0",
     "grunt-contrib-uglify": "~0.2.7",
     "grunt-contrib-watch": "~0.5.3",
