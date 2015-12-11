@@ -26,7 +26,7 @@ module.directive "plunkerUserpanel", [ ->
     <div class="plunker-userpanel pull-right" ng-switch on="visitor.logged_in">
       <div class="btn-group" ng-switch-when="true">
         <button class="user-menu btn dropdown-toggle" data-toggle="dropdown" title="User options">
-          <img class="gravatar" src="http://www.gravatar.com/avatar/{{visitor.user.gravatar_id}}?s=20" />
+          <img class="gravatar" src="https://www.gravatar.com/avatar/{{visitor.user.gravatar_id}}?s=20" />
           <span class="text shrink">{{visitor.user.login}}</span>
           <b class="caret" />
         </button>

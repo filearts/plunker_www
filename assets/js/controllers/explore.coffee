@@ -156,7 +156,7 @@ module.run ["$templateCache", ($templateCache) ->
               <div id="azcarbon"></div>
             </div>
           </div>
-          <a target="_blank" href="http://carbonads.net/dev_code.php">Advertise here</a>
+          <a target="_blank" href="https://carbonads.net/dev_code.php">Advertise here</a>
         </div>
         <div class="span4">
           <h4>Features</h4>
