@@ -13,7 +13,7 @@ exports.middleware = function(options) {
     
     function maybeLoadPlunk(req, res, next) {
         if (req.params.plunkId && req.params.plunkId.match(/^[a-zA-Z0-9]+$/)) {
-            Request.get(apiUrl + '/plunks/' + req.params.plunkId, { json: true, timeout: 3000, qs: { v: req.query.v } }, function (err, res, body) {
+            Request.get('https://' + apiUrl + '/plunks/' + req.params.plunkId, { json: true, timeout: 3000, qs: { v: req.query.v } }, function (err, res, body) {
                 if (!err && body) req.plunk = body;
                 
                 next();

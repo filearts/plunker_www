@@ -9,13 +9,13 @@ module.exports.middleware = (options = {}) ->
     fetchSession = (sessid) ->
       return createSession() unless sessid
       
-      request { method: "GET", url: "#{apiUrl}/sessions/#{sessid}", json: true },  (err, response, body) ->
+      request { method: "GET", url: "https:#{apiUrl}/sessions/#{sessid}", json: true },  (err, response, body) ->
         if err or response.statusCode >= 400 then createSession()
         else finalize(body)
       
     createSession = ->
       
-      request { method: "POST", url: "#{apiUrl}/sessions", body: {}, json: true }, (err, response, body) ->
+      request { method: "POST", url: "https:#{apiUrl}/sessions", body: {}, json: true }, (err, response, body) ->
         if err or response.statusCode >= 400
           console.error "[ERR] Failed to create session: #{JSON.stringify(err or body)}"
           finalize({})
