@@ -38,7 +38,7 @@ github = authom.createServer
   scope: ["gist"]
   
 staticOptions = 
-  maxAge: "one week"
+  maxAge: 1000 * 60 * 60 * 24 * 7
   
 assetOptions =
   src: "#{__dirname}/assets"
@@ -64,8 +64,8 @@ app.engine "html", hbs.__express
 app.use require("./middleware/redirect").middleware(nconf.get("redirect"))
 #app.use express.logger() unless process.env.NODE_ENV is "PRODUCTION"
 app.use require("./middleware/vary").middleware()
-app.use serveStatic "#{__dirname}/build", staticOptions
-app.use serveStatic "#{__dirname}/assets", staticOptions
+app.use serveStatic("#{__dirname}/build", staticOptions)
+app.use serveStatic("#{__dirname}/assets", staticOptions)
 app.use "/css/font", serveStatic("#{__dirname}/assets/vendor/Font-Awesome-More/font/", staticOptions)
 
 if nconf.get("NODE_ENV") is "production"
