@@ -220,6 +220,9 @@ app.get "/embed/:plunkId*", localsMiddleware, maybeLoadPlunk, (req, res) ->
   if !req.plunk then res.send(404)
   else
     res.locals.plunk = req.plunk
+    res.set('etag', req.plunk.updated_at)
+    res.set('last-modified', req.plunk.updated_at)
+    res.set('cache-control', 'public, max-age=' + (60 * 60))
     res.render "embed.html"
 
 
