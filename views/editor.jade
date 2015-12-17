@@ -9,9 +9,9 @@ html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editor
     if typeof(plunk) !== 'undefined'
       meta(name="twitter:card",content="summary_large_image")
       meta(name="twitter:site",content="@plnkrco")
-      meta(name="twitter:title",content="#{plunk.description}")
-      meta(name="twitter:description",content="Created on Plnkr: Helping developers build the web.")
-      meta(name="twitter:image",content="#{url.shot}/#{plunk.id}.png?d=#{plunk.updated_at}")
+      meta(name="twitter:title",ng-non-bindable,content="#{plunk.description}")
+      meta(name="twitter:description",ng-non-bindable,,content="Created on Plnkr: Helping developers build the web.")
+      meta(name="twitter:image",ng-non-bindable,,content="#{url.shot}/#{plunk.id}.png?d=#{plunk.updated_at}")
     base(href="/edit/")
     title Plunker
     != css("apps/editor")
