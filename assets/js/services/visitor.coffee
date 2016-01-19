@@ -27,7 +27,8 @@ module.factory "visitor", ["$http", "$rootScope", "$window", "url", "notifier", 
       $rootScope.$watch ( -> self.user?.id ), (user) ->
         self.logged_in = !!user
       
-      $window._handleOAuthSuccess = (auth) -> $rootScope.$apply ->
+      _handleOAuthSuccess = (auth) -> $rootScope.$apply ->
+        console.log "AUTH", auth
         self.request = $http.post(self.session.user_url, { service: auth.service, token: auth.token })
         self.request.then (response) ->
           self.applySessionData(response.data)
@@ -36,9 +37,25 @@ module.factory "visitor", ["$http", "$rootScope", "$window", "url", "notifier", 
           notifier.error "Login error", arguments...
           delete self.request
       
-      $window._handleOAuthError = (error) -> $rootScope.$apply ->
-        console.error "AUTH", self, arguments...
+      _handleOAuthError = (error) -> $rootScope.$apply ->
+        console.error "AUTH", error
         notifier.error "Authentication error", self, arguments...
+      
+      $window.addEventListener 'message', (message) =>
+        if (typeof message.data == 'string' and matches = message.data.match(/^plunker\.auth\.(.*)/))
+          try
+            origin = (message.origin || message.originalEvent.origin).replace(/^https?:/, '')
+            
+            if origin != window.location.origin.replace(/^https?:/, '')
+              return _handleOAuthError('Invalid OAuth source origin')
+            
+            payload = JSON.parse(matches[1]);
+            
+            if payload.auth then _handleOAuthSuccess(payload.auth)
+            else if payload.error then _handleOAuthError(payload.error)
+            else _handleOAuthError('Invalid OAuth payload.')
+          catch error
+            _handleOAuthError('Unable to parse OAuth payload.')
     
     isMember: -> !!@logged_in
     isLoading: -> !!@request or !!@loginWindow

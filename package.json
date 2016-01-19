@@ -12,9 +12,10 @@
     "release": "grunt release"
   },
   "engines": {
-    "node": "0.10.x"
+    "node": "0.10.x",
+    "npm": "2.x"
   },
-  "version": "0.8.17",
+  "version": "0.8.18",
   "private": true,
   "description": "The code powering the public facing component of http://plnkr.co",
   "main": "server.js",

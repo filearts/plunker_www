@@ -10,8 +10,32 @@ html
       !{state}
       // -->
       
-      if (window.opener && _plunker && _plunker.auth) {
-        window.opener._handleOAuthError(_plunker.auth);
+      if (!window.opener) {
+        alert('Orphaned auth window. Closing.');
+        window.close();
       }
       
+      if (typeof _plunker !== 'object' || !_plunker.auth) {
+        alert('Missing auth information. Closing.');
+        window.close();
+      }
+      
+      var parentHost = _plunker.url.www.replace(/https?:/, '');
+      
+      var parentHost = _plunker.url.www.replace(/https?:/, '');
+      var parentProtocol = window.location.protocol;
+      
+      var message = {
+        error: _plunker.auth,
+      };
+      
+      try {
+        var test = window.opener.location.protocol;
+      } catch (__) {
+        parentProtocol = parentProtocol === 'https:'
+          ? 'http:'
+          : 'https:';
+      }
+      
+      window.opener.postMessage('plunker.auth.' + JSON.stringify(message), parentProtocol + parentHost);
       window.close();

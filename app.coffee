@@ -152,7 +152,7 @@ authom.on "auth", (req, res, auth) ->
 authom.on "error", (req, res, auth) ->
   console.log "Auth error", auth
   res.expose auth, "_plunker.auth"
-  res.status(403).end()
+  res.status(403)
   res.render "auth/error"
   
 # /////////////////////////////////
