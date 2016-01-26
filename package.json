@@ -15,7 +15,7 @@
     "node": "0.10.x",
     "npm": "2.x"
   },
-  "version": "0.8.19",
+  "version": "0.8.20",
   "private": true,
   "description": "The code powering the public facing component of http://plnkr.co",
   "main": "server.js",
