@@ -23,7 +23,7 @@
     "JSONStream": "0.4.x",
     "ace": "git://github.com/ajaxorg/ace#v1.2.2",
     "amd-loader": "0.0.5",
-    "authom": "https://github.com/ggoodman/authom/tarball/patch-1",
+    "authom": "0.4.36",
     "bluebird": "^2.2.2",
     "bluebird-lru-cache": "^0.1.0",
     "body-parser": "^1.5.2",

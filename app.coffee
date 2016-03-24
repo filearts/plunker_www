@@ -35,6 +35,7 @@ github = authom.createServer
   service: "github"
   id: nconf.get("oauth:github:id")
   secret: nconf.get("oauth:github:secret")
+  url: nconf.get("oauth:github:url")
   scope: ["gist"]
   
 staticOptions = 
