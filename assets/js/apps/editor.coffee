@@ -93,7 +93,7 @@ module.config ["$routeProvider", ($routeProvider) ->
             content: ""
       ]
     controller: [ "$rootScope", "$scope", "$location", "$browser", "$timeout", "$route", "session", "source", "notifier", "panes", ($rootScope, $scope, $location, $browser, $timeout, $route, session, source, notifier, panes) ->
-      session.reset(source) if source?
+      session.reset(source, { open: $location.search().open }) if source?
 
       unless panes.active
         unless session.plunk?.id

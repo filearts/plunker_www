@@ -304,7 +304,7 @@ module.service "session", [ "$rootScope", "$q", "$timeout", "plunks", "notifier"
       @addBuffer(file.filename, file.content, {id: file.id, activate: true, snippet: file.snippet}) for filename, file of json.files if json.files
       @addBuffer("index.html", "") unless $$history.length
   
-      @activateBuffer(buffer) if buffer = @getBufferByFilename(/^index\./i)
+      @activateBuffer(buffer) if buffer = options.open || @getBufferByFilename(/^index\./i)
       
       # Set currentRevisionIndex if we are not the owner and this plunk is frozen
       if @plunk and @plunk.frozen_version and !@isWritable()
