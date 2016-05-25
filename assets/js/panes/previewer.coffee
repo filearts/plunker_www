@@ -1,4 +1,4 @@
-#= require ./../../vendor/qrcodejs/qrcode
+#= require qrcodejs/qrcode
 
 #= require ./../services/panes
 #= require ./../services/url

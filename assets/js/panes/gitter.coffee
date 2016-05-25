@@ -1,4 +1,4 @@
-#= require ./../../vendor/script/dist/script
+#= require script/dist/script
 
 #= require ./../services/panes
 

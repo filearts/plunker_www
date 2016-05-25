@@ -1,5 +1,5 @@
-#= require ./../../vendor/jquery-ui
-#= require ./../../vendor/jquery-layout/jquery.layout
+#= require jquery-ui
+#= require jquery-layout/jquery.layout
 
 #= require ./../services/panes
 

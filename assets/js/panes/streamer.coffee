@@ -1,5 +1,5 @@
-#= require ./../../vendor/jquery.cookie/jquery.cookie
-#= require ./../../vendor/script/dist/script
+#= require jquery.cookie/jquery.cookie
+#= require script/dist/script
 
 #= require ./../services/panes
 #= require ./../services/participants

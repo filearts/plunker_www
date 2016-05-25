@@ -1,4 +1,4 @@
-#= require ./../../vendor/dominatrix
+#= require dominatrix
 
 #= require ./../services/plunks
 #= require ./../services/updater

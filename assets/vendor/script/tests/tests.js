@@ -17,7 +17,7 @@ script('../node_modules/domready/ready.js', function () {
             ok(true, 'called ready on a chain')
           })
 
-        script('../vendor/jquery.js', 'jquery', function() {
+        script('jquery.js', 'jquery', function() {
           ok(true, 'loaded from base callback')
         })
 
@@ -36,8 +36,8 @@ script('../node_modules/domready/ready.js', function () {
       })
 
       test('ready should wait for several batches by name', 1, function() {
-        script('../vendor/yui-utilities.js', 'yui')
-        script('../vendor/mootools.js', 'moomoo')
+        script('yui-utilities.js', 'yui')
+        script('mootools.js', 'moomoo')
         script.ready(['yui', 'moomoo'], function() {
           console.log('ONCE')
           ok(true, 'multiple batch has been loaded')
@@ -61,7 +61,7 @@ script('../node_modules/domready/ready.js', function () {
       test('should load a single file without extra arguments', 1, function () {
         var err = false
         try {
-          script('../vendor/yui-utilities.js')
+          script('yui-utilities.js')
         } catch (ex) {
           err = true
           console.log('wtf ex', ex)
@@ -71,7 +71,7 @@ script('../node_modules/domready/ready.js', function () {
       })
 
       test('should callback a duplicate file without loading the file', 1, function () {
-        script('../vendor/yui-utilities.js', function () {
+        script('yui-utilities.js', function () {
           ok(true, 'loaded yui twice. nice')
         })
       })
@@ -83,7 +83,7 @@ script('../node_modules/domready/ready.js', function () {
       })
 
       test('setting script path', 3, function () {
-        script.path('../vendor/')
+        script.path('')
         script(['patha', 'pathb', 'http://ded.github.com/morpheus/morpheus.js'], function () {
           ok(patha == true, 'loaded patha.js')
           ok(pathb == true, 'loaded pathb.js')

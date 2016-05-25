@@ -1,10 +1,10 @@
-#= require ./../../vendor/select2/select2
+#= require select2/select2
 
-#= require ./../../vendor/jquery.autosize/jquery.autosize
+#= require jquery.autosize/jquery.autosize
 
-#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
+#= require ui-bootstrap/ui-bootstrap-tpls-0.3.0
 
-#= require ./../../vendor/script/dist/script
+#= require script/dist/script
 
 
 #= require ./../services/session

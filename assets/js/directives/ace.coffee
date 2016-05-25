@@ -1,6 +1,6 @@
-#= require ./../../vendor/ace/src/ace
-#= require ./../../vendor/ace/src/ext-language_tools
-#= require ./../../vendor/ace/src/ext-searchbox
+#= require ace/src/ace
+#= require ace/src/ext-language_tools
+#= require ace/src/ext-searchbox
 
 #= require ./../services/session
 #= require ./../services/modes

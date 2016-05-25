@@ -1,11 +1,11 @@
-#= require ./../../vendor/tern/node_modules/acorn/acorn
-#= require ./../../vendor/tern/node_modules/acorn/acorn_loose
-#= require ./../../vendor/tern/node_modules/acorn/util/walk
+#= require tern/node_modules/acorn/acorn
+#= require tern/node_modules/acorn/acorn_loose
+#= require tern/node_modules/acorn/util/walk
 
-#= require ./../../vendor/tern/lib/tern
-#= require ./../../vendor/tern/lib/def
-#= require ./../../vendor/tern/lib/jsdoc
-#= require ./../../vendor/tern/lib/infer
+#= require tern/lib/tern
+#= require tern/lib/def
+#= require tern/lib/jsdoc
+#= require tern/lib/infer
 
 module = angular.module "plunker.tern", [
 ]

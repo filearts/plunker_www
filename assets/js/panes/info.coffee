@@ -1,4 +1,4 @@
-#= require ./../../vendor/script/dist/script
+#= require script/dist/script
 
 #= require ./../services/panes
 #= require ./../services/session
@@ -9,7 +9,7 @@
 #= require ./../directives/markdown
 #= require ./../directives/timeago
 
-#= require ./../../vendor/jquery.autosize/jquery.autosize
+#= require jquery.autosize/jquery.autosize
 
 
 module = angular.module("plunker.panes")

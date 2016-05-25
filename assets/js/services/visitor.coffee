@@ -1,4 +1,4 @@
-#= require ./../../vendor/jquery.cookie/jquery.cookie
+#= require jquery.cookie/jquery.cookie
 
 #= require ./../services/url
 #= require ./../services/notifier

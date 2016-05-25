@@ -1,4 +1,4 @@
-#= require ./../../vendor/bootstrap/js/bootstrap-alert.js
+#= require bootstrap/js/bootstrap-alert.js
 
 #= require ./../services/session
 

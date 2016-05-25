@@ -41,7 +41,11 @@ staticOptions =
   maxAge: 1000 * 60 * 60 * 24 * 7
   
 assetOptions =
-  src: "#{__dirname}/assets"
+  paths: [
+    "#{__dirname}/assets/js"
+    "#{__dirname}/assets/css"
+    "#{__dirname}/assets/vendor"
+  ]
   buildDir: "build"
   buildFilenamer: (filename) ->
     dir = path.dirname(filename)

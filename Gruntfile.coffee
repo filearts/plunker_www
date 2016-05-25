@@ -75,7 +75,7 @@ module.exports = (grunt) ->
           '<%=build.dest%>/js/embed-min.js': ['<%=build.dest%>/js/embed.js']
     
     exec:
-      editor: 'coffee build.coffee'
+      editor: 'NODE_ENV=production node build.js'
 
   # load plugins
   grunt.loadNpmTasks 'grunt-contrib-less'

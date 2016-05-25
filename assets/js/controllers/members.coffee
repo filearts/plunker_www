@@ -1,6 +1,6 @@
-#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
+#= require ui-bootstrap/ui-bootstrap-tpls-0.3.0
 
-#= require ./../../vendor/script/dist/script
+#= require script/dist/script
 
 
 #= require ./../services/users

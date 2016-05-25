@@ -1,6 +1,6 @@
-#= require ./../../vendor/dominatrix
+#= require dominatrix
 
-#= require ./../../vendor/semver/semver
+#= require semver/semver
 
 #= require ./../services/catalogue
 #= require ./../services/settings

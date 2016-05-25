@@ -1,4 +1,4 @@
-#= require ./../../vendor/semver/semver
+#= require semver/semver
 
 #= require ./../services/url
 #= require ./../services/visitor

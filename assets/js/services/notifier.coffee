@@ -1,7 +1,7 @@
-#= require ./../../vendor/noty/js/noty/jquery.noty
-#= require ./../../vendor/noty/js/noty/layouts/bottomRight
-#= require ./../../vendor/noty/js/noty/layouts/center
-#= require ./../../vendor/noty/js/noty/themes/default
+#= require noty/js/noty/jquery.noty
+#= require noty/js/noty/layouts/bottomRight
+#= require noty/js/noty/layouts/center
+#= require noty/js/noty/themes/default
 
 
 module = angular.module("plunker.notifier", [])

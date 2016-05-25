@@ -22,7 +22,7 @@
         font-size: 20px;
       }
     </style>
-    <script src="../vendor/lab2.min.js"></script>
+    <script src="lab2.min.js"></script>
     <script type="text/javascript">
       var start = (+new Date),
           onloadTime = 0,
@@ -33,9 +33,9 @@
 
       $LAB
       // load a bunch of libraries
-      .script('../vendor/yui-utilities.js?' + start)
-      .script('../vendor/jquery.js?' + start)
-      .script('../vendor/mootools.js?' + start).wait(function () {
+      .script('yui-utilities.js?' + start)
+      .script('jquery.js?' + start)
+      .script('mootools.js?' + start).wait(function () {
         YAHOO.util.Dom.get('yui').innerHTML = '✓';
         $('#jquery').html('✓');
         document.id('mootools').innerHTML = '✓';
@@ -46,7 +46,7 @@
   <body>
     <h1>Benchmark Test</h1>
     <div id="ready">
-      <img src="../vendor/bird.png">
+      <img src="bird.png">
       <p>window.onload time: <span id="window-ms">0</span>ms</p>
       <ul>
         <li>YUI: <span id="yui"></span></li>

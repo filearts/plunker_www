@@ -1,5 +1,5 @@
-#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
-#= require ./../../vendor/jquery.lazyload/jquery.lazyload
+#= require ui-bootstrap/ui-bootstrap-tpls-0.3.0
+#= require jquery.lazyload/jquery.lazyload
 
 #= require ./../services/quickview
 #= require ./../services/url
@@ -10,7 +10,7 @@
 #= require ./../directives/taglist
 #= require ./../directives/markdown
 
-#= require ./../../vendor/jquery-timeago/jquery.timeago
+#= require jquery-timeago/jquery.timeago
 
 module = angular.module "plunker.card", [
   "plunker.inlineuser"
