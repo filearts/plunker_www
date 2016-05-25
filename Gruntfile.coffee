@@ -91,5 +91,5 @@ module.exports = (grunt) ->
 
   grunt.registerTask 'default', ['compile', 'watch']
   grunt.registerTask 'compile', ['browserify:development', 'less:development']
-  grunt.registerTask 'build', ['exec:editor', 'browserify:production', 'uglify', 'less:production']
+  grunt.registerTask 'build', ['exec:editor', 'less:production']
   grunt.registerTask 'release', ['bump', 'build']
