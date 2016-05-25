@@ -8,7 +8,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "build": "coffee build.coffee",
+    "build": "node build.js",
     "release": "grunt release"
   },
   "engines": {
