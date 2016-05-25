@@ -331,7 +331,8 @@ module.directive "plunkerAce", ["$timeout", "$q", "session", "settings", "activi
     $aceEl = $el.find(".plunker-ace-canvas").get(0)
 
     controller.editor = new Editor(new Renderer($aceEl, "ace/theme/#{settings.editor.theme || 'textmate'}"))
-
+    controller.editor.$blockScrolling = Infinity
+  
     controller.bindKeys(settings.editor.keyboard_handler)
     controller.setupAutocomplete()
     
