@@ -27,7 +27,7 @@ module.run [ "$q", "$timeout", "panes", "url", "updater", "session", "catalogue"
     icon: "book"
     size: "50%"
     order: 300
-    title: "Find and external libraries"
+    title: "Find and add external libraries"
     description: """
       Find external libraries and add them to your plunk.
     """
