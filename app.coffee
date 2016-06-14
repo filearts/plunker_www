@@ -120,14 +120,14 @@ app.all "/edit/", addSession, (req, res, next) ->
   if "OPTIONS" == req.method then res.send(200)
   else next()
 
-app.post "/edit/", addSession, (req, res, next) ->    
+app.post "/edit/:plunkId?", addSession, maybeLoadPlunk, (req, res, next) ->    
   res.header "X-XSS-Protection", 0
   
   bootstrap =
-    description: req.body.description or ""
-    tags: req.body.tags or []
+    description: req.body.description or if req.plunk then req.plunk.description else ""
+    tags: req.body.tags or if req.plunk then req.plunk.tags else []
     files: {}
-    'private': req.body.private != "false"
+    'private': (req.body.private or if req.plunk then req.plunk.private else true) != "false"
 
   if req.body.files
     for filename, file of req.body.files

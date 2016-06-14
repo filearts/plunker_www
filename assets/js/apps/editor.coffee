@@ -58,6 +58,11 @@ module.config ["$routeProvider", ($routeProvider) ->
         if source = $route.current.params.source
           unless source is session.getEditPath()
             importer.import(source).then (json) ->
+              if _plunker.bootstrap
+                json.description = _plunker.bootstrap.description if _plunker.bootstrap.description
+                json.tags = _plunker.bootstrap.tags if _plunker.bootstrap.tags
+                json.files = _plunker.bootstrap.files if _plunker.bootstrap.files
+              
               json.source = source
               json
             , (error) ->
