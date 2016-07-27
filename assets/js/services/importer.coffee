@@ -44,7 +44,7 @@ githubRegex = ///
     |
       gist\:
     )
-    ([0-9]+|[0-9a-z]{20}) # Gist ID
+    ([0-9]+|[0-9a-z]+)    # Gist ID
     (?:#.+)?              # Optional anchor
     \s*                   # Trailing whitespace
   $
