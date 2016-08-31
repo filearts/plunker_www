@@ -16,7 +16,7 @@ module = angular.module "plunker.toolbar", [
   "plunker.panes"
   "plunker.url"
   "plunker.beautifier"
-  
+
   "angularytics"
   "ui.bootstrap"
 ]
@@ -148,25 +148,25 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
     $scope.visitor = visitor
     $scope.url = url
     $scope.beautifier = beautifier
-    
+
     $scope.promptReset = ->
       if session.isDirty() and not session.skipDirtyCheck then notifier.confirm "You have unsaved changes. This action will reset your plunk. Are you sure you would like to proceed?",
         confirm: -> session.reset()
       else session.reset()
-    
+
     $scope.promptDestroy = ->
       notifier.confirm "Confirm Deletion", "Are you sure that you would like to delete this plunk?",
-        confirm: -> session.destroy()          
-    
+        confirm: -> session.destroy()
+
     $scope.triggerDownload = ->
       downloader.download session.toJSON(), if session.plunk?.id then "plunk-#{session.plunk.id}.zip" else "plunk.zip"
-    
+
     $scope.toggleFavorite = ->
       if session.plunk then session.plunk.star()
-    
+
     $scope.toggleRemembered = ->
       if session.plunk then session.plunk.remember()
-    
+
     $scope.togglePreview = ->
       previewer = panes.findById("preview")
       panes.toggle(previewer)
