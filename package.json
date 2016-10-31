@@ -1,12 +1,13 @@
 {
-  "name": "plunker-www",
-  "subdomain": "plunker-www",
+  "name": "plunker-legacy-www",
+  "subdomain": "plunker-legacy-www",
   "domains": [
     "plnkr.co",
     "plunker.co"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "docker:build": "docker build -t gcr.io/$(gcloud config list project --format 'value(core.project)' 2> /dev/null)/$(node -e 'var p=require(\"./package.json\");console.log(`${p.name}:${p.version}`)') .",
+    "docker:push": "gcloud docker push gcr.io/$(gcloud config list project --format 'value(core.project)' 2> /dev/null)/$(node -e 'var p=require(\"./package.json\");console.log(`${p.name}:${p.version}`)')",
     "start": "node server.js",
     "build": "NODE_ENV=production grunt build",
     "release": "grunt release"
@@ -15,7 +16,7 @@
     "node": "0.10.x",
     "npm": "2.x"
   },
-  "version": "0.11.4",
+  "version": "0.11.5",
   "private": true,
   "description": "The code powering the public facing component of http://plnkr.co",
   "main": "server.js",
