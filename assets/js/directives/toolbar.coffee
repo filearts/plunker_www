@@ -81,9 +81,7 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
               <li><a href="/edit/tpl:CR2TtS1zz9wFGgsl5z2c">1.5.x</a></li>
               <li><a href="/edit/tpl:qvZ8Iri6jRUioBEDsa32">1.5.x + Typescript</a></li>
               <li class="divider"></li>
-              <li><a href="/edit/tpl:BrUl7z1vvZBGWBfSGS8D">2.0.x (ES6)</a></li>
-              <li><a href="/edit/tpl:XmZkHzl407z93R5Kf0pv">2.0.x (ES5)</a></li>
-              <li><a href="/edit/tpl:AvJOMERrnz94ekVua0u5">2.0.x (TS)</a></li>
+              <li><a href="/edit/tpl:AvJOMERrnz94ekVua0u5">2.0.x</a></li>
             </ul>
           </li>
           <li class="divider"></li>
