@@ -75,8 +75,8 @@ module.factory "notifier", [ "$rootScope", ($rootScope) ->
               $rootScope.$apply(options.deny)
           ]
 
-      options.title = he.encode(title)
-      options.text = he.encode(text)
+      options.title = he.encode(options.title) if options.title
+      options.text = he.encode(options.text) if options.text
 
       noty(options)
 
