@@ -65,7 +65,7 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
           <li><a href="/edit/gist:2006604">jQuery UI</a></li>
           <li class="divider"></li>
           <li class="dropdown-submenu">
-            <a tabindex="-1" href="#">Angular</a>
+            <a tabindex="-1" href="#" title="Angular 1.x">AngularJS</a>
             <ul class="dropdown-menu">
               <li><a href="/edit/gist:3510140">1.0.x<a href="/edit/gist:3189582" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
               <li><a href="/edit/gist:5301635">1.0.x + Jasmine</a></li>
@@ -80,10 +80,9 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
               <li class="divider"></li>
               <li><a href="/edit/tpl:CR2TtS1zz9wFGgsl5z2c">1.5.x</a></li>
               <li><a href="/edit/tpl:qvZ8Iri6jRUioBEDsa32">1.5.x + Typescript</a></li>
-              <li class="divider"></li>
-              <li><a href="/edit/tpl:AvJOMERrnz94ekVua0u5">2.0.x</a></li>
             </ul>
           </li>
+          <li><a href="/edit/tpl:AvJOMERrnz94ekVua0u5" title="Just Angular">Angular</a></li>
           <li class="divider"></li>
           <li class="dropdown-submenu">
             <a tabindex="-1" href="#">React.js</a>
