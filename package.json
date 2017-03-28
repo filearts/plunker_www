@@ -13,7 +13,7 @@
     "release": "grunt release"
   },
   "engines": {
-    "node": "0.10.x",
+    "node": "4.8.x",
     "npm": "2.x"
   },
   "version": "0.11.8",
