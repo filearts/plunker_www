@@ -98,7 +98,7 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
           <li class="divider"></li>
           <li><a href="/edit/gist:3510115">YUI</a></li>
           <li class="divider"></li>
-          <li><a href="/edit/tpl:tyvqGwgayf3COZGsB81s">KendoUI</a></li>
+          <li><a href="/edit/tpl:ajm0hzObeid6Kb1aE1Ih">KendoUI</a></li>
         </ul>
       </div>
       <div class="btn-group">
