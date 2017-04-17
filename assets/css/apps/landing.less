@@ -83,19 +83,24 @@ body {
   background: url('/img/plunker.png') no-repeat;
   background-size: 40px 40px;
   background-position: 20px center;
-  
+
   padding-left: 60px !important;
-  
+
   .version {
     font-size: 50%;
     color: #ccc;
   }
 }
 
+.hero-unit .actions {
+  display: flex;
+  flex-direction: row;
+}
+
 @media (max-width: 767px) {
   .navbar .brand {
     padding-right: 8px;
-    
+
     .brandname {
       margin-left: -999px;
     }
@@ -106,10 +111,10 @@ body {
   width: 100%;
   background-color: #f9f9f9;
   box-shadow: 0px 10px 10px -10px rgba(0,0,0,0.4) inset;
-  
+
   .row {
     font-size: 80%;
-    
+
     p {
       margin-top: 10px;
     }

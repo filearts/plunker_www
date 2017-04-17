@@ -47,10 +47,10 @@ module.run [ "$timeout", "panes", "session", "activity", "url", ($timeout, panes
         <plunker-taglist tags="session.plunk.tags" ng-show="tags.length"></plunker-taglist>
         <p></p>
         <div class="info-ad" ng-show="adcode">
-          <div id="carbonads-container">
-            <div class="carbonad">
-              <div id="azcarbon"></div>
-            </div>
+          <div align="center" id="div-gpt-ad-300x250">
+            <script data-cfasync="false" type='text/javascript'>
+              freestar.queue.push(function () { googletag.display('div-gpt-ad-300x250'); });
+            </script>
           </div>
         </div>
         <div class="info-readme" ng-show="session.plunk.getReadme()" markdown="session.plunk.getReadme()">
@@ -78,17 +78,17 @@ module.run [ "$timeout", "panes", "session", "activity", "url", ($timeout, panes
     """
     link: ($scope, $el, attrs) ->
       pane = @
-      
+
       $scope.$watch ( -> pane.active), (active) ->
         if active and !$scope.adcode and url.carbonadsH
           $scope.adcode = true
           $timeout -> $script(url.carbonadsH)
-    
+
       $scope.session = session
-      
+
       $scope.$watch "session.plunk.id", (id) ->
         pane.hidden = !id
-      
+
       $textarea = $(".plunker-comment-box textarea", $el).autosize(append: "\n").css("height", "24px")
       $textarea.on "blur", -> $textarea.css("height", "24px")
       $textarea.on "focus", -> $textarea.trigger "autosize"
