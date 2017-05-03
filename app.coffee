@@ -34,12 +34,13 @@ expstate.extend(app)
 github = authom.createServer
   service: "github"
   id: nconf.get("oauth:github:id")
+  redirect_uri: "https:" + nconf.get("url:www").replace(/^https?:/, '')
   secret: nconf.get("oauth:github:secret")
   scope: ["gist"]
-  
-staticOptions = 
+
+staticOptions =
   maxAge: 1000 * 60 * 60 * 24 * 7
-  
+
 assetOptions =
   paths: [
     "#{__dirname}/assets/js"
@@ -51,7 +52,7 @@ assetOptions =
     dir = path.dirname(filename)
     ext = path.extname(filename)
     base = path.basename(filename, ext)
-    
+
     return path.join dir, "#{base}-#{pkginfo.version}#{ext}"
   helperContext: app.locals
 
@@ -79,7 +80,7 @@ if nconf.get("NODE_ENV") is "production"
 else
   console.log "Starting Plunker in: DEVELOPMENT"
   app.use assets(assetOptions)
-  
+
 app.use cookieParser()
 app.use bodyParser.urlencoded(limit: "2mb", extended: true)
 app.use bodyParser.json(limit: "2mb")
@@ -91,7 +92,7 @@ app.expose null, "_plunker.bootstrap"
 app.use (req, res, next) ->
   res.locals.url = nconf.get("url")
   next()
-    
+
 app.use require("./middleware/subdomain").middleware()
 
 addSession = require("./middleware/session").middleware()
@@ -102,14 +103,14 @@ maybeLoadPlunk = require('./middleware/maybeLoadPlunk').middleware({
 
 app.get "/partials/:partial", (req, res, next) ->
   res.render "partials/#{req.params.partial}"
-  
+
 app.get "/edit/:plunkId", addSession, maybeLoadPlunk, (req, res, next) ->
   res.locals.plunk = req.plunk
   res.render "editor"
 
 app.get "/edit/*", addSession, (req, res, next) ->
   res.render "editor"
-  
+
 app.all "/edit/", addSession, (req, res, next) ->
   res.header("Access-Control-Allow-Origin", req.headers.origin or "*")
   res.header("Access-Control-Allow-Methods", "OPTIONS,GET,PUT,POST,DELETE")
@@ -120,9 +121,9 @@ app.all "/edit/", addSession, (req, res, next) ->
   if "OPTIONS" == req.method then res.send(200)
   else next()
 
-app.post "/edit/:plunkId?", addSession, maybeLoadPlunk, (req, res, next) ->    
+app.post "/edit/:plunkId?", addSession, maybeLoadPlunk, (req, res, next) ->
   res.header "X-XSS-Protection", 0
-  
+
   bootstrap =
     description: req.body.description or if req.plunk then req.plunk.description else ""
     tags: req.body.tags or if req.plunk then req.plunk.tags else []
@@ -134,7 +135,7 @@ app.post "/edit/:plunkId?", addSession, maybeLoadPlunk, (req, res, next) ->
       bootstrap.files[filename] =
         filename: filename
         content: if typeof file is "string" then file else file.content or ""
-      
+
   res.expose bootstrap, "_plunker.bootstrap"
   res.render "editor"
 
@@ -144,7 +145,7 @@ app.all "/edit", addSession, (req, res, next) -> res.redirect("/edit/", 302)
 
 app.get "/auth/:service", addSession, (req, res, next) ->
   req.headers.host = nconf.get("host")
-  
+
   authom.app(arguments...)
 
 
@@ -158,35 +159,35 @@ authom.on "error", (req, res, auth) ->
   res.expose auth, "_plunker.auth"
   res.status(403)
   res.render "auth/error"
-  
+
 # /////////////////////////////////
 
 localsMiddleware = (req, res, next) ->
   res.locals.timestamp = ""
   res.locals.suffix = "-min"
-  
+
   if process.env.NODE_ENV is "development"
     res.locals.timestamp = Date.now()
     res.locals.suffix = ""
-  
+
   next()
 
 
 app.get "/sitemap.xml", (req, res) ->
   outstanding = 0
-  
+
   urlset = xmlbuilder.create "urlset",
     version: "1.0"
     encoding: "UTF-8"
-  
+
   urlset.attribute "xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9"
-  
+
   finalize = ->
     res.set('Content-Type', 'application/xml')
     res.send(urlset.end())
-  
+
   complete = -> finalize() unless --outstanding > 0
-  
+
   outstanding++
   plunks = request("#{apiUrl}/plunks?pp=40000").pipe(JSONStream.parse([true])).pipe es.mapSync (plunk) ->
     url = urlset.ele("url")
@@ -194,9 +195,9 @@ app.get "/sitemap.xml", (req, res) ->
     url.ele("lastmod").text(plunk.updated_at).up()
     url.ele("changefreq").text("daily").up()
     url.up()
-  
+
   plunks.on "end", complete
-  
+
 
 app.get "/catalogue", addSession, (req, res) -> res.render "packages"
 app.get "/catalogue/*", addSession, (req, res) -> res.render "packages"
@@ -215,9 +216,9 @@ hbs.registerHelper "syntaxHilightCode", () ->
   syntaxMode = modelist.getModeForPath(this.filename)
   syntaxMode = if syntaxMode then syntaxMode.mode else 'ace/mode/text'
   Mode = require('ace/lib/' + syntaxMode).Mode
-  
+
   rendered = highlighter.renderSync this.content, new Mode, theme
-  
+
   return new hbs.SafeString(rendered.html)
 
 app.get "/embed/:plunkId*", localsMiddleware, maybeLoadPlunk, (req, res) ->
