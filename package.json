@@ -6,17 +6,19 @@
     "plunker.co"
   ],
   "scripts": {
-    "docker:build": "docker build -t gcr.io/$(gcloud config list project --format 'value(core.project)' 2> /dev/null)/$(node -e 'var p=require(\"./package.json\");console.log(`${p.name}:${p.version}`)') .",
-    "docker:push": "gcloud docker push gcr.io/$(gcloud config list project --format 'value(core.project)' 2> /dev/null)/$(node -e 'var p=require(\"./package.json\");console.log(`${p.name}:${p.version}`)')",
+    "docker:build": "gcloud docker -- build -t gcr.io/$(gcloud config list project --format 'value(core.project)' 2> /dev/null)/$(node -e 'var p=require(\"./package.json\");console.log(`${p.name}:${p.version}`)') .",
+    "docker:push": "gcloud docker -- push gcr.io/$(gcloud config list project --format 'value(core.project)' 2> /dev/null)/$(node -e 'var p=require(\"./package.json\");console.log(`${p.name}:${p.version}`)')",
     "start": "node server.js",
     "build": "NODE_ENV=production grunt build",
-    "release": "grunt release"
+    "release": "grunt release",
+    "version": "npm run build",
+    "postversion": "npm run docker:build && npm run docker:push"
   },
   "engines": {
     "node": "4.8.x",
     "npm": "2.x"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "The code powering the public facing component of http://plnkr.co",
   "main": "server.js",
