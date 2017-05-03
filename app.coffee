@@ -34,7 +34,7 @@ expstate.extend(app)
 github = authom.createServer
   service: "github"
   id: nconf.get("oauth:github:id")
-  redirect_uri: "https:" + nconf.get("url:www").replace(/^https?:/, '')
+  redirect_uri: "https:" + nconf.get("url:www").replace(/^https?:/, '') + "/auth/github"
   secret: nconf.get("oauth:github:secret")
   scope: ["gist"]
 
