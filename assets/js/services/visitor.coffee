@@ -43,6 +43,8 @@ module.factory "visitor", ["$http", "$rootScope", "$window", "url", "notifier", 
 
       $window.addEventListener 'message', (message) =>
         if (typeof message.data == 'string' and matches = message.data.match(/^plunker\.auth\.(.*)/))
+          if @loginWindow
+            @loginWindow = null
           try
             origin = (message.origin || message.originalEvent.origin).replace(/^https?:/, '')
 
