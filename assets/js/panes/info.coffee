@@ -24,8 +24,6 @@ module.requires.push "plunker.timeago"
 
 module.run [ "$timeout", "panes", "session", "activity", "url", ($timeout, panes, session, activity, url) ->
 
-  adGen = 0
-
   panes.add
     id: "info"
     icon: "dashboard"
@@ -77,22 +75,10 @@ module.run [ "$timeout", "panes", "session", "activity", "url", ($timeout, panes
     link: ($scope, $el, attrs) ->
       pane = @
 
-      $scope.adId = 'freestar-info-' + (adGen++)
-
-      # $scope.$watch ( -> pane.active), (active) ->
-      #   if active and !$scope.adcode and url.carbonadsH
-      #     $scope.adcode = true
-      #     $timeout -> $script(url.carbonadsH)
-      #   if active and $scope.adcode
-      #     $timeout ->
-
       $scope.session = session
 
       $scope.$watch "session.plunk.id", (id) ->
-        pane.hidden = false# || !id
-
-      # $scope.$watch "adcode", adcode ->
-      #   freestar.queue.push(() -> googletag.display(
+        pane.hidden = !id
 
       $textarea = $(".plunker-comment-box textarea", $el).autosize(append: "\n").css("height", "24px")
       $textarea.on "blur", -> $textarea.css("height", "24px")
@@ -106,8 +92,6 @@ module.directive 'plunkerAd', [() ->
   replace: false
   link: ($cope, $el, $attrs) ->
     adId = 'plnkr-ad-' + adGen++
-
-    console.log('setting innerHtml', $el[0])
 
     $el[0].innerHTML = """
       <div align="center" id="div-gpt-ad-300x250">
