@@ -15,6 +15,10 @@ html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editor
     base(href="/edit/")
     title Plunker
     != css("apps/editor")
+    script(data-cfasync="false")
+        !function(a,b){var c=b.getElementsByTagName("script")[0],d=b.createElement("script"),e="https://pub.freestar.io/plnkr/";e+=window.location.search.indexOf("fsdebug")==-1?"pubfig.min.js":"pubfig.js",d.async=!0,d.src=e,c.parentNode.insertBefore(d,c)}(window,document);
+        window.freestar = window.freestar || {};
+        window.freestar.queue = window.freestar.queue || [];
     // if lt IE 9
       script(src="http://html5shim.googlecode.com/svn/trunk/html5.js")
     // if lte IE 8
@@ -37,18 +41,18 @@ html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editor
       })
     script(src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js")
     // script(src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.3/angular.js")
-    
+
     script
       <!--
       !{state.toString().replace(/<\//g,"<\\/").replace(/-->/g, "--\\>")}
       -->
-      
+
     != js("apps/editor")
     script
       var _gaq = _gaq || [];
       _gaq.push(['_setAccount', 'UA-28928507-1']);
       _gaq.push(['_trackPageview']);
-    
+
       (function() {
         var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
         ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
@@ -58,7 +62,7 @@ html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editor
       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-    
+
       ga('create', 'UA-28928507-5', 'plnkr.co');
 
     script(type="text/javascript", src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-4f60c7714e5b5629", async="async")

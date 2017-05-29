@@ -64,20 +64,20 @@ generateRouteHandler = (filter, options = {}) ->
     reloadOnSearch: true
     controller: ["$rootScope", "$scope", "$injector", "menu", "filtered", ($rootScope, $scope, $injector, menu, filtered) ->
       $rootScope.page_title = "Explore"
-      
+
       $scope.plunks = filtered
       $scope.filters = filters
       $scope.activeFilter = filters[filter]
-      
+
       menu.activate "plunks" unless options.skipActivate
-      
+
       $injector.invoke(options.initialize) if options.initialize
     ]
   , options
 
 module.config ["$routeProvider", ($routeProvider) ->
   initialLoad = [ "url", (url) -> $script(url.carbonadsH) if url.carbonadsH ]
-  
+
   $routeProvider.when "/", generateRouteHandler("trending", {templateUrl: "partials/landing.html", skipActivate: true, initialize: initialLoad})
   $routeProvider.when "/plunks", generateRouteHandler("trending")
   $routeProvider.when "/plunks/#{view}", generateRouteHandler(view) for view, viewDef of filters
@@ -95,29 +95,30 @@ module.run ["$templateCache", ($templateCache) ->
   $templateCache.put "partials/explore.html", """
     <div class="container">
       <plunker-pager class="pull-right" collection="plunks"></plunker-pager>
-      
+
       <ul class="nav nav-pills pull-left">
         <li ng-repeat="(name, filter) in filters | orderBy:'order'" ng-class="{active: filter == activeFilter}">
           <a ng-href="{{filter.href}}" ng-bind="filter.text"></a>
         </li>
       </ul>
-    
+
       <div class="row">
         <div class="span12">
           <plunker-gallery plunks="plunks"></plunker-gallery>
         </div>
       </div>
-    
+
       <plunker-pager class="pagination-right" collection="plunks"></plunker-pager>
     </div>
   """
-  
+
   $templateCache.put "partials/landing.html", """
     <div class="container plunker-landing">
+
       <div class="hero-unit">
         <h1>
           Plunker
-          <small>Helping developers make the web</small>  
+          <small>Helping developers make the web</small>
         </h1>
         <p class="description">
           Plunker is an online community for creating, collaborating on and sharing your web development ideas.
@@ -150,15 +151,6 @@ module.run ["$templateCache", ($templateCache) ->
           </ul>
         </div>
         <div class="span4">
-          <h4>Advertisement</h4>
-          <div id="carbonads-container">
-            <div class="carbonad">
-              <div id="azcarbon"></div>
-            </div>
-          </div>
-          <a target="_blank" href="https://carbonads.net/dev_code.php">Advertise here</a>
-        </div>
-        <div class="span4">
           <h4>Features</h4>
           <ul>
             <li>Real-time code collaboration</li>
@@ -170,28 +162,35 @@ module.run ["$templateCache", ($templateCache) ->
             <li>And many more to come...</li>
           </ul>
         </div>
+        <div class="span4">
+          <div align="center" id="div-gpt-ad-300x250">
+            <script data-cfasync="false" type='text/javascript'>
+              freestar.queue.push(function () { googletag.display('div-gpt-ad-300x250'); });
+            </script>
+          </div>
+        </div>
 
-    
+
       </div>
-      
+
       <div class="page-header">
         <h1>See what users have been creating</h1>
       </div>
-      
+
       <plunker-pager class="pull-right" path="/plunks/" collection="plunks"></plunker-pager>
-      
+
       <ul class="nav nav-pills pull-left">
         <li ng-repeat="(name, filter) in filters | orderBy:'order'" ng-class="{active: filter == activeFilter}">
           <a ng-href="{{filter.href}}" ng-bind="filter.text"></a>
         </li>
       </ul>
-    
+
       <div class="row">
         <div class="span12">
           <plunker-gallery plunks="plunks"></plunker-gallery>
         </div>
       </div>
-    
+
       <plunker-pager class="pagination-right" path="/plunks/" collection="plunks"></plunker-pager>
     </div>
   """
