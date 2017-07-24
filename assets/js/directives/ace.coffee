@@ -279,7 +279,7 @@ module.directive "plunkerAce", ["$timeout", "$q", "session", "settings", "activi
           enableBasicAutocompletion: true
           enableSnippets: true
       
-      $q.all([@loadModule("ace/ext/emmet"), @loadScript("https://nightwing.github.io/emmet-core/emmet.js")]).then ([module]) =>
+      $q.all([@loadModule("ace/ext/emmet"), @loadScript("/js/vendor/emmet.js")]).then ([module]) =>
         module.setCore(window.emmet)
         @editor.setOption "enableEmmet", true
 
