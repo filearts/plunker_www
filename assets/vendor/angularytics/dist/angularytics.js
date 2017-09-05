@@ -18,10 +18,11 @@
       pageChangeEvent = newPageChangeEvent;
     };
     this.$get = [
+      '$browser',
       '$injector',
       '$rootScope',
       '$location',
-      function ($injector, $rootScope, $location) {
+      function ($browser, $injector, $rootScope, $location) {
         var eventHandlers = [];
         angular.forEach(eventHandlersNames, function (handler) {
           eventHandlers.push($injector.get('Angularytics' + handler + 'Handler'));
@@ -49,7 +50,9 @@
           });
         };
         $rootScope.$on(pageChangeEvent, function () {
-          service.trackPageView($location.url());
+          var baseHref = $browser.baseHref();
+          var prefix = baseHref ? baseHref.slice(0, baseHref.length - 1) : '';
+          service.trackPageView(prefix  + $location.url());
         });
         return service;
       }

@@ -6,19 +6,20 @@
     "plunker.co"
   ],
   "scripts": {
+    "build": "NODE_ENV=production grunt build",
     "docker:build": "gcloud docker -- build -t gcr.io/$(gcloud config list project --format 'value(core.project)' 2> /dev/null)/$(node -e 'var p=require(\"./package.json\");console.log(`${p.name}:${p.version}`)') .",
     "docker:push": "gcloud docker -- push gcr.io/$(gcloud config list project --format 'value(core.project)' 2> /dev/null)/$(node -e 'var p=require(\"./package.json\");console.log(`${p.name}:${p.version}`)')",
-    "start": "node server.js",
-    "build": "NODE_ENV=production grunt build",
+    "k8s:update": "sed -i '' \"s~\\(image: gcr\\.io/plunker-api/$(node -p 'require(\"./package.json\").name')\\):.*\\$~\\1:$(node -p 'require(\"./package.json\").version')~\" ./k8s/$(node -p 'require(\"./package.json\").name')-deploy.yaml",
     "release": "grunt release",
-    "version": "npm run build",
-    "postversion": "npm run docker:build && npm run docker:push"
+    "start": "node server.js",
+    "version": "npm run docker:build && npm run docker:push && npm run k8s:update",
+    "postversion": "kubectl apply -f ./k8s"
   },
   "engines": {
     "node": "4.8.x",
     "npm": "2.x"
   },
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "The code powering the public facing component of http://plnkr.co",
   "main": "server.js",
