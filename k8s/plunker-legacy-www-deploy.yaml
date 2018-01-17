@@ -2,6 +2,8 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: plunker-legacy-www
+  annotations:
+    kubernetes.io/change-cause: '1.2.4'
 spec:
   replicas: 2
   strategy:

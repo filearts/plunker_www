@@ -204,7 +204,7 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
       </details>
       <div class="filler"></div>
       <a class="ag-grid-banner"
-        href="https://www.ag-grid.com/ag-grid-supporting-plunker?utm_source=plunker&utm_medium=banner&utm_campaign=partnership"
+        href="https://www.ag-grid.com/ag-grid-proud-to-support-plunker/?utm_source=plunker&utm_medium=banner&utm_campaign=partnership"
         target="_blank"
         rel="noopener nofollow">
         <img src="/img/ag-grid-logo.svg">
