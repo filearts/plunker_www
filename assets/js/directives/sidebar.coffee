@@ -55,22 +55,22 @@ module.directive "plunkerSidebarFile", [ "notifier", "session", (notifier, sessi
   """
   link: ($scope, $el, attrs) ->
     buffer = $scope.buffer
-    
+
     $scope.$watch ( -> session.isDirty(["buffers", buffer.id])), (dirty) ->
       $scope.dirty = dirty and Date.now()
       $scope.changed = dirty and not $scope.active
-    
+
     $scope.$watch ( -> session.getActiveBuffer() == buffer), (active) ->
       $scope.active = active and Date.now()
       $scope.changed = false
-    
+
     $scope.activateBuffer = (buffer) ->
       session.activateBuffer(buffer.filename)
-    
+
     $scope.promptFileRename = (buffer) ->
       notifier.prompt "Rename file", buffer.filename,
         confirm: (filename) -> session.renameBuffer(buffer.filename, filename)
-    
+
     $scope.promptFileDelete = (buffer) ->
       notifier.confirm "Confirm Delete", "Are you sure that you would like to delete #{buffer.filename}?",
         confirm: -> session.removeBuffer(buffer.filename)
@@ -85,7 +85,7 @@ module.directive "plunkerTagger", ["$timeout", "url", ($timeout, url) ->
   """
   link: ($scope, element, args, ngModel) ->
     modelChange = false
-    
+
     $select2 = $(element).select2
       tags: []
       minimumInputLength: 1
@@ -95,20 +95,20 @@ module.directive "plunkerTagger", ["$timeout", "url", ($timeout, url) ->
         cb({id: tag, text: tag} for tag in ngModel.$modelValue)
       createSearchChoice: (term, data) ->
         return null for item in data when item.text?.localeCompare(term) == 0
-        
+
         id: term,
         text: term
       query: (query) ->
         $.getJSON "#{url.api}/tags", {q: query.term}, (data) ->
           results = []
           results.push {id: item.tag, text: item.tag} for item in data
-          
+
           query.callback results: results
-    
+
     $select2.on "change", (e) ->
       unless modelChange then $scope.$apply ->
         ngModel.$setViewValue(e.val.join(","))
-    
+
     ngModel.$render = ->
       modelChange = true
       $(element).select2("val", ngModel.$modelValue)
@@ -202,6 +202,15 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
           </div>
         </form>
       </details>
+      <div class="filler"></div>
+      <a class="ag-grid-banner"
+        href="https://www.ag-grid.com/ag-grid-supporting-plunker?utm_source=plunker&utm_medium=banner&utm_campaign=partnership"
+        target="_blank"
+        rel="noopener nofollow">
+        <img src="/static/img/ag-grid-logo.svg">
+        <h4>A proud sponsor of Plunker</h4>
+        <p>The JavaScript DataGrid for Enterprise</p>
+      </a>
     </div>
   """
   link: ($scope, $el, attrs) ->
@@ -213,10 +222,10 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
 
     $scope.revertTo = (rel) ->
       return unless session.isSaved()
-                                    
+
       revert = ->
         overlay.show "Reverting plunk", session.revertTo(rel)
-      
+
       if session.isDirty() then notifier.confirm "You have unsaved changes that will be lost if you revert. Are you sure you would like to revert?",
         confirm: revert
       else revert()
@@ -231,11 +240,11 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
 
     $scope.$watch "session.description", (description) ->
       $desc.trigger("autosize")
-      
+
     $scope.$on "resize", -> $desc.trigger("autosize")
-    
+
     $(".share").on "click", (e) ->
       e.stopPropagation()
       e.preventDefault()
-    
+
 ]

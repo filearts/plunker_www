@@ -43,8 +43,8 @@ module.directive "plunkerEditorLayout", [ "panes", (panes) ->
         spacing_closed: 8
         onresize: -> $scope.$broadcast "resize", arguments...
       west:
-        size: 200
-        minSize: 160
+        size: 250
+        minSize: 200
         maxSize: 320
         onresize: -> $scope.$broadcast "resize", arguments...
       center:
@@ -68,16 +68,16 @@ module.directive "plunkerEditorLayout", [ "panes", (panes) ->
         resizable: false
         spacing_open: 1
         spacing_closed: 1
-    
+
     center = layout.panes.center.layout()
     center.resizers.east.mousedown -> center.showMasks("east")
     center.resizers.east.mouseup -> center.hideMasks("east")
-    
+
     # Watch for changes to the active pane
     $scope.$watch ( -> panes.active ), (pane) ->
       if pane
         center.sizePane("east", pane.size)
         center.open("east")
       else center.close("east")
-      
+
 ]
