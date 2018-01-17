@@ -14,8 +14,7 @@
     "k8s:release": "kubectl apply -f ./k8s && kubectl annotate deployment/$(node -p 'require(\"./package.json\").name') \"kubernetes.io/change-cause=$(node -p 'require(\"./package.json\").version')\" && kubectl rollout status deployment/$(node -p 'require(\"./package.json\").name')",
     "release": "grunt release",
     "start": "node server.js",
-    "version": "grunt build && npm run docker:build && npm run docker:push && npm run k8s:update",
-    "postversion": "npm run k8s:release && npm run git:release"
+    "postversion": "grunt build && npm run docker:build && npm run docker:push && npm run k8s:update && npm run k8s:release && npm run git:release"
   },
   "engines": {
     "node": "4.8.x",
