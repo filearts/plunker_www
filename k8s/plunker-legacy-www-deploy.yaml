@@ -28,7 +28,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
       - name: plunker-legacy-www
-        image: gcr.io/plunker-api/plunker-legacy-www:1.2.3
+        image: gcr.io/plunker-api/plunker-legacy-www:1.2.4
         livenessProbe:
           httpGet:
             path: /
