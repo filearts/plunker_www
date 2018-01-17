@@ -134,83 +134,86 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
   replace: true
   template: """
     <div class="plunker-sidebar">
-      <plunker-restorer></plunker-restorer>
-      <div class="share" ng-switch="session.isSaved()">
-        <div ng-switch-when="true" addthis-toolbox class="addthis_default_style addthis_20x20_style" addthis-description="{{session.description}}">
-          <a target="_self" class="addthis_button_twitter"></a>
-          <a target="_self" class="addthis_button_facebook"></a>
-          <a target="_self" class="addthis_button_google_plusone_share"></a>
-          <a target="_self" class="addthis_button_linkedin"></a>
-          <a target="_self" class="addthis_button_compact"></a>
-        </div>
-      </div>
-      <details open>
-        <summary class="header">Files</summary>
-        <ul class="plunker-filelist nav nav-list">
-          <plunker-sidebar-file buffer="buffer" ng-repeat="buffer in session.getBufferArray() | orderBy:'filename'">
-          </plunker-sidebar-file>
-          <li class="newfile">
-            <a ng-click="promptFileAdd() | trackEvent:'File':'Add':'Sidebar'">
-              <i class="icon-file"></i> New file
-            </a>
-          </li>
-        </ul>
-      </details>
-      <details ng-show="session.isSaved()">
-        <summary class="header">Versions <span class="label" ng-bind="session.plunk.history.length | number"></span></summary>
-        <ul class="plunker-filelist nav nav-list">
-          <li ng-class="{active: $index==session.currentRevisionIndex, frozen: $index==session.plunk.frozen_version}" ng-repeat="event in session.plunk.history | orderBy:'-created_at'">
-            <a ng-click="revertTo($index) | trackEvent:'Plunk':'Revert':'Sidebar'">
-              <i ng-class="event.event | eventIcon"></i>
-              <span ng-bind="event.event | eventName"></span>
-              <abbr timeago="{{event.created_at}}"></abbr>
-              <i class="icon-lock" ng-show="session.plunk.frozen_at && $index==session.plunk.history.length - 1 - session.plunk.frozen_version" tooltip="The plunk is currently frozen at this version" tooltip-placement="right"></i>
-            </a>
-          </li>
-        </ul>
-      </details>
-      <details open>
-        <summary class="header">Plunk</summary>
-        <form>
-          <div>
-            <label for="plunk-description">
-              <div>Description:</div>
-              <textarea id="plunk-description" rows="2" ng-model="session.description"></textarea>
-            </label>
-            <label for="plunk-tags">
-              <div>Tags:</div>
-              <plunker-tagger id="plunker-tags" ng-model="session.tags" />
-            </label>
-            <div ng-show="session.isSaved()">
-              <div>User:</div>
-              <plunker-inline-user user="session.plunk.user"></plunker-inline-user>
-            </div>
-            <div ng-hide="session.isSaved() || !visitor.isMember()">
-              <div>Privacy:</div>
-              <label>
-                <span tooltip="Only users who know the url of the plunk will be able to view it" tooltip-placement="right">
-                  <input type="checkbox" ng-model="session.private" />
-                  private plunk
-                </span>
-              </label>
-            </div>
-            <div ng-show="session.isSaved()">
-              <div>Privacy:</div>
-              <abbr ng-show="session.plunk.private" tooltip-placement="right" tooltip="Only users who know the url of the plunk will be able to view it"><i class="icon-lock"></i> private plunk</abbr>
-              <abbr ng-hide="session.plunk.private" tooltip-placement="right" tooltip="Everyone can see this plunk"><i class="icon-unlock"></i> public plunk</abbr>
-            </div>
+      <div class="plunker-sidebar-scroll">
+        <plunker-restorer></plunker-restorer>
+        <div class="share" ng-switch="session.isSaved()">
+          <div ng-switch-when="true" addthis-toolbox class="addthis_default_style addthis_20x20_style" addthis-description="{{session.description}}">
+            <a target="_self" class="addthis_button_twitter"></a>
+            <a target="_self" class="addthis_button_facebook"></a>
+            <a target="_self" class="addthis_button_google_plusone_share"></a>
+            <a target="_self" class="addthis_button_linkedin"></a>
+            <a target="_self" class="addthis_button_compact"></a>
           </div>
-        </form>
-      </details>
-      <div class="filler"></div>
-      <a class="ag-grid-banner"
-        href="https://www.ag-grid.com/ag-grid-proud-to-support-plunker/?utm_source=plunker&utm_medium=banner&utm_campaign=partnership"
-        target="_blank"
-        rel="noopener nofollow">
-        <img src="/img/ag-grid-logo.svg">
-        <h4>A proud sponsor of Plunker</h4>
-        <p>The JavaScript DataGrid for Enterprise</p>
-      </a>
+        </div>
+        <details open>
+          <summary class="header">Files</summary>
+          <ul class="plunker-filelist nav nav-list">
+            <plunker-sidebar-file buffer="buffer" ng-repeat="buffer in session.getBufferArray() | orderBy:'filename'">
+            </plunker-sidebar-file>
+            <li class="newfile">
+              <a ng-click="promptFileAdd() | trackEvent:'File':'Add':'Sidebar'">
+                <i class="icon-file"></i> New file
+              </a>
+            </li>
+          </ul>
+        </details>
+        <details ng-show="session.isSaved()">
+          <summary class="header">Versions <span class="label" ng-bind="session.plunk.history.length | number"></span></summary>
+          <ul class="plunker-filelist nav nav-list">
+            <li ng-class="{active: $index==session.currentRevisionIndex, frozen: $index==session.plunk.frozen_version}" ng-repeat="event in session.plunk.history | orderBy:'-created_at'">
+              <a ng-click="revertTo($index) | trackEvent:'Plunk':'Revert':'Sidebar'">
+                <i ng-class="event.event | eventIcon"></i>
+                <span ng-bind="event.event | eventName"></span>
+                <abbr timeago="{{event.created_at}}"></abbr>
+                <i class="icon-lock" ng-show="session.plunk.frozen_at && $index==session.plunk.history.length - 1 - session.plunk.frozen_version" tooltip="The plunk is currently frozen at this version" tooltip-placement="right"></i>
+              </a>
+            </li>
+          </ul>
+        </details>
+        <details open>
+          <summary class="header">Plunk</summary>
+          <form>
+            <div>
+              <label for="plunk-description">
+                <div>Description:</div>
+                <textarea id="plunk-description" rows="2" ng-model="session.description"></textarea>
+              </label>
+              <label for="plunk-tags">
+                <div>Tags:</div>
+                <plunker-tagger id="plunker-tags" ng-model="session.tags" />
+              </label>
+              <div ng-show="session.isSaved()">
+                <div>User:</div>
+                <plunker-inline-user user="session.plunk.user"></plunker-inline-user>
+              </div>
+              <div ng-hide="session.isSaved() || !visitor.isMember()">
+                <div>Privacy:</div>
+                <label>
+                  <span tooltip="Only users who know the url of the plunk will be able to view it" tooltip-placement="right">
+                    <input type="checkbox" ng-model="session.private" />
+                    private plunk
+                  </span>
+                </label>
+              </div>
+              <div ng-show="session.isSaved()">
+                <div>Privacy:</div>
+                <abbr ng-show="session.plunk.private" tooltip-placement="right" tooltip="Only users who know the url of the plunk will be able to view it"><i class="icon-lock"></i> private plunk</abbr>
+                <abbr ng-hide="session.plunk.private" tooltip-placement="right" tooltip="Everyone can see this plunk"><i class="icon-unlock"></i> public plunk</abbr>
+              </div>
+            </div>
+          </form>
+        </details>
+      </div>
+      <div class="plunker-sidebar-footer">
+        <a class="ag-grid-banner"
+          href="https://www.ag-grid.com/ag-grid-proud-to-support-plunker/?utm_source=plunker&utm_medium=banner&utm_campaign=partnership"
+          target="_blank"
+          rel="noopener nofollow">
+          <img src="/img/ag-grid-logo.svg">
+          <h4>A proud sponsor of Plunker</h4>
+          <p>The JavaScript DataGrid for Enterprise</p>
+        </a>
+      </div>
     </div>
   """
   link: ($scope, $el, attrs) ->
