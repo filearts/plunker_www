@@ -210,8 +210,9 @@ module.directive "plunkerSidebar", [ "$timeout", "$q", "session", "notifier", "v
           target="_blank"
           rel="noopener nofollow">
           <img src="/img/ag-grid-logo.svg">
-          <h4>A proud sponsor of Plunker</h4>
+          <h4>Plunker is Backed By:</h4>
           <p>The JavaScript DataGrid for Enterprise</p>
+          <span>Read more&hellip;</span>
         </a>
       </div>
     </div>
