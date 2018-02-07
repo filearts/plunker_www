@@ -25,6 +25,17 @@ pkginfo = require("./package.json")
 # Set defaults in nconf
 require "./configure"
 
+apiUrl = nconf.get("url:api")
+embedUrl = nconf.get("url:embed")
+runUrl = nconf.get("url:run")
+wwwUrl = nconf.get("url:www")
+
+
+Plunks = require('./lib/plunks');
+plunks = new Plunks({ apiUrl: apiUrl });
+
+Oembed = require('./lib/oembed');
+oembed = new Oembed({ wwwUrl: wwwUrl });
 
 app = module.exports = express()
 
@@ -55,10 +66,6 @@ assetOptions =
 
     return path.join dir, "#{base}-#{pkginfo.version}#{ext}"
   helperContext: app.locals
-
-apiUrl = nconf.get("url:api")
-runUrl = nconf.get("url:run")
-wwwUrl = nconf.get("url:www")
 
 app.set "views", "#{__dirname}/views"
 app.set "view engine", "jade"
@@ -105,6 +112,12 @@ app.get "/partials/:partial", (req, res, next) ->
   res.render "partials/#{req.params.partial}"
 
 app.get "/edit/:plunkId", addSession, maybeLoadPlunk, (req, res, next) ->
+  if req.plunk
+    res.locals.oembed = {
+      href: "#{wwwUrl}/api/oembed?url=#{wwwUrl}/edit/#{req.params.plunkId}/&format=json",
+      title: req.plunk.description,
+    };
+
   res.locals.plunk = req.plunk
   res.render "editor"
 
@@ -197,6 +210,48 @@ app.get "/sitemap.xml", (req, res) ->
     url.up()
 
   plunks.on "end", complete
+
+
+
+app.get "/api/oembed", (req, res) ->
+  if req.query.format && req.query.format != 'json'
+    return res.send(501);
+
+  return oembed.extractPlunkIdFromUrl req.query.url, (error, plunkId) ->
+    if error
+      return res.send(error.statusCode || 500, error.message)
+
+    plunks.loadPlunkById plunkId, (error, plunk) ->
+      if error
+        return res.send(error.statusCode || 500, error.message)
+
+      width = if !isNaN(+request.query.maxwidth) then +request.query.maxwidth else 600
+      height = if !isNaN(+request.query.maxheight) then +request.query.maxheight else 400
+      html = """<iframe id="plnkr_embed_#{encodeURI(
+          plunkId
+      )}" class="plnkr_embed_iframe" style="width: 100%; overflow: hidden;" src="#{encodeURI(
+          embedUri
+      )}/plunk/#{encodeURIComponent(plunkId)}?autoCloseSidebar&deferRun&show=preview" width="#{encodeURI(
+          width
+      )}" height="#{encodeURI(
+          height
+      )}" frameborder="0" scrolling="no"></iframe>"""
+
+      return res.json(
+        type: 'rich',
+        version: '1.0',
+        title: plunk.description || 'Untitled plunk',
+        author_name: if plunk.user then plunk.user.login,
+        author_url: if plunk.user then "#{wwwUri}/users/#{plunk.user.login}",
+        provider_name: 'Plunker',
+        provider_url: 'https://plnkr.co',
+        html,
+        width,
+        height,
+        thumbnail_url: "#{shotUri}",
+        thumbnail_width: 400,
+        thumbnail_height: 300,
+      );
 
 
 app.get "/catalogue", addSession, (req, res) -> res.render "packages"
