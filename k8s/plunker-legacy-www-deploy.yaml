@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: plunker-legacy-www
   annotations:
-    kubernetes.io/change-cause: '1.3.3'
+    kubernetes.io/change-cause: '1.4.0'
 spec:
   replicas: 2
   strategy:
@@ -30,7 +30,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
       - name: plunker-legacy-www
-        image: gcr.io/plunker-api/plunker-legacy-www:1.3.3
+        image: gcr.io/plunker-api/plunker-legacy-www:1.4.0
         livenessProbe:
           httpGet:
             path: /

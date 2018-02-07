@@ -9,6 +9,7 @@ RUN npm install --production
 COPY *.coffee *.js *.json /src/
 COPY assets /src/assets/
 COPY build /src/build/
+COPY lib /src/lib/
 COPY middleware /src/middleware/
 COPY views /src/views/
 
