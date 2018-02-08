@@ -120,7 +120,6 @@ app.get "/edit/:plunkId", addSession, maybeLoadPlunk, (req, res, next) ->
     oembedApiUrl = "#{wwwUrl}/api/oembed"
     oembedApiUrl = "https:#{oembedApiUrl}" if oembedApiUrl.indexOf('//') == 0
 
-
     res.locals.oembed = {
       href: "#{oembedApiUrl}?url=#{encodeURIComponent(oembedUrl)}&format=json",
       title: req.plunk.description,
@@ -245,12 +244,16 @@ app.get "/api/oembed", (req, res) ->
           })
           .code(error.statusCode || 500)
 
+      oembedEmbedUrl = if embedUrl.indexOf('//') == 0 then "https:#{embedUrl}" else embedUrl
+      oembedShotUrl = if shotUrl.indexOf('//') == 0 then "https:#{shotUrl}" else shotUrl
+      oembedWwwUrl = if wwwUrl.indexOf('//') == 0 then "https:#{wwwUrl}" else wwwUrl
+
       width = if !isNaN(+req.query.maxwidth) then +req.query.maxwidth else 600
       height = if !isNaN(+req.query.maxheight) then +req.query.maxheight else 400
       html = """<iframe id="plnkr_embed_#{encodeURI(
           plunkId
       )}" class="plnkr_embed_iframe" style="width: 100%; overflow: hidden;" src="#{encodeURI(
-          embedUrl
+          oembedEmbedUrl
       )}/plunk/#{encodeURIComponent(plunkId)}?autoCloseSidebar&deferRun&show=preview" width="#{encodeURI(
           width
       )}" height="#{encodeURI(
@@ -262,13 +265,13 @@ app.get "/api/oembed", (req, res) ->
         version: '1.0',
         title: plunk.title || 'Untitled plunk',
         author_name: if plunk.user then (plunk.user.name || plunk.user.username),
-        author_url: if plunk.user then "#{wwwUrl}/users/#{plunk.user.username}",
+        author_url: if plunk.user then "#{oembedWwwUrl}/users/#{plunk.user.username}",
         provider_name: 'Plunker',
         provider_url: 'https://plnkr.co',
         html: html,
         width: width,
         height: height,
-        thumbnail_url: "#{shotUrl}/#{plunkId}.png?d=#{encodeURIComponent(plunk.updated_at)}",
+        thumbnail_url: "#{oembedShotUrl}/#{plunkId}.png?d=#{encodeURIComponent(plunk.updated_at)}",
         thumbnail_width: 400,
         thumbnail_height: 300,
       );
