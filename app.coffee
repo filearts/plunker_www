@@ -115,7 +115,7 @@ app.get "/partials/:partial", (req, res, next) ->
 app.get "/edit/:plunkId", addSession, maybeLoadPlunk, (req, res, next) ->
   if req.plunk
     oembedUrl = "#{wwwUrl}/edit/#{req.params.plunkId}/";
-    oembedUrl = "https:#{oembedUrl}" if oembedUrl.indexOf('//') === 0
+    oembedUrl = "https:#{oembedUrl}" if oembedUrl.indexOf('//') == 0
 
     res.locals.oembed = {
       href: "#{wwwUrl}/api/oembed?url=#{encodeURIComponent(oembedUrl)}&format=json",
