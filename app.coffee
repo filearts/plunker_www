@@ -28,11 +28,12 @@ require "./configure"
 apiUrl = nconf.get("url:api")
 embedUrl = nconf.get("url:embed")
 runUrl = nconf.get("url:run")
+shotUrl = nconf.get("url:shot")
 wwwUrl = nconf.get("url:www")
 
 
 Plunks = require('./lib/plunks');
-plunks = new Plunks({ apiUrl: apiUrl });
+plunks = new Plunks({ apiUrl: nconf.get("url:api2") });
 
 Oembed = require('./lib/oembed');
 oembed = new Oembed({ wwwUrl: wwwUrl });
@@ -225,12 +226,12 @@ app.get "/api/oembed", (req, res) ->
       if error
         return res.send(error.statusCode || 500, error.message)
 
-      width = if !isNaN(+request.query.maxwidth) then +request.query.maxwidth else 600
-      height = if !isNaN(+request.query.maxheight) then +request.query.maxheight else 400
+      width = if !isNaN(+req.query.maxwidth) then +req.query.maxwidth else 600
+      height = if !isNaN(+req.query.maxheight) then +req.query.maxheight else 400
       html = """<iframe id="plnkr_embed_#{encodeURI(
           plunkId
       )}" class="plnkr_embed_iframe" style="width: 100%; overflow: hidden;" src="#{encodeURI(
-          embedUri
+          embedUrl
       )}/plunk/#{encodeURIComponent(plunkId)}?autoCloseSidebar&deferRun&show=preview" width="#{encodeURI(
           width
       )}" height="#{encodeURI(
@@ -240,15 +241,15 @@ app.get "/api/oembed", (req, res) ->
       return res.json(
         type: 'rich',
         version: '1.0',
-        title: plunk.description || 'Untitled plunk',
-        author_name: if plunk.user then plunk.user.login,
-        author_url: if plunk.user then "#{wwwUri}/users/#{plunk.user.login}",
+        title: plunk.title || 'Untitled plunk',
+        author_name: if plunk.user then (plunk.user.name || plunk.user.username),
+        author_url: if plunk.user then "#{wwwUrl}/users/#{plunk.user.username}",
         provider_name: 'Plunker',
         provider_url: 'https://plnkr.co',
-        html,
-        width,
-        height,
-        thumbnail_url: "#{shotUri}",
+        html: html,
+        width: width,
+        height: height,
+        thumbnail_url: "#{shotUrl}/#{plunkId}.png?d=#{encodeURIComponent(plunk.updated_at)}",
         thumbnail_width: 400,
         thumbnail_height: 300,
       );

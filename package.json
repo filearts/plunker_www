@@ -50,7 +50,7 @@
     "morph": "^0.2.0",
     "nconf": "~0.6.4",
     "prerender-node": "~1.0.0",
-    "request": "~2.11.4",
+    "request": "^2.83.0",
     "secure-filters": "~1.0.4",
     "serve-static": "^1.10.0",
     "xmlbuilder": "0.4.x"
