@@ -220,11 +220,23 @@ app.get "/api/oembed", (req, res) ->
 
   return oembed.extractPlunkIdFromUrl req.query.url, (error, plunkId) ->
     if error
-      return res.send(error.statusCode || 500, error.message)
+      return res
+        .json({
+          message: error.message,
+          data: error.data,
+          statusCode: error.statusCode,
+        })
+        .code(error.statusCode || 500)
 
     plunks.loadPlunkById plunkId, (error, plunk) ->
       if error
-        return res.send(error.statusCode || 500, error.message)
+        return res
+          .json({
+            message: error.message,
+            data: error.data,
+            statusCode: error.statusCode,
+          })
+          .code(error.statusCode || 500)
 
       width = if !isNaN(+req.query.maxwidth) then +req.query.maxwidth else 600
       height = if !isNaN(+req.query.maxheight) then +req.query.maxheight else 400
