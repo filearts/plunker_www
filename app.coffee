@@ -18,6 +18,7 @@ xmlbuilder = require("xmlbuilder")
 es = require("event-stream")
 hbs = require("hbs")
 JSONStream = require("JSONStream")
+Cors = require('cors')
 
 pkginfo = require("./package.json")
 
@@ -219,8 +220,8 @@ app.get "/sitemap.xml", (req, res) ->
   plunks.on "end", complete
 
 
-
-app.get "/api/oembed", (req, res) ->
+app.options "/api/oembed", cors()
+app.get "/api/oembed", cors(), (req, res) ->
   if req.query.format && req.query.format != 'json'
     return res.send(501);
 
