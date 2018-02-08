@@ -117,8 +117,12 @@ app.get "/edit/:plunkId", addSession, maybeLoadPlunk, (req, res, next) ->
     oembedUrl = "#{wwwUrl}/edit/#{req.params.plunkId}/";
     oembedUrl = "https:#{oembedUrl}" if oembedUrl.indexOf('//') == 0
 
+    oembedApiUrl = "#{wwwUrl}/api/oembed"
+    oembedApiUrl = "https:#{oembedApiUrl}" if oembedApiUrl.indexOf('//') == 0
+
+
     res.locals.oembed = {
-      href: "#{wwwUrl}/api/oembed?url=#{encodeURIComponent(oembedUrl)}&format=json",
+      href: "#{oembedApiUrl}?url=#{encodeURIComponent(oembedUrl)}&format=json",
       title: req.plunk.description,
     };
 
