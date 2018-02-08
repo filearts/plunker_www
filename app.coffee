@@ -18,7 +18,7 @@ xmlbuilder = require("xmlbuilder")
 es = require("event-stream")
 hbs = require("hbs")
 JSONStream = require("JSONStream")
-Cors = require('cors')
+cors = require('cors')
 
 pkginfo = require("./package.json")
 
