@@ -34,7 +34,7 @@ wwwUrl = nconf.get("url:www")
 
 
 Plunks = require('./lib/plunks');
-plunks = new Plunks({ apiUrl: nconf.get("url:api2") });
+plunksApi = new Plunks({ apiUrl: nconf.get("url:api2") });
 
 Oembed = require('./lib/oembed');
 oembed = new Oembed({ wwwUrl: wwwUrl });
@@ -235,7 +235,7 @@ app.get "/api/oembed", cors(), (req, res) ->
         })
         .code(error.statusCode || 500)
 
-    plunks.loadPlunkById plunkId, (error, plunk) ->
+    plunksApi.loadPlunkById plunkId, (error, plunk) ->
       if error
         return res
           .json({
