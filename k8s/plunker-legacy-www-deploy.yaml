@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: plunker-legacy-www
+  name: plunker-legacy-www-ab
   annotations:
     kubernetes.io/change-cause: '1.6.2'
 spec:
@@ -13,7 +13,7 @@ spec:
   template:
     metadata:
       labels:
-        app: plunker-legacy-www
+        app: plunker-legacy-www-ab
         tier: frontend
     spec:
       affinity:
@@ -26,7 +26,7 @@ spec:
                 - key: app
                   operator: In
                   values:
-                  - plunker-legacy-www
+                  - plunker-legacy-www-ab
               topologyKey: kubernetes.io/hostname
       containers:
       - name: plunker-legacy-www

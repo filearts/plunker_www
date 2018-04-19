@@ -33,7 +33,7 @@ html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editor
         document.createElement('ng:view');
     // if lt IE 8
       script(src="/vendor/json2/json2.js")
-    script(src="https://cdn.rawgit.com/jpillora/xdomain/0.7.3/dist/xdomain.min.js")
+    script(src="https://unpkg.com/xdomain@0.8.2/dist/xdomain.min.js")
     script
       xdomain.slaves({
         'http:!{url.api}': "/proxy.html",
@@ -70,9 +70,10 @@ html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editor
     script(type="text/javascript", src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-4f60c7714e5b5629", async="async")
 
 
-  body
+  body.editor
     div.overlay
-    nav.navbar.navbar-fixed-top
+    <plunker-version-switcher path="/edit"></plunker-version-switcher>
+    nav.navbar
       div.navbar-inner
         div.container-fluid
           a.brand(href="/")

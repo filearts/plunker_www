@@ -1,6 +1,7 @@
 nconf = require("nconf")
 
 env = process.env.NODE_ENV or "development"
+console.log(env);
 
 nconf.use("memory")
   .argv()

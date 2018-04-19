@@ -12,11 +12,11 @@ var nconf = require("nconf")
 
 
 serverDomain.run(function(){
-  http.createServer(function(req, res){
+  const dispatcher = http.createServer(function(req, res){
     var reqd = domain.create();
     reqd.add(req);
     reqd.add(res);
-    
+
     // On error dispose of the domain
     reqd.on('error', function (error) {
       console.error('[ERR]', error.code, error.message, req.url);
@@ -25,11 +25,11 @@ serverDomain.run(function(){
 
     // Pass the request to express
     server(req, res);
-    
+
   }).listen(nconf.get("PORT"), function(){
-    console.log("[OK] Server started");
+    console.log("[OK] Server started", dispatcher.address());
   });
-  
+
 });
 
 serverDomain.on("error", function (error) {

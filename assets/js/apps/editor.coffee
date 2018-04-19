@@ -11,6 +11,7 @@
 #= require ./../directives/toolbar
 #= require ./../directives/overlay
 #= require ./../directives/layout
+#= require ./../directives/versionSwitcher
 
 module = angular.module "plunker.editorPage", [
   "plunker.userpanel"
@@ -21,9 +22,10 @@ module = angular.module "plunker.editorPage", [
   "plunker.session"
   "plunker.notifier"
   "plunker.panes"
-  
+  "plunker.versionSwitcher"
+
   "ui.bootstrap"
-  
+
   "angularytics"
 ]
 
@@ -44,14 +46,14 @@ module.config ["$routeProvider", ($routeProvider) ->
     resolve:
       dirtyCheck: ["$q", "notifier", "session", ($q, notifier, session) ->
         dfd = $q.defer()
-        
+
         if session.isDirty() and not session.skipDirtyCheck then notifier.confirm "You have unsaved changes. This action will reset your plunk. Are you sure you would like to proceed?",
           confirm: -> dfd.resolve()
           deny: -> dfd.reject()
         else dfd.resolve()
-        
+
         delete session.skipDirtyCheck
-        
+
         dfd.promise
       ]
       source: ["$route", "importer", "session", "notifier", ($route, importer, session, notifier) ->
@@ -62,7 +64,7 @@ module.config ["$routeProvider", ($routeProvider) ->
                 json.description = _plunker.bootstrap.description if _plunker.bootstrap.description
                 json.tags = _plunker.bootstrap.tags if _plunker.bootstrap.tags
                 json.files = _plunker.bootstrap.files if _plunker.bootstrap.files
-              
+
               json.source = source
               json
             , (error) ->
@@ -73,16 +75,16 @@ module.config ["$routeProvider", ($routeProvider) ->
             snippet: """
               <!DOCTYPE html>
               <html>
-              
+
                 <head>
                   <link rel="stylesheet" href="style.css">
                   <script src="script.js"></script>
                 </head>
-              
+
                 <body>
                   ${1:<h1>Hello Plunker!</h1>}
                 </body>
-              
+
               </html>
             """
           "script.js":
@@ -106,18 +108,18 @@ module.config ["$routeProvider", ($routeProvider) ->
 
       $scope.$watch ( -> session.getEditPath()), (path) ->
         $location.path("/#{path}").replace()
-        
+
       lastValidUrl = $location.absUrl()
       lastValidRoute = $route.current
 
       $rootScope.$on "$routeChangeError", (curr, prev) ->
         $route.current = lastValidRoute
         $location.$$parse lastValidUrl
-        
+
         $browser.url lastValidUrl, true
-        
+
         window.history.back()
-        
+
       $rootScope.$on "$routeChangeSuccess", (curr, prev) ->
         lastValidUrl = $location.absUrl()
         lastValidRoute = $route.current

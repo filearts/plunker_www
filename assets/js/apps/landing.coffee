@@ -15,6 +15,7 @@
 #= require ./../services/users
 
 #= require ./../directives/userpanel
+#= require ./../directives/versionSwitcher
 
 
 module = angular.module "plunker.landing", [
@@ -28,7 +29,8 @@ module = angular.module "plunker.landing", [
   "plunker.menu"
   "plunker.userpanel"
   "plunker.plunks"
-  
+  "plunker.versionSwitcher"
+
   "angularytics"
   "ui.bootstrap"
 ]
@@ -49,7 +51,7 @@ module.run ["$rootScope", "$location", "$window", "menu", ($rootScope, $location
 ]
 
 module.run ["plunks", (plunks) ->
-  
+
   if bootstrap = _plunker.bootstrap?.plunks
     for json in bootstrap
       plunks.findOrCreate(json).$$updated_at = Date.now()
@@ -58,12 +60,12 @@ module.run ["plunks", (plunks) ->
 module.run ["$rootElement", ($rootElement) ->
   $("body").on "click", (event) ->
     if event.ctrlKey || event.metaKey || event.which == 2 then return
-  
+
     elm = angular.element(event.target)
-  
+
     while angular.lowercase(elm[0].nodeName) != 'a'
       if elm[0] == $rootElement[0] || !(elm = elm.parent())[0] then return
-    
+
     if (href = elm.prop("href")) and href.match(/\/edit\//)
       event.stopPropagation()
       window.location = href

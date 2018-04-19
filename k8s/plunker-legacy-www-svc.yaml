@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: plunker-legacy-www
+  name: plunker-legacy-www-ab
   labels:
-    app: plunker-legacy-www
+    app: plunker-legacy-www-ab
 spec:
   ports:
   - port: 80
@@ -11,5 +11,6 @@ spec:
     protocol: TCP
   selector:
     app: plunker-legacy-www
-  type: LoadBalancer
-  loadBalancerIP: 104.197.139.153
+  type: NodePort
+  # type: LoadBalancer
+  # loadBalancerIP: 104.197.139.153

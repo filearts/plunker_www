@@ -73,6 +73,8 @@ module.directive "plunkerEditorLayout", [ "panes", (panes) ->
     center.resizers.east.mousedown -> center.showMasks("east")
     center.resizers.east.mouseup -> center.hideMasks("east")
 
+    $scope.$on 'editor-resize', -> layout.resizeAll()
+
     # Watch for changes to the active pane
     $scope.$watch ( -> panes.active ), (pane) ->
       if pane
