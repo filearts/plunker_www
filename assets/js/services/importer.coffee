@@ -1,4 +1,4 @@
-#= require ./../../vendor/dominatrix
+#= require dominatrix
 
 #= require ./../services/plunks
 #= require ./../services/updater
@@ -44,7 +44,7 @@ githubRegex = ///
     |
       gist\:
     )
-    ([0-9]+|[0-9a-z]{20}) # Gist ID
+    ([0-9]+|[0-9a-z]+)    # Gist ID
     (?:#.+)?              # Optional anchor
     \s*                   # Trailing whitespace
   $
@@ -224,7 +224,7 @@ module.service "importer", [ "$q", "$http", "plunks", "updater", "notifier", ($q
       fiddleRef = matches[1] + if matches[2] then "/#{matches[2]}" else ""
       fiddleUrl = "http://jsfiddle.net/#{fiddleRef}/show"
       
-      request = $http.jsonp("http://query.yahooapis.com/v1/public/yql?q=SELECT * FROM html WHERE url=\"#{fiddleUrl}\" AND xpath=\"/html\" and compat=\"html5\"&format=xml&callback=JSON_CALLBACK")
+      request = $http.jsonp("https://query.yahooapis.com/v1/public/yql?q=SELECT * FROM html WHERE url=\"#{fiddleUrl}\" AND xpath=\"/html\" and compat=\"html5\"&format=xml&callback=JSON_CALLBACK")
       request.then (response) ->
         if response.status >= 400 then deferred.reject("Failed to fetch fiddle")
         else

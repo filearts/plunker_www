@@ -1,4 +1,4 @@
-#= require ./../../vendor/masonry/jquery.masonry
+#= require masonry/jquery.masonry
 
 #= require ./../directives/card
 

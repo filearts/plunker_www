@@ -1,4 +1,4 @@
-#= require ./../../vendor/semver/semver.js
+#= require semver/semver.js
 
 #= require ./../services/panes
 #= require ./../services/url

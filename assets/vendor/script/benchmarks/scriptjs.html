@@ -31,13 +31,13 @@
         document.getElementById('window-ms').innerHTML = (+new Date) - start;
       };
       // load a bunch of libraries
-      $script('../vendor/yui-utilities.js?' + start, 'yui', function() {
+      $script('yui-utilities.js?' + start, 'yui', function() {
         YAHOO.util.Dom.get('yui').innerHTML = '✓';
       });
-      $script('../vendor/jquery.js?' + start, 'jquery', function() {
+      $script('jquery.js?' + start, 'jquery', function() {
         $('#jquery').html('✓');
       });
-      $script('../vendor/mootools.js?' + start, 'moo', function() {
+      $script('mootools.js?' + start, 'moo', function() {
         document.id('mootools').innerHTML = '✓';
       });
       $script.ready(['moo', 'jquery', 'yui'], function() {
@@ -48,7 +48,7 @@
   <body>
     <h1>Benchmark Test</h1>
     <div id="ready">
-      <img src="../vendor/bird.png">
+      <img src="bird.png">
       <p>window.onload time: <span id="window-ms">0</span>ms</p>
       <ul>
         <li>YUI: <span id="yui"></span></li>

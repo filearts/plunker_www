@@ -1,4 +1,4 @@
-#= require ./../../vendor/jquery-timeago/jquery.timeago
+#= require jquery-timeago/jquery.timeago
 
 #= require ./../directives/addthis
 #= require ./../directives/inlineuser

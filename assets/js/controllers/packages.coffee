@@ -1,6 +1,6 @@
-#= require ./../../vendor/typeahead/dist/typeahead
+#= require typeahead/dist/typeahead
 
-#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
+#= require ui-bootstrap/ui-bootstrap-tpls-0.3.0
 
 
 #= require ./../services/catalogue

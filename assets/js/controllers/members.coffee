@@ -1,6 +1,6 @@
-#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
+#= require ui-bootstrap/ui-bootstrap-tpls-0.3.0
 
-#= require ./../../vendor/script/dist/script
+#= require script/dist/script
 
 
 #= require ./../services/users
@@ -54,7 +54,7 @@ createProfileHandler = (pane = "plunks") ->
         <div class="span3">
           <div class="row">
             <div class="thumbnail span3">
-              <img ng-src="http://www.gravatar.com/avatar/{{user.gravatar_id}}?s=260" />
+              <img ng-src="https://www.gravatar.com/avatar/{{user.gravatar_id}}?s=260" />
             </div>
             <div class="span4">
               <h3>{{user.login}}</h3>

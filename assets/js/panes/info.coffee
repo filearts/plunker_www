@@ -1,4 +1,4 @@
-#= require ./../../vendor/script/dist/script
+#= require script/dist/script
 
 #= require ./../services/panes
 #= require ./../services/session
@@ -9,7 +9,7 @@
 #= require ./../directives/markdown
 #= require ./../directives/timeago
 
-#= require ./../../vendor/jquery.autosize/jquery.autosize
+#= require jquery.autosize/jquery.autosize
 
 
 module = angular.module("plunker.panes")
@@ -27,9 +27,9 @@ module.run [ "$timeout", "panes", "session", "activity", "url", ($timeout, panes
   panes.add
     id: "info"
     icon: "dashboard"
-    size: 430
+    size: 316
     title: "Info"
-    hidden: true
+    hidden: false
     description: """
       Plunk information.
     """
@@ -46,12 +46,8 @@ module.run [ "$timeout", "panes", "session", "activity", "url", ($timeout, panes
         </div>
         <plunker-taglist tags="session.plunk.tags" ng-show="tags.length"></plunker-taglist>
         <p></p>
-        <div class="info-ad" ng-show="adcode">
-          <div id="carbonads-container">
-            <div class="carbonad">
-              <div id="azcarbon"></div>
-            </div>
-          </div>
+        <div class="info-ad">
+          <plunker-ad></plunker-ad>
         </div>
         <div class="info-readme" ng-show="session.plunk.getReadme()" markdown="session.plunk.getReadme()">
         </div>
@@ -78,18 +74,30 @@ module.run [ "$timeout", "panes", "session", "activity", "url", ($timeout, panes
     """
     link: ($scope, $el, attrs) ->
       pane = @
-      
-      $scope.$watch ( -> pane.active), (active) ->
-        if active and !$scope.adcode and url.carbonadsH
-          $scope.adcode = true
-          $timeout -> $script(url.carbonadsH)
-    
+
       $scope.session = session
-      
+
       $scope.$watch "session.plunk.id", (id) ->
         pane.hidden = !id
-      
+
       $textarea = $(".plunker-comment-box textarea", $el).autosize(append: "\n").css("height", "24px")
       $textarea.on "blur", -> $textarea.css("height", "24px")
       $textarea.on "focus", -> $textarea.trigger "autosize"
+]
+
+module.directive 'plunkerAd', [() ->
+  adGen = 0;
+
+  restrict: "E"
+  replace: false
+  link: ($cope, $el, $attrs) ->
+    adId = 'plnkr-ad-' + adGen++
+
+    $el[0].innerHTML = """
+      <div align="center" id="div-gpt-ad-300x250">
+        <script data-cfasync="false" type='text/javascript'>
+          freestar.queue.push(function () { googletag.display('div-gpt-ad-300x250'); });
+        </script>
+      </div>
+    """
 ]

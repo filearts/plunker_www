@@ -1,4 +1,4 @@
-#= require ./../../vendor/qrcodejs/qrcode
+#= require qrcodejs/qrcode
 
 #= require ./../services/panes
 #= require ./../services/url
@@ -14,12 +14,13 @@ module.requires.push "plunker.url"
 module.requires.push "plunker.session"
 module.requires.push "plunker.settings"
 module.requires.push "plunker.notifier"
+module.requires.push "plunker.visitor"
 
 
 module.service "previewer", ["$http", "$timeout", "url", "settings", "notifier", ($http, $timeout, url, settings, notifier) ->
 ]
 
-module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings", "notifier", "annotations", ($q, $document, $timeout, url, panes, session, settings, notifier, annotations) ->
+module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings", "notifier", "annotations", "visitor", ($q, $document, $timeout, url, panes, session, settings, notifier, annotations, visitor) ->
   
   genid = (len = 16, prefix = "", keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789") ->
     prefix += keyspace.charAt(Math.floor(Math.random() * keyspace.length)) while len-- > 0
@@ -114,6 +115,13 @@ module.run [ "$q", "$document", "$timeout", "url", "panes", "session", "settings
         form.setAttribute "method", "post"
         form.setAttribute "action", $scope.previewUrl
         form.setAttribute "target", "plunkerPreviewTarget"
+        
+        sessionField = document.createElement("input")
+        sessionField.setAttribute "type", "hidden"
+        sessionField.setAttribute "name", "sessid"
+        sessionField.setAttribute "value", visitor.session.id
+        
+        form.appendChild(sessionField)
         
         for filename, file of session.toJSON().files
           field = document.createElement("input")

@@ -1,5 +1,5 @@
-#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
-#= require ./../../vendor/jquery.lazyload/jquery.lazyload
+#= require ui-bootstrap/ui-bootstrap-tpls-0.3.0
+#= require jquery.lazyload/jquery.lazyload
 
 #= require ./../services/quickview
 #= require ./../services/url
@@ -10,7 +10,7 @@
 #= require ./../directives/taglist
 #= require ./../directives/markdown
 
-#= require ./../../vendor/jquery-timeago/jquery.timeago
+#= require jquery-timeago/jquery.timeago
 
 module = angular.module "plunker.card", [
   "plunker.inlineuser"
@@ -58,7 +58,7 @@ module.directive "plunkerCard", [ "$timeout", "$compile", "quickview", "visitor"
             </ul>
           </div>
           <div class="plunk-card-image-container">
-            <img src="http://placehold.it/248x186&text=Loading..." data-original="http://shot.plunker.co/{{plunk.id}}.png?d={{plunk.updated_at}}" />
+            <img src="https://placehold.it/248x186&text=Loading..." data-original="{{url.shot}}/{{plunk.id}}.png?d={{plunk.updated_at}}" />
           </div>
         </div>
         <div class="plunk-card-about">

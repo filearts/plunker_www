@@ -21,7 +21,7 @@
         font-size: 20px;
       }
     </style>
-    <script src="../vendor/head.js"></script>
+    <script src="head.js"></script>
     <script type="text/javascript">
       var start = (+new Date),
           onloadTime = 0,
@@ -30,15 +30,15 @@
         document.getElementById('window-ms').innerHTML = (+new Date) - start;
       };
       // load a bunch of libraries
-      head.js('../vendor/yui-utilities.js?' + start, function() {
+      head.js('yui-utilities.js?' + start, function() {
         YAHOO.util.Dom.get('yui').innerHTML = '✓';
       });
 
-      head.js('../vendor/mootools.js?' + start, function() {
+      head.js('mootools.js?' + start, function() {
         document.id('mootools').set('html', '✓');
       });
 
-      head.js('../vendor/jquery.js?' + start, function() {
+      head.js('jquery.js?' + start, function() {
         $('#jquery').html('✓');
       });
 
@@ -50,7 +50,7 @@
   <body>
     <h1>Benchmark Test</h1>
     <div id="ready">
-      <img src="../vendor/bird.png">
+      <img src="bird.png">
       <p>window.onload time: <span id="window-ms">0</span>ms</p>
       <ul>
         <li>YUI: <span id="yui"></span></li>

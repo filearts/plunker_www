@@ -1,6 +1,6 @@
-#= require ./../../vendor/angular-1.0.js
-#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
-#= require ./../../vendor/angularytics/dist/angularytics
+#= require angular-1.0.js
+#= require ui-bootstrap/ui-bootstrap-tpls-0.3.0
+#= require angularytics/dist/angularytics
 
 #= require ./../services/importer
 #= require ./../services/session
@@ -56,10 +56,13 @@ module.config ["$routeProvider", ($routeProvider) ->
       ]
       source: ["$route", "importer", "session", "notifier", ($route, importer, session, notifier) ->
         if source = $route.current.params.source
-          console.log("EDITOR ", source)
-          debugger;
           unless source is session.getEditPath()
             importer.import(source).then (json) ->
+              if _plunker.bootstrap
+                json.description = _plunker.bootstrap.description if _plunker.bootstrap.description
+                json.tags = _plunker.bootstrap.tags if _plunker.bootstrap.tags
+                json.files = _plunker.bootstrap.files if _plunker.bootstrap.files
+              
               json.source = source
               json
             , (error) ->
@@ -93,7 +96,7 @@ module.config ["$routeProvider", ($routeProvider) ->
             content: ""
       ]
     controller: [ "$rootScope", "$scope", "$location", "$browser", "$timeout", "$route", "session", "source", "notifier", "panes", ($rootScope, $scope, $location, $browser, $timeout, $route, session, source, notifier, panes) ->
-      session.reset(source) if source?
+      session.reset(source, { open: $location.search().open }) if source?
 
       unless panes.active
         unless session.plunk?.id

@@ -21,26 +21,31 @@ html#ng-app(ng-app="plunker.landing", lang="en", class="ng-app:plunker.landingPa
         document.createElement('ng:view');
     // if lt IE 8
       script(src="/vendor/json2/json2.js")
-    script(src="//cdn.rawgit.com/jpillora/xdomain/gh-pages/dist/0.6/xdomain.min.js")
+    script(src="//cdn.rawgit.com/jpillora/xdomain/0.7.4/dist/xdomain.min.js")
     script
       xdomain.slaves({
-        '!{url.api}': "/proxy.html",
-        '!{url.collab}': "/proxy.html",
+        'http:!{url.api}': "/proxy.html",
+        'http:!{url.collab}': "/proxy.html",
+        'https:!{url.api}': "/proxy.html",
+        'https:!{url.collab}': "/proxy.html",
       })
     script(src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js")
-    // script(src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.3/angular.min.js")
+    script(data-cfasync="false")
+        !function(a,b){var c=b.getElementsByTagName("script")[0],d=b.createElement("script"),e="https://pub.freestar.io/plnkr/";e+=window.location.search.indexOf("fsdebug")==-1?"pubfig.min.js":"pubfig.js",d.async=!0,d.src=e,c.parentNode.insertBefore(d,c)}(window,document);
+        window.freestar = window.freestar || {};
+        window.freestar.queue = window.freestar.queue || [];
 
     script
       // <!--
       !{state}
       // -->
-      
+
     != js("apps/landing")
     script
       var _gaq = _gaq || [];
       _gaq.push(['_setAccount', 'UA-28928507-1']);
       _gaq.push(['_trackPageview']);
-    
+
       (function() {
         var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
         ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
@@ -50,7 +55,7 @@ html#ng-app(ng-app="plunker.landing", lang="en", class="ng-app:plunker.landingPa
       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-    
+
       ga('create', 'UA-28928507-5', 'plnkr.co');
 
     script(type="text/javascript", src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-4f60c7714e5b5629", async="async")
@@ -80,15 +85,23 @@ html#ng-app(ng-app="plunker.landing", lang="en", class="ng-app:plunker.landingPa
         div.row
           div.span4
             p
-              a(href="https://modulus.io/",title="Modulus.io"): img(src="/img/modulus.png")
-              | &nbsp;provides node.js hosting for Plunker. If you want low-latency, high-availability
-              | and easy to use hosting for Node.js, we strongly suggest considering Modulus.io.
+              a(href="https://www.auth0.com/?utm_source=plunker&utm_campaign=footerlogo",title="Auth0",target="_blank"): img(src="/img/auth0-logo-blue.png",class="footer-logo")
+            p
+              | Auth0 makes adding Authentication to your app a breeze. Add features like
+              a(href="https://auth0.com/learn/how-to-implement-single-sign-on/?utm_source=plunker&utm_medium=sso&utm_campaign=links",title="Single sign-on",target="_blank") Single Sign On
+              | ,
+              a(href="https://auth0.com/learn/multifactor-authentication/?utm_source=plunker&utm_medium=mfa&utm_campaign=links",title="Multifactor Authentication",target="_blank") Multifactor Authentication
+              | ,
+              a(href="https://auth0.com/learn/social-login/?utm_source=plunker&utm_medium=sociallogin&utm_campaign=links",title="Social login",target="_blank") Social Login
+              |  and more in minutes. Instead of worrying about
+              | implementation details, testing and security, just focus on your application's business logic.
           div.span4
             p
-              a(href="http://mongolab.com",title="MongoLab"): img(src="/img/Mongolab.png")
-              | &nbsp;has generously provided the back-end storage for Plunker. If you are looking for
-              | good service and easy set-up, check them out.
-  
+              a(href="https://modulus.io/",title="Modulus.io",target="_blank"): img(src="/img/modulus.png")
+            p
+              | Modulus provides node.js hosting for Plunker. If you want low-latency, high-availability
+              | and easy to use hosting for Node.js, we strongly suggest considering Modulus.io.
+
           div.span2
             strong Contact
             ul.unstyled
@@ -101,3 +114,11 @@ html#ng-app(ng-app="plunker.landing", lang="en", class="ng-app:plunker.landingPa
               li: a(href="https://github.com/filearts/plunker_www", title="Website front-end") Website
               li: a(href="https://github.com/filearts/plunker_api", title="Backend API") API Server
               li: a(href="https://github.com/filearts/plunker_run", title="Plunk runner") Plunk runner
+    noscript
+      iframe(src="//www.googletagmanager.com/ns.html?id=GTM-T6RZMX",height="0",width="0",style="display:none;visibility:hidden")
+    script(type="text/javascript")
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      '//www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-T6RZMX');

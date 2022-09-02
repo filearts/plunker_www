@@ -1,6 +1,6 @@
-#= require ./../../vendor/js-beautify/beautify
-#= require ./../../vendor/js-beautify/beautify-html
-#= require ./../../vendor/js-beautify/beautify-css
+#= require js-beautify/beautify
+#= require js-beautify/beautify-html
+#= require js-beautify/beautify-css
 
 #= require ./../services/session
 #= require ./../services/activity

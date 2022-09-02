@@ -1,4 +1,4 @@
-#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
+#= require ui-bootstrap/ui-bootstrap-tpls-0.3.0
 
 #= require ./../directives/inlineplunk
 

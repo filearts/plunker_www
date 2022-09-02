@@ -1069,8 +1069,11 @@ var AcePopup = function(parentNode) {
 
         if (data.meta) {
             var maxW = popup.renderer.$size.scrollerWidth / popup.renderer.layerConfig.characterWidth;
-            if (data.meta.length + data.caption.length < maxW - 2)
-                tokens.push({type: "rightAlignedText", value: data.meta});
+            var metaData = data.meta;
+            if (metaData.length + data.caption.length > maxW - 2) {
+                metaData = metaData.substr(0, maxW - data.caption.length - 3) + "\u2026"
+            }
+            tokens.push({type: "rightAlignedText", value: metaData});
         }
         return tokens;
     };
@@ -1367,7 +1370,7 @@ var Autocomplete = function() {
     this.blurListener = function(e) {
         var el = document.activeElement;
         var text = this.editor.textInput.getElement()
-        if (el != text && el.parentNode != this.popup.container
+        if (el != text && ( !this.popup || el.parentNode != this.popup.container )
             && el != this.tooltipNode && e.relatedTarget != this.tooltipNode
             && e.relatedTarget != text
         ) {
@@ -1429,7 +1432,6 @@ var Autocomplete = function() {
         "Ctrl-Down|Ctrl-End": function(editor) { editor.completer.goTo("end"); },
 
         "Esc": function(editor) { editor.completer.detach(); },
-        "Space": function(editor) { editor.completer.detach(); editor.insert(" ");},
         "Return": function(editor) { return editor.completer.insertMatch(); },
         "Shift-Return": function(editor) { editor.completer.insertMatch(true); },
         "Tab": function(editor) {

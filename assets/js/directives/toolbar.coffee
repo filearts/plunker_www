@@ -1,5 +1,5 @@
-#= require ./../../vendor/ui-bootstrap/ui-bootstrap-tpls-0.3.0
-#= require ./../../vendor/angularytics/dist/angularytics
+#= require ui-bootstrap/ui-bootstrap-tpls-0.3.0
+#= require angularytics/dist/angularytics
 
 #= require ./../services/visitor
 #= require ./../services/session
@@ -16,7 +16,7 @@ module = angular.module "plunker.toolbar", [
   "plunker.panes"
   "plunker.url"
   "plunker.beautifier"
-  
+
   "angularytics"
   "ui.bootstrap"
 ]
@@ -65,7 +65,7 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
           <li><a href="/edit/gist:2006604">jQuery UI</a></li>
           <li class="divider"></li>
           <li class="dropdown-submenu">
-            <a tabindex="-1" href="#">AngularJS</a>
+            <a tabindex="-1" href="#" title="Angular 1.x">AngularJS</a>
             <ul class="dropdown-menu">
               <li><a href="/edit/gist:3510140">1.0.x<a href="/edit/gist:3189582" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
               <li><a href="/edit/gist:5301635">1.0.x + Jasmine</a></li>
@@ -75,8 +75,14 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
               <li><a href="/edit/tpl:FrTqqTNoY8BEfHs9bB0f">1.2.x<a href="/edit/tpl:9dz4TT6og6hHx9QAOBT3" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
               <li class="divider"></li>
               <li><a href="/edit/tpl:rfqcl9AHEoJZEEJxyNn2">1.3.x<a href="/edit/tpl:RJc8D4Z6KMf74ffWOTn5" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
+              <li class="divider"></li>
+              <li><a href="/edit/tpl:8rFfZljYNl3z1A4LKSL2">1.4.x<a href="/edit/tpl:zxQbqlOd9vSmkCLQm5ke" class="coffee" title="In coffee-script"><img src="/img/coffeescript-logo-small_med.png"></a></a></li>
+              <li class="divider"></li>
+              <li><a href="/edit/tpl:CR2TtS1zz9wFGgsl5z2c">1.5.x</a></li>
+              <li><a href="/edit/tpl:qvZ8Iri6jRUioBEDsa32">1.5.x + Typescript</a></li>
             </ul>
           </li>
+          <li><a href="/edit/tpl:AvJOMERrnz94ekVua0u5" title="Just Angular">Angular</a></li>
           <li class="divider"></li>
           <li class="dropdown-submenu">
             <a tabindex="-1" href="#">React.js</a>
@@ -92,7 +98,7 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
           <li class="divider"></li>
           <li><a href="/edit/gist:3510115">YUI</a></li>
           <li class="divider"></li>
-          <li><a href="/edit/tpl:tyvqGwgayf3COZGsB81s">KendoUI</a></li>
+          <li><a href="/edit/tpl:ajm0hzObeid6Kb1aE1Ih">KendoUI</a></li>
         </ul>
       </div>
       <div class="btn-group">
@@ -140,25 +146,25 @@ module.directive "plunkerToolbar", ["$location", "Angularytics", "session", "dow
     $scope.visitor = visitor
     $scope.url = url
     $scope.beautifier = beautifier
-    
+
     $scope.promptReset = ->
       if session.isDirty() and not session.skipDirtyCheck then notifier.confirm "You have unsaved changes. This action will reset your plunk. Are you sure you would like to proceed?",
         confirm: -> session.reset()
       else session.reset()
-    
+
     $scope.promptDestroy = ->
       notifier.confirm "Confirm Deletion", "Are you sure that you would like to delete this plunk?",
-        confirm: -> session.destroy()          
-    
+        confirm: -> session.destroy()
+
     $scope.triggerDownload = ->
       downloader.download session.toJSON(), if session.plunk?.id then "plunk-#{session.plunk.id}.zip" else "plunk.zip"
-    
+
     $scope.toggleFavorite = ->
       if session.plunk then session.plunk.star()
-    
+
     $scope.toggleRemembered = ->
       if session.plunk then session.plunk.remember()
-    
+
     $scope.togglePreview = ->
       previewer = panes.findById("preview")
       panes.toggle(previewer)

@@ -6,9 +6,19 @@ html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editor
     meta(name="description",content="Plunker is an online community for creating, collaborating on and sharing your web development ideas.")
     meta(name="keywords",content="jquery,angular.js,editor,online,jsfiddle,codepen,pastebin,testing,javascript testing,css testing,javascript,css,coffeescript,preview,live preview")
     meta(name="fragment", content="!")
+    if typeof(plunk) !== 'undefined'
+      meta(name="twitter:card",content="summary_large_image")
+      meta(name="twitter:site",content="@plnkrco")
+      meta(name="twitter:title",ng-non-bindable,content="#{plunk.description}")
+      meta(name="twitter:description",ng-non-bindable,,content="Created on Plnkr: Helping developers build the web.")
+      meta(name="twitter:image",ng-non-bindable,,content="#{url.shot}/#{plunk.id}.png?d=#{plunk.updated_at}")
     base(href="/edit/")
     title Plunker
     != css("apps/editor")
+    script(data-cfasync="false")
+        !function(a,b){var c=b.getElementsByTagName("script")[0],d=b.createElement("script"),e="https://pub.freestar.io/plnkr/";e+=window.location.search.indexOf("fsdebug")==-1?"pubfig.min.js":"pubfig.js",d.async=!0,d.src=e,c.parentNode.insertBefore(d,c)}(window,document);
+        window.freestar = window.freestar || {};
+        window.freestar.queue = window.freestar.queue || [];
     // if lt IE 9
       script(src="http://html5shim.googlecode.com/svn/trunk/html5.js")
     // if lte IE 8
@@ -21,26 +31,28 @@ html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editor
         document.createElement('ng:view');
     // if lt IE 8
       script(src="/vendor/json2/json2.js")
-    script(src="//cdn.rawgit.com/jpillora/xdomain/gh-pages/dist/0.6/xdomain.min.js")
+    script(src="https://cdn.rawgit.com/jpillora/xdomain/0.7.3/dist/xdomain.min.js")
     script
       xdomain.slaves({
-        '!{url.api}': "/proxy.html",
-        '!{url.collab}': "/proxy.html",
+        'http:!{url.api}': "/proxy.html",
+        'http:!{url.collab}': "/proxy.html",
+        'https:!{url.api}': "/proxy.html",
+        'https:!{url.collab}': "/proxy.html",
       })
     script(src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js")
     // script(src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.3/angular.js")
-    
+
     script
       <!--
       !{state.toString().replace(/<\//g,"<\\/").replace(/-->/g, "--\\>")}
       -->
-      
+
     != js("apps/editor")
     script
       var _gaq = _gaq || [];
       _gaq.push(['_setAccount', 'UA-28928507-1']);
       _gaq.push(['_trackPageview']);
-    
+
       (function() {
         var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
         ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
@@ -50,7 +62,7 @@ html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editor
       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
       m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
       })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-    
+
       ga('create', 'UA-28928507-5', 'plnkr.co');
 
     script(type="text/javascript", src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-4f60c7714e5b5629", async="async")
@@ -77,3 +89,11 @@ html#ng-app(ng-app="plunker.editorPage", lang="en", class="ng-app:plunker.editor
                   span(ng-bind="item.text")
     <plunker-editor-layout></plunker-editor-layout>
     <ng-view></ng-view>
+    noscript
+      iframe(src="//www.googletagmanager.com/ns.html?id=GTM-T6RZMX",height="0",width="0",style="display:none;visibility:hidden")
+    script(type="text/javascript")
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      '//www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-T6RZMX');

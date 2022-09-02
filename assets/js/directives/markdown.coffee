@@ -1,4 +1,4 @@
-#= require ./../../vendor/marked.js
+#= require marked.js
 
 
 module = angular.module "plunker.markdown", []

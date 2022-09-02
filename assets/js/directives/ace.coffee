@@ -1,6 +1,6 @@
-#= require ./../../vendor/ace/src/ace
-#= require ./../../vendor/ace/src/ext-language_tools
-#= require ./../../vendor/ace/src/ext-searchbox
+#= require ace/src/ace
+#= require ace/src/ext-language_tools
+#= require ace/src/ext-searchbox
 
 #= require ./../services/session
 #= require ./../services/modes
@@ -279,7 +279,7 @@ module.directive "plunkerAce", ["$timeout", "$q", "session", "settings", "activi
           enableBasicAutocompletion: true
           enableSnippets: true
       
-      $q.all([@loadModule("ace/ext/emmet"), @loadScript("http://nightwing.github.io/emmet-core/emmet.js")]).then ([module]) =>
+      $q.all([@loadModule("ace/ext/emmet"), @loadScript("https://nightwing.github.io/emmet-core/emmet.js")]).then ([module]) =>
         module.setCore(window.emmet)
         @editor.setOption "enableEmmet", true
 
@@ -331,7 +331,8 @@ module.directive "plunkerAce", ["$timeout", "$q", "session", "settings", "activi
     $aceEl = $el.find(".plunker-ace-canvas").get(0)
 
     controller.editor = new Editor(new Renderer($aceEl, "ace/theme/#{settings.editor.theme || 'textmate'}"))
-
+    controller.editor.$blockScrolling = Infinity
+  
     controller.bindKeys(settings.editor.keyboard_handler)
     controller.setupAutocomplete()
     

@@ -1,5 +1,5 @@
-#= require ./../../vendor/jquery.cookie/jquery.cookie
-#= require ./../../vendor/script/dist/script
+#= require jquery.cookie/jquery.cookie
+#= require script/dist/script
 
 #= require ./../services/panes
 #= require ./../services/participants
@@ -341,7 +341,7 @@ module.run [ "$rootScope", "$q", "$location", "panes", "session", "participants"
           <div>
             <ul class="participants">
               <li ng-class="participant.style" ng-repeat="(public_id, participant) in participants">
-                <img ng-src="http://www.gravatar.com/avatar/{{participant.gravatar_id}}?s=14&d=identicon" />
+                <img ng-src="https://www.gravatar.com/avatar/{{participant.gravatar_id}}?s=14&d=identicon" />
                 <span ng-bind="participant.handle"></span>
               </li>
             <ul>

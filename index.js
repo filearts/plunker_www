@@ -1,4 +1,6 @@
-require("coffee-script");
+var Coffee = require("coffee-script");
+
+Coffee.register();
 
 //process.env.NODE_ENV = "production";
 
